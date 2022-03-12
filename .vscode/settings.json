@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "Test-Eigen.C": "cpp",
+        "singleWave.C": "cpp",
+        "Test-riemann.C": "cpp",
+        "ostream": "cpp",
+        "vector": "cpp",
+        "Test-singleWave.C": "cpp",
+        "dbnsFlux.C": "cpp",
+        "roeFlux.C": "cpp",
+        "Test-singleWave copy.C": "cpp",
+        "Test-roeFlux.C": "cpp",
+        "adolcforward": "cpp",
+        "mprealsupport": "cpp"
+    }
+}

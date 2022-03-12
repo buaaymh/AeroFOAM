@@ -1,0 +1,88 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "fvCFD.H"
+#include "dbnsFlux.H"
+
+void Foam::consToPrim
+(
+    scalar& rho,
+    vector& rhoU,
+    scalar& rhoE,
+    const scalar& gamma
+)
+{
+    rhoU /= rho;
+    rhoE -= rho * magSqr(rhoU);
+    rhoE *= gamma - 1;
+}
+
+void Foam::primToCons
+(
+    scalar& rho,
+    vector& U,
+    scalar& p,
+    const scalar& gamma
+)
+{
+    p /= (gamma - 1.0);
+    p += 0.5 * rho * magSqr(U);
+    U *= rho;
+}
+
+void Foam::evaluateFlux
+(
+    scalar& rhoFlux,
+    vector& rhoUFlux,
+    scalar& rhoEFlux,
+    const scalar& rho,
+    const vector& U,
+    const scalar& p,
+    const vector& normal,
+    const scalar& gamma
+)
+{
+    const scalar H  = gamma/(gamma-1) * p / max(rho, SMALL) + 0.5 * magSqr(U);
+    const scalar Vn = U & normal;
+
+    rhoFlux  = rho * Vn;
+    rhoUFlux = rhoFlux * U + p * normal;
+    rhoEFlux = rhoFlux * H;
+}
+
+scalar Foam::entropyCorr
+(
+    const scalar& z,
+    const scalar& d
+)
+{
+    if (z > d)
+      return z;
+    else
+      return 0.5*(z*z+d*d)/d;
+}
+
+
+// ************************************************************************* //

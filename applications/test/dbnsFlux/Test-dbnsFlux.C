@@ -1,0 +1,205 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+Application
+    Test-roeFlux
+
+Description
+    This is the OpenFOAM Euler riemann solver test from buaaymh.
+
+\*---------------------------------------------------------------------------*/
+
+#include "fvCFD.H"
+#include "AUSMplusUpFlux.H"
+#include "hllcFlux.H"
+#include "roeFlux.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+int main(int argc, char *argv[])
+{
+    Foam::roeFlux  roe  = roeFlux();
+    Foam::hllcFlux hllc = hllcFlux();
+    Foam::AUSMplusUpFlux AUSMplusUp = AUSMplusUpFlux();
+    vector  normal = vector(1.0, 0.0, 0.0);
+    scalar  gamma  = 1.4;
+
+    //Flux
+    scalar rhoFlux;
+    vector rhoUFlux = vector::zero;
+    scalar rhoEFlux;
+    
+    Info << "Sod problem:" << endl;
+    // Left state
+    scalar rho_L = 1.0; vector U_L = vector(0.0, 0.0, 0.0); scalar p_L = 1.0;
+    // Right state
+    scalar rho_R = 0.125; vector U_R = vector(0.0, 0.0, 0.0); scalar p_R = 0.1;
+    // Mid state
+    scalar rho_M = 0.426319; vector U_M = vector(0.927453, 0.0, 0.0); scalar p_M = 0.303130;
+    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Foam::primToCons(rho_L, U_L, p_L, gamma);
+    Foam::primToCons(rho_R, U_R, p_R, gamma);
+    roe.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                     rho_L, rho_R, U_L, U_R, p_L, p_R,
+                     normal, gamma);
+    Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    hllc.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    AUSMplusUp.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Info << endl;
+
+    Info << "ShockCollision problem:" << endl;
+    // Left state
+    rho_L = 5.99924; U_L = vector(19.5975, 0.0, 0.0); p_L = 460.894;
+    // Right state
+    rho_R = 5.99924; U_R = vector(6.19633, 0.0, 0.0); p_R = 46.0950;
+    // Mid state
+    rho_M = 5.99924; U_M = vector(19.5975, 0.0, 0.0); p_M = 460.894;
+    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Foam::primToCons(rho_L, U_L, p_L, gamma);
+    Foam::primToCons(rho_R, U_R, p_R, gamma);
+    roe.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                     rho_L, rho_R, U_L, U_R, p_L, p_R,
+                     normal, gamma);
+    Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    hllc.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    AUSMplusUp.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Info << endl;
+
+    Info << "BlastFromLeft problem:" << endl;
+    // Left state
+    rho_L = 1.0; U_L = vector(0.0, 0.0, 0.0); p_L = 1000.0;
+    // Right state
+    rho_R = 1.0; U_R = vector(0.0, 0.0, 0.0); p_R = 0.01;
+    // Mid state
+    rho_M = 0.575062; U_M = vector(19.5975, 0.0, 0.0); p_M = 460.8938;
+    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Foam::primToCons(rho_L, U_L, p_L, gamma);
+    Foam::primToCons(rho_R, U_R, p_R, gamma);
+    roe.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                     rho_L, rho_R, U_L, U_R, p_L, p_R,
+                     normal, gamma);
+    Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    hllc.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    AUSMplusUp.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Info << endl;
+
+    Info << "BlastFromLeft problem:" << endl;
+    // Left state
+    rho_L = 1.0; U_L = vector(0.0, 0.0, 0.0); p_L = 0.01;
+    // Right state
+    rho_R = 1.0; U_R = vector(0.0, 0.0, 0.0); p_R = 100.0;
+    // Mid state
+    rho_M = 0.575062; U_M = vector(-6.196328, 0.0, 0.0); p_M = 46.09504;
+    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Foam::primToCons(rho_L, U_L, p_L, gamma);
+    Foam::primToCons(rho_R, U_R, p_R, gamma);
+    roe.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                     rho_L, rho_R, U_L, U_R, p_L, p_R,
+                     normal, gamma);
+    Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    hllc.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    AUSMplusUp.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Info << endl;
+
+    Info << "AlmostVaccumed problem:" << endl;
+    // Left state
+    rho_L = 1.0; U_L = vector(-2.0, 0.0, 0.0); p_L = 0.4;
+    // Right state
+    rho_R = 1.0; U_R = vector(+2.0, 0.0, 0.0); p_R = 0.4;
+    // Mid state
+    rho_M = 0.21852; U_M = vector(0.0, 0.0, 0.0); p_M = 0.001894;
+    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Foam::primToCons(rho_L, U_L, p_L, gamma);
+    Foam::primToCons(rho_R, U_R, p_R, gamma);
+    roe.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                     rho_L, rho_R, U_L, U_R, p_L, p_R,
+                     normal, gamma);
+    Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    hllc.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    AUSMplusUp.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Info << endl;
+
+    Info << "Vaccumed problem:" << endl;
+    // Left state
+    rho_L = 1.0; U_L = vector(-4.0, 0.0, 0.0); p_L = 0.4;
+    // Right state
+    rho_R = 1.0; U_R = vector(+4.0, 0.0, 0.0); p_R = 0.4;
+    // Mid state
+    rho_M = 0.0; U_M = vector(0.0, 0.0, 0.0); p_M = 0.0;
+    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Foam::primToCons(rho_L, U_L, p_L, gamma);
+    Foam::primToCons(rho_R, U_R, p_R, gamma);
+    roe.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                     rho_L, rho_R, U_L, U_R, p_L, p_R,
+                     normal, gamma);
+    Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    hllc.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    AUSMplusUp.evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                      rho_L, rho_R, U_L, U_R, p_L, p_R,
+                      normal, gamma);
+    Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
+    Info << endl;
+
+    return 0;
+}
+
+// ************************************************************************* //

@@ -1,0 +1,7 @@
+riemann/singleWave/singleWave.C
+riemann/dbnsFlux/dbnsFlux.C
+riemann/dbnsFlux/roeFlux/roeFlux.C
+riemann/dbnsFlux/hllcFlux/hllcFlux.C
+riemann/dbnsFlux/AUSMplusUpFlux/AUSMplusUpFlux.C
+
+LIB = $(FOAM_USER_LIBBIN)/libAeroFoam
