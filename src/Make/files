@@ -1,7 +1,8 @@
-riemann/singleWave/singleWave.C
-riemann/dbnsFlux/dbnsFlux.C
-riemann/dbnsFlux/roeFlux/roeFlux.C
-riemann/dbnsFlux/hllcFlux/hllcFlux.C
-riemann/dbnsFlux/AUSMplusUpFlux/AUSMplusUpFlux.C
+dbnsFlux/dbnsFlux.C
+dbnsFlux/roeFlux/roeFlux.C
+dbnsFlux/hllcFlux/hllcFlux.C
+dbnsFlux/AUSMplusUpFlux/AUSMplusUpFlux.C
+solver/eulerSolver/eulerSolver.C
+bound/boundMinMax.C
 
 LIB = $(FOAM_USER_LIBBIN)/libAeroFoam
