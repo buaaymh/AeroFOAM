@@ -12,8 +12,8 @@ void Foam::eulerSolver::limitGrad()
         const label j = neighbour[faceI];
         const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
         const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-        const scalar eps2_i = 8*pow(magSqr(delta_i), 1.5);
-        const scalar eps2_j = 8*pow(magSqr(delta_j), 1.5);
+        const scalar eps2_i = 16*pow(magSqr(delta_i), 1.5);
+        const scalar eps2_j = 16*pow(magSqr(delta_j), 1.5);
 
         rhoLimit_[i] = min(rhoLimit_[i], Venkat(rhoGrad_[i]&delta_i, rhoMin_[i], rhoMax_[i], eps2_i));
         rhoLimit_[j] = min(rhoLimit_[j], Venkat(rhoGrad_[j]&delta_j, rhoMin_[j], rhoMax_[j], eps2_j));
@@ -43,7 +43,7 @@ void Foam::eulerSolver::limitGrad()
             {
                 const label i = bfaceCells[faceI];
                 const vector delta = Cf[faceI] - Cn[faceI];
-                const scalar eps2 = 8*pow(magSqr(delta), 1.5);
+                const scalar eps2 = 16*pow(magSqr(delta), 1.5);
                 rhoLimit_[i] = min(rhoLimit_[i], Venkat(rhoGrad_[i]&delta, rhoMin_[i], rhoMax_[i], eps2));
                 const vector UProj = UGrad_[i]&delta;
                 const vector& UMax = UMax_[i];

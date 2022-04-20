@@ -89,6 +89,8 @@ class eulerSolver
     volScalarField rhoE_;
     //- Static temperature
     volScalarField T_;
+    //- Sound speed
+    volScalarField c_;
     //- Mach number
     volScalarField Ma_;
     //- Density grad
@@ -114,6 +116,10 @@ class eulerSolver
     scalarField pMax_;
     //- Riemann solver
     std::unique_ptr<dbnsFlux> riemann_;
+    //- Volume projections
+    vectorField volProjections_;
+    //- Local time steps
+    scalarField localDtDv_;
 
     // Private Member Functions
     //- Disallow default bitwise copy construct
@@ -143,6 +149,8 @@ public:
     scalarField& rho()  { return rho_.primitiveFieldRef(); }
     vectorField& rhoU() { return rhoU_.primitiveFieldRef(); }
     scalarField& rhoE() { return rhoE_.primitiveFieldRef(); }
+    
+    const scalarField& LTS() const { return localDtDv_; }
 
     void evaluateFlowRes
     (
@@ -153,7 +161,11 @@ public:
 
     void correctFields();
 
+    void updateLTS();
+
 private:
+    
+    void volProjectionsInit();
 
     void limiterInit();
 

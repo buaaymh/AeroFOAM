@@ -78,6 +78,16 @@ Foam::eulerSolver::eulerSolver
         ),
         fluidProps_.gamma*p_/rho_
     ),
+    c_
+    (
+        IOobject
+        (
+            "c",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        sqrt(T_)
+    ),
     Ma_
     (
         IOobject
@@ -161,7 +171,9 @@ Foam::eulerSolver::eulerSolver
     UMin_(vectorField(mesh_.nCells())),
     UMax_(vectorField(mesh_.nCells())),
     pMin_(scalarField(mesh_.nCells())),
-    pMax_(scalarField(mesh_.nCells()))
+    pMax_(scalarField(mesh_.nCells())),
+    volProjections_(vectorField(mesh_.nCells())),
+    localDtDv_(scalarField(mesh_.nCells()))
 {
     word flux = mesh_.schemesDict().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");
     Info << "The flux scheme is " << flux << endl;
@@ -176,6 +188,7 @@ Foam::eulerSolver::eulerSolver
         Info << "Error in Riemann solver, you should choose hllc, AUSMplusUp or roe" << endl;
         riemann_ = std::make_unique<roeFlux>();
     }
+    volProjectionsInit();
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -185,5 +198,7 @@ Foam::eulerSolver::eulerSolver
 #include "evaluateFlowRes.H"
 
 #include "correctFields.H"
+
+#include "localTimeStep.H"
 
 // ************************************************************************* //
