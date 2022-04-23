@@ -12,7 +12,7 @@ void Foam::eulerSolver::volProjectionsInit()
         volProjections_[owner[faceI]] += faceVector;
         volProjections_[neighbour[faceI]] += faceVector;
     }
-    forAll(mesh_.boundaryMesh(), patchI)
+    forAll(mesh_.boundary(), patchI)
     {   
         scalar temp = 0.25;
         if (mesh_.boundary()[patchI].coupled()) temp = 0.5;
@@ -25,6 +25,6 @@ void Foam::eulerSolver::volProjectionsInit()
 
 void Foam::eulerSolver::updateLTS()
 {
-    scalar localCFL = 1.0;
-    localDtDv_ = localCFL/(volProjections_&(cmptMag(U_.primitiveField())+c_.primitiveField()*vector::one));
+    scalar localCFL = mesh_.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("LocalCFL", 1.0);
+    localDtDv_ = localCFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
 }

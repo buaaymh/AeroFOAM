@@ -90,7 +90,7 @@ class eulerSolver
     //- Static temperature
     volScalarField T_;
     //- Sound speed
-    volScalarField c_;
+    scalarField c_;
     //- Mach number
     volScalarField Ma_;
     //- Density grad
@@ -153,6 +153,13 @@ public:
     const scalarField& LTS() const { return localDtDv_; }
 
     void evaluateFlowRes
+    (
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE
+    );
+
+    void solveFlowLinearSystem
     (
         scalarField& resRho,
         vectorField& resRhoU,

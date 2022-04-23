@@ -136,53 +136,63 @@ void Foam::eulerSolver::evaluateFlowRes
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
             }
         }
-        if (name == "subInlet")
+        if (name == "inlet")
         {
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];
             const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
+            const fvPatchScalarField& Ma = Ma_.boundaryField()[patchI];
+            const scalarField rhoInter = rhoBound.patchInternalField();
             const vectorField UInter = UBound.patchInternalField();
             const scalarField pInter = pBound.patchInternalField();
-            const scalarField c2 = pBound*fluidProps_.gamma/rhoBound;
-            const scalarField rhoc = rhoBound*sqrt(c2);
-            const scalarField p = 0.5*(pBound+pInter-rhoc*(normal&(UBound-UInter)));
-            const scalarField rho = rhoBound + (p-pBound)/c2;
-            const vectorField U = UBound + normal*(p-pBound)/rhoc;
             forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux;
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux;
-                const label i = bfaceCells[faceI];
+                scalar rho = rhoBound[faceI];
+                vector U = UBound[faceI];
+                scalar p = pBound[faceI];
+                const label i = bfaceCells[faceI]; 
+                if (Ma[faceI] < 1)
+                {
+                    const scalar rhoc = rhoInter[faceI]*c_[i];
+                    p = 0.5*(p+pInter[faceI]-rhoc*(normal[faceI]&(U-UInter[faceI])));
+                    rho += (p-pBound[faceI])/sqr(c_[i]);
+                    U += normal[faceI]*(p-pBound[faceI])/rhoc;
+                }
                 Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                   rho[faceI], U[faceI], p[faceI],
+                                   rho, U, p,
                                    normal[faceI], fluidProps_.gamma);
                 resRho[i]  -= rhoFlux * magSf[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
                 resRhoE[i] -= rhoEFlux * magSf[faceI];
             }
         }
-        if (name == "subOutlet")
+        if (name == "outlet")
         {
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];
-            const fvPatchScalarField& p = p_.boundaryField()[patchI];
-            const scalarField rhoInter = rhoBound.patchInternalField();
-            const vectorField UInter = UBound.patchInternalField();
-            const scalarField pInter = p.patchInternalField();
-            const scalarField c2 = p*fluidProps_.gamma/rhoBound;
-            const scalarField rhoc = rhoBound*sqrt(c2);
-            const scalarField rho = rhoInter + (p-pInter)/c2;
-            const vectorField U = UInter - normal*(p-pInter)/rhoc;
+            const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
+            const scalarField pInter = pBound.patchInternalField();
+            const scalarField Ma = Ma_.boundaryField()[patchI].patchInternalField();
             forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux;
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux;
+                scalar rho = rhoBound[faceI];
+                vector U = UBound[faceI];
+                scalar p = pBound[faceI];
                 const label i = bfaceCells[faceI];
+                if (Ma[faceI] < 1.0)
+                {
+                    rho -= (pInter[faceI]-p)/sqr(c_[i]);
+                    U += normal[faceI]*(pInter[faceI]-p)/(rho*c_[i]);
+                }
                 Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                   rho[faceI], U[faceI], p[faceI],
-                                   normal[faceI], fluidProps_.gamma);
+                                    rho, U, p,
+                                    normal[faceI], fluidProps_.gamma);
                 resRho[i]  -= rhoFlux * magSf[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
                 resRhoE[i] -= rhoEFlux * magSf[faceI];
@@ -196,18 +206,18 @@ void Foam::eulerSolver::evaluateFlowRes
             const scalarField rhoInter = rhoBound.patchInternalField();
             const vectorField UInter = UBound.patchInternalField();
             const scalarField pInter = pBound.patchInternalField();
+            const scalarField& Ma = Ma_.boundaryField()[patchI];
             const scalarField& Vn = normal&UBound;
             forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux;
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux;
-                const scalar machInf2 = magSqr(UBound[faceI]);
                 const label i = bfaceCells[faceI];
-                if (machInf2 < 1.0)
+                if (Ma[faceI] < 1.0)
                 {
-                    const scalar c2 = pBound[faceI]*fluidProps_.gamma/rhoBound[faceI];
-                    const scalar rhoc = rhoBound[faceI]*sqrt(c2);
+                    const scalar c2 = pInter[faceI]*fluidProps_.gamma/rhoInter[faceI];
+                    const scalar rhoc = rhoInter[faceI]*sqrt(c2);
                     scalar rho, p; vector U;
                     if (Vn[faceI] < 0)
                     {
@@ -236,25 +246,6 @@ void Foam::eulerSolver::evaluateFlowRes
                                            rhoInter[faceI], UInter[faceI], pInter[faceI],
                                            normal[faceI], fluidProps_.gamma);
                 }
-                resRho[i]  -= rhoFlux * magSf[faceI];
-                resRhoU[i] -= rhoUFlux * magSf[faceI];
-                resRhoE[i] -= rhoEFlux * magSf[faceI];
-            }
-        }
-        if (name == "supInlet" || name == "supOutlet")
-        {
-            const scalarField& rho_patch = rho_.boundaryField()[patchI];
-            const vectorField& U_patch = U_.boundaryField()[patchI];
-            const scalarField& p_patch = p_.boundaryField()[patchI];
-            forAll(bfaceCells, faceI)
-            {
-                scalar rhoFlux;
-                vector rhoUFlux = vector::zero;
-                scalar rhoEFlux;
-                const label i = bfaceCells[faceI];
-                Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                   rho_patch[faceI], U_patch[faceI], p_patch[faceI],
-                                   normal[faceI], fluidProps_.gamma);
                 resRho[i]  -= rhoFlux * magSf[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
                 resRhoE[i] -= rhoEFlux * magSf[faceI];

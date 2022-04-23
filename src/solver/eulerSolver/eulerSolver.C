@@ -78,16 +78,7 @@ Foam::eulerSolver::eulerSolver
         ),
         fluidProps_.gamma*p_/rho_
     ),
-    c_
-    (
-        IOobject
-        (
-            "c",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        sqrt(T_)
-    ),
+    c_(sqrt(T_.primitiveField())),
     Ma_
     (
         IOobject
@@ -196,6 +187,8 @@ Foam::eulerSolver::eulerSolver
 #include "limitGrad.H"
 
 #include "evaluateFlowRes.H"
+
+#include "solveFlowLinearSystem.H"
 
 #include "correctFields.H"
 
