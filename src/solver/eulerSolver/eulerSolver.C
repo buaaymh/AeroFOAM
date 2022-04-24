@@ -190,6 +190,8 @@ Foam::eulerSolver::eulerSolver
 
 #include "solveFlowLinearSystem.H"
 
+#include "solveFlowPseudoTimeSystem.H"
+
 #include "correctFields.H"
 
 #include "localTimeStep.H"

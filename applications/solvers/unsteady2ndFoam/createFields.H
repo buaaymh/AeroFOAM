@@ -88,7 +88,7 @@ eulerSolver solver
     U,
     p
 );
-
+solver.correctFields();
 // Resident
 scalarField resRho(mesh.nCells());
 vectorField resRhoU(mesh.nCells());

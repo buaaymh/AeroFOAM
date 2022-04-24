@@ -1,6 +1,6 @@
 void Foam::eulerSolver::correctFields()
 {
-    const dimensionedScalar boundMin("boundMin", dimless, 0.00001);
+    const dimensionedScalar boundMin("boundMin", dimless, 0.001);
     const dimensionedScalar boundMax("boundMax", dimless, 100.0);
     U_.ref() = rhoU_ / rho_;
     p_.ref() = (rhoE_ - 0.5*rho_*magSqr(U_))*(fluidProps_.gamma-1.0);

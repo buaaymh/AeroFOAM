@@ -30,6 +30,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
+#include "eulerSolver.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -42,22 +43,17 @@ int main(int argc, char *argv[])
     #include "createMesh.H"
 
     #include "createFields.H"
-    // #include "createControls.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     while (runTime.run())
     {
-        runTime++;
-        Info<< "Time steps = " << runTime.value() << nl;
-
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
-
-        // Check resident
         solver.solveFlowLinearSystem(resRho, resRhoU, resRhoE);
-        
-        solver.correctField();
+        solver.correctFields();
 
+        runTime++;
+        Info<< "Time = " << runTime.value() << " s" << nl;
         runTime.write();
 	
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"

@@ -166,6 +166,16 @@ public:
         scalarField& resRhoE
     );
 
+    void solveFlowPseudoTimeSystem
+    (
+        const scalar& dt,
+        const scalar& alpha,
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE,
+        scalar& resL1
+    );
+
     void correctFields();
 
     void updateLTS();

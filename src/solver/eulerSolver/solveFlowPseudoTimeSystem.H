@@ -1,14 +1,17 @@
-void Foam::eulerSolver::solveFlowLinearSystem
+void Foam::eulerSolver::solveFlowPseudoTimeSystem
 (
+    const scalar& dt,
+    const scalar& alpha,
     scalarField& resRho,
     vectorField& resRhoU,
-    scalarField& resRhoE
+    scalarField& resRhoE,
+    scalar& resL1
 )
 {
     updateLTS();
     const scalar omega = mesh_.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("relaxOmega", 1.2);
-    // Calculate D 
-    scalarField D(1.0/localDtDv_);
+    // Calculate D
+    scalarField D(1.0/localDtDv_ + mesh_.V().field()/dt);
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
     const surfaceVectorField& Sf = mesh_.Sf();
@@ -17,8 +20,8 @@ void Foam::eulerSolver::solveFlowLinearSystem
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        D[i] += 0.5*omega*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
-        D[j] += 0.5*omega*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI]);
+        D[i] += 0.5*omega*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
+        D[j] += 0.5*omega*alpha*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI]);
     }
     forAll(mesh_.boundary(), patchI)
     {
@@ -28,7 +31,7 @@ void Foam::eulerSolver::solveFlowLinearSystem
         forAll(bfaceCells, faceI)
         {
             const label i = bfaceCells[faceI];
-            D[i] += 0.5*omega*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
+            D[i] += 0.5*omega*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
         }
     }
     // Forward Sweep
@@ -56,9 +59,9 @@ void Foam::eulerSolver::solveFlowLinearSystem
                     const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(fluidProps_.gamma-1.0);
                     const scalar phi0 = U_[i]&Sf[faceI];
                     const scalar phi1 = (rhoU1/rho1)&Sf[faceI];
-                    rRho  += ac*dRhoStar[i]  + 0.5*(rho1*phi1       - rho_[i]*phi0);
-                    rRhoU += ac*dRhoUStar[i] + 0.5*(rhoU1*phi1      - rhoU_[i]*phi0 + (p1-p_[i])*Sf[faceI]);
-                    rRhoE += ac*dRhoEStar[i] + 0.5*((rhoE1+p1)*phi1 - (rhoE_[i]+p_[i])*phi0);
+                    rRho  += alpha*(ac*dRhoStar[i]  + 0.5*(rho1*phi1       - rho_[i]*phi0));
+                    rRhoU += alpha*(ac*dRhoUStar[i] + 0.5*(rhoU1*phi1      - rhoU_[i]*phi0 + (p1-p_[i])*Sf[faceI]));
+                    rRhoE += alpha*(ac*dRhoEStar[i] + 0.5*((rhoE1+p1)*phi1 - (rhoE_[i]+p_[i])*phi0));
                 }
             }
         }
@@ -97,10 +100,11 @@ void Foam::eulerSolver::solveFlowLinearSystem
                 }
             }
         }
-        dRho[cellI]  = dRhoStar[cellI]  + rRho  / D[cellI];
-        dRhoU[cellI] = dRhoUStar[cellI] + rRhoU / D[cellI];
-        dRhoE[cellI] = dRhoEStar[cellI] + rRhoE / D[cellI];
+        dRho[cellI]  = dRhoStar[cellI]  + alpha*rRho  / D[cellI];
+        dRhoU[cellI] = dRhoUStar[cellI] + alpha*rRhoU / D[cellI];
+        dRhoE[cellI] = dRhoEStar[cellI] + alpha*rRhoE / D[cellI];
     }
+    resL1 = gSum(mag(dRho));
     rho_.primitiveFieldRef()  += dRho;
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;

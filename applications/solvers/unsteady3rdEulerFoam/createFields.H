@@ -10,46 +10,39 @@ IOdictionary testDict
     )
 );
 
-word simulationType;
-testDict.lookup("simulationType") >> simulationType;
+fluidProperties fluidProps;
 
-const scalar gamma(testDict.lookupOrDefault<scalar>("gamma", 1.4));
-const scalar PrDyna(testDict.lookupOrDefault<scalar>("PrDyna", 0.0));
-const scalar PrTurb(testDict.lookupOrDefault<scalar>("PrTurb", 0.0));
+testDict.lookup("simulationType") >> fluidProps.simulationType;
+
+fluidProps.gamma = testDict.lookupOrDefault<scalar>("gamma", 1.4);
 
 Info << "=================Fluid Properties===================" << nl
-     << "simulationType: "  << simulationType << nl
-     << "gamma:          "  << gamma << nl
-     << "PrDyna:         "  << PrDyna << nl
-     << "PrTurb:         "  << PrTurb << nl
+     << "simulationType: "  << fluidProps.simulationType << nl
+     << "gamma:          "  << fluidProps.gamma << nl
      << "====================================================" << endl;
 
 const dictionary& freeStream = testDict.subDict("freeStream");
-const scalar Mach = freeStream.lookup<scalar>("Mach");
-const scalar T = freeStream.lookup<scalar>("T");
-const scalar AOA = freeStream.lookup<scalar>("AOA");
-const scalar Pressure = freeStream.lookupOrDefault<scalar>("Pressure", 101325.0);
-const scalar Re = freeStream.lookupOrDefault<scalar>("Re", 1e6);
-const scalar length = freeStream.lookupOrDefault<scalar>("length", 1.0);
+fluidProps.AOA = freeStream.lookup<scalar>("AOA");
+fluidProps.Mach_inf = freeStream.lookup<scalar>("Mach");
+fluidProps.T_inf = freeStream.lookup<scalar>("T");
+fluidProps.p_inf = freeStream.lookupOrDefault<scalar>("Pressure", 101325.0);
 
-Info << "===============Free-steam Definition================" << nl
-     << "Temperature    : "  << T << " K" << nl
-     << "Mach number    : "  << Mach << nl
-     << "Angle of attack: "  << AOA  << " deg" << nl
-     << "Pressure       : "  << Pressure  << " N/m2" << nl
-     << "Reynolds number: "  << Re << nl
-     << "Reynolds length: "  << length << " m" << nl
+Info << "===============Free-stream Definition================" << nl
+     << "Temperature    : "  << fluidProps.T_inf << " K" << nl
+     << "Mach number    : "  << fluidProps.Mach_inf << nl
+     << "Angle of attack: "  << fluidProps.AOA  << " deg" << nl
+     << "Pressure       : "  << fluidProps.p_inf  << " N/m2" << nl
      << "====================================================" << endl;
 
 Info << "==================Reading Fields====================" << endl;
 // Primitive variables
 
-Info<< "Reading field T" << endl;
-volScalarField T
+Info<< "Reading field rho" << endl;
+volScalarField rho
 (
     IOobject
     (
-        "T",
+        "rho",
         runTime.timeName(),
         mesh,
         IOobject::MUST_READ,
@@ -88,54 +81,15 @@ volScalarField p
 
 Info << "====================================================" << endl;
 
-EulerSolver solver
+eulerSolver solver
 (
-    mesh,
-    T,
+    fluidProps,
+    rho,
     U,
     p
 );
-
+solver.correctFields();
 // Resident
-
-volScalarField resRho
-(
-    IOobject
-    (
-        "resRho",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::NO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("resRho", rho.dimensions(), 1.0)
-);
-
-volVectorField resRhoU
-(
-    IOobject
-    (
-        "resRhoU",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::NO_WRITE
-    ),
-    mesh,
-    dimensionedVector("resRhoU", solver.rhoU().dimensions(), vector::one)
-);
-
-volScalarField resRhoE
-(
-    IOobject
-    (
-        "resRhoE",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::NO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("resRhoE", solver.rhoE().dimensions(), 1.0)
-);
+scalarField resRho(mesh.nCells());
+vectorField resRhoU(mesh.nCells());
+scalarField resRhoE(mesh.nCells());
