@@ -22,26 +22,20 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    eulerSolver
+    euler2ndSolver
 
 Description
-    Solver for Euler flow.
+    2nd order solver for Euler flow.
 
 Author
     Minghao Yang
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef eulerSolver_H
-#define eulerSolver_H
+#ifndef euler2ndSolver_H
+#define euler2ndSolver_H
 
-#include <memory>
-#include "fvCFD.H"
-#include "emptyFvPatch.H"
-#include "cyclicFvPatch.H"
-#include "processorFvPatch.H"
-#include "boundMinMax.H"
-#include "dbnsFlux.H"
+#include "solver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,56 +43,14 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                   Structure fluidProperties Declaration
-\*---------------------------------------------------------------------------*/
-
-struct fluidProperties
-{
-    word simulationType;
-
-    scalar gamma,       /* Gas constant */
-           AOA,         /* Angle of attack */
-           Mach_inf,    /* Free-stream Mach number */
-           T_inf,       /* Free-stream Temperature */
-           p_inf;       /* Free-stream pressure */
-};
-
-/*---------------------------------------------------------------------------*\
-                           Class eulerSolver Declaration
+                           Class euler2ndSolver Declaration
 \*---------------------------------------------------------------------------*/
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-class eulerSolver
+class euler2ndSolver: public solver
 {
     // Private Data
-    const fluidProperties& fluidProps_;
-    //- Reference to mesh
-    const fvMesh& mesh_;
-    //- Normal
-    surfaceVectorField normal_;
-    //- Static density
-    volScalarField& rho_;
-    //- Velocity
-    volVectorField& U_;
-    //- Static pressure
-    volScalarField& p_;
-    //- Momentum
-    volVectorField rhoU_;
-    //- Energy
-    volScalarField rhoE_;
-    //- Static temperature
-    volScalarField T_;
-    //- Sound speed
-    scalarField c_;
-    //- Mach number
-    volScalarField Ma_;
-    //- Density grad
-    volVectorField rhoGrad_;
-    //- Velocity grad
-    volTensorField UGrad_;
-    //- pressure grad
-    volVectorField pGrad_;
     //- Density limit
     volScalarField rhoLimit_;
     //- Velocity limit
@@ -114,23 +66,17 @@ class eulerSolver
     //- pressure min and max
     scalarField pMin_;
     scalarField pMax_;
-    //- Riemann solver
-    std::unique_ptr<dbnsFlux> riemann_;
-    //- Volume projections
-    vectorField volProjections_;
-    //- Local time steps
-    scalarField localDtDv_;
 
     // Private Member Functions
     //- Disallow default bitwise copy construct
-    eulerSolver(const eulerSolver&);
+    euler2ndSolver(const euler2ndSolver&);
     //- Disallow default bitwise assignment
-    void operator=(const eulerSolver&);
+    void operator=(const euler2ndSolver&);
 
 public:
 
     // Constructors - default
-    eulerSolver
+    euler2ndSolver
     (
         const fluidProperties& fluidProps,
         volScalarField& rho,
@@ -139,18 +85,9 @@ public:
     );
 
     // Destructor - default
-    virtual ~eulerSolver() {};
+    virtual ~euler2ndSolver() {};
 
     // Member Functions
-    const scalarField& rho()  const { return rho_.primitiveField(); }
-    const vectorField& rhoU() const { return rhoU_.primitiveField(); }
-    const scalarField& rhoE() const { return rhoE_.primitiveField(); }
-    
-    scalarField& rho()  { return rho_.primitiveFieldRef(); }
-    vectorField& rhoU() { return rhoU_.primitiveFieldRef(); }
-    scalarField& rhoE() { return rhoE_.primitiveFieldRef(); }
-    
-    const scalarField& LTS() const { return localDtDv_; }
 
     void evaluateFlowRes
     (
@@ -159,30 +96,7 @@ public:
         scalarField& resRhoE
     );
 
-    void solveFlowLinearSystem
-    (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE
-    );
-
-    void solveFlowPseudoTimeSystem
-    (
-        const scalar& dt,
-        const scalar& alpha,
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
-        scalar& resL1
-    );
-
-    void correctFields();
-
-    void updateLTS();
-
 private:
-    
-    void volProjectionsInit();
 
     void limiterInit();
 

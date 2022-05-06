@@ -1,4 +1,4 @@
-void Foam::eulerSolver::evaluateFlowRes
+void Foam::euler2ndSolver::evaluateFlowRes
 (
     scalarField& resRho,
     vectorField& resRhoU,

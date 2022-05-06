@@ -1,4 +1,4 @@
-void Foam::eulerSolver::solveFlowLinearSystem
+void Foam::solver::solveFlowLinearSystem
 (
     scalarField& resRho,
     vectorField& resRhoU,

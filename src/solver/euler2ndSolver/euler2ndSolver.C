@@ -23,68 +23,69 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "vrScheme.H"
+#include "euler2ndSolver.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 // Construct from components
-Foam::vrScheme::vrScheme
+Foam::euler2ndSolver::euler2ndSolver
 (
-    const fvMesh& mesh
+    const fluidProperties& fluidProps,
+    volScalarField& rho,
+    volVectorField& U,
+    volScalarField& p
 )
 :
-    mesh_(mesh),
-    rLengthScale_
+    solver(fluidProps, rho, U, p),
+    rhoLimit_
     (
         IOobject
         (
-            "rLengthScale",
+            "rhoLimit",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 0)
+    ),
+    ULimit_
+    (
+        IOobject
+        (
+            "ULimit",
             mesh_.time().timeName(),
             mesh_
         ),
         mesh_,
         dimensionedVector(dimless, vector::zero)
     ),
-    basisConst_
+    pLimit_
     (
         IOobject
         (
-            "basisConst",
+            "pLimit",
             mesh_.time().timeName(),
             mesh_
         ),
         mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
+        dimensionedScalar(dimless, 0)
     ),
-    p0_(mesh_.nCells(), false),
-    rA_(mesh_.nCells(), vrScheme::Matrix::Zero()),
-    B_(mesh_.nInternalFaces(), vrScheme::Matrix::Zero()),
-    bRho_(mesh_.nCells(), vrScheme::Column::Zero()),
-    bUx_(mesh_.nCells(), vrScheme::Column::Zero()),
-    bUy_(mesh_.nCells(), vrScheme::Column::Zero()),
-    bUz_(mesh_.nCells(), vrScheme::Column::Zero()),
-    bP_(mesh_.nCells(), vrScheme::Column::Zero()),
-    quad_(mesh_.nInternalFaces(), std::vector<vector>(4, vector::zero)),
-    delta_(mag(mesh_.delta()))
+    rhoMin_(scalarField(mesh_.nCells())),
+    rhoMax_(scalarField(mesh_.nCells())),
+    UMin_(vectorField(mesh_.nCells())),
+    UMax_(vectorField(mesh_.nCells())),
+    pMin_(scalarField(mesh_.nCells())),
+    pMax_(scalarField(mesh_.nCells()))
 {
-    vrWeight_ = mesh_.schemesDict().subDict("vrSchemes").lookup<vector>("weightList");
-    adaptive_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
-    positive_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);
-    Info << "The vrWeight is " << vrWeight_ << nl
-         << "The adaptive is " << adaptive_ << nl
-         << "The positive is " << positive_ << endl;
-    rLengthScaleInit();
-    basisConstInit();
-    matInit();
-    forAll(mesh_.owner(), faceI) { gaussQuad4(faceI, quad_[faceI]); }
+    Info << "Ths solver is 2nd order for Euler flow." << nl
+         << "Ths limiter is Venkatakrishnan." << nl
+         << "====================================================" << endl << endl;
 }
 
-#include "initFunctions.H"
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-#include "quadPoints.H"
+#include "limitGrad.H"
 
-#include "basisFunc.H"
-
-#include "updateCoefficients.H"
+#include "evaluateFlowRes.H"
 
 // ************************************************************************* //

@@ -23,68 +23,84 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "vrScheme.H"
+#include "euler3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 // Construct from components
-Foam::vrScheme::vrScheme
+Foam::euler3rdSolver::euler3rdSolver
 (
-    const fvMesh& mesh
+    const fluidProperties& fluidProps,
+    volScalarField& rho,
+    volVectorField& U,
+    volScalarField& p
 )
 :
-    mesh_(mesh),
-    rLengthScale_
+    solver(fluidProps, rho, U, p),
+    vr_(mesh_),
+    d2Rho_
     (
         IOobject
         (
-            "rLengthScale",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless, vector::zero)
-    ),
-    basisConst_
-    (
-        IOobject
-        (
-            "basisConst",
+            "d2Rho",
             mesh_.time().timeName(),
             mesh_
         ),
         mesh_,
         dimensionedSymmTensor(dimless, symmTensor::zero)
     ),
-    p0_(mesh_.nCells(), false),
-    rA_(mesh_.nCells(), vrScheme::Matrix::Zero()),
-    B_(mesh_.nInternalFaces(), vrScheme::Matrix::Zero()),
-    bRho_(mesh_.nCells(), vrScheme::Column::Zero()),
-    bUx_(mesh_.nCells(), vrScheme::Column::Zero()),
-    bUy_(mesh_.nCells(), vrScheme::Column::Zero()),
-    bUz_(mesh_.nCells(), vrScheme::Column::Zero()),
-    bP_(mesh_.nCells(), vrScheme::Column::Zero()),
-    quad_(mesh_.nInternalFaces(), std::vector<vector>(4, vector::zero)),
-    delta_(mag(mesh_.delta()))
+    d2Ux_
+    (
+        IOobject
+        (
+            "d2Ux",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    ),
+    d2Uy_
+    (
+        IOobject
+        (
+            "d2Uy",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    ),
+    d2Uz_
+    (
+        IOobject
+        (
+            "d2Uz",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    ),
+    d2P_
+    (
+        IOobject
+        (
+            "d2P",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    )
 {
-    vrWeight_ = mesh_.schemesDict().subDict("vrSchemes").lookup<vector>("weightList");
-    adaptive_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
-    positive_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);
-    Info << "The vrWeight is " << vrWeight_ << nl
-         << "The adaptive is " << adaptive_ << nl
-         << "The positive is " << positive_ << endl;
-    rLengthScaleInit();
-    basisConstInit();
-    matInit();
-    forAll(mesh_.owner(), faceI) { gaussQuad4(faceI, quad_[faceI]); }
+    Info << "Ths solver is 3rd order for Euler flow." << nl
+         << "Ths scheme is VR with AV." << nl
+         << "====================================================" << endl << endl;
 }
 
-#include "initFunctions.H"
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-#include "quadPoints.H"
-
-#include "basisFunc.H"
-
-#include "updateCoefficients.H"
+#include "evaluateFlowRes.H"
 
 // ************************************************************************* //

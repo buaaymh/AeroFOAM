@@ -1,4 +1,4 @@
-void Foam::eulerSolver::limitGrad()
+void Foam::euler2ndSolver::limitGrad()
 {
     limiterInit();
     rhoLimit_.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
@@ -57,7 +57,7 @@ void Foam::eulerSolver::limitGrad()
     }
 }
 
-void Foam::eulerSolver::limiterInit()
+void Foam::euler2ndSolver::limiterInit()
 {
     label i, j;
     scalar rho_i, rho_j, p_i, p_j;
@@ -133,7 +133,7 @@ void Foam::eulerSolver::limiterInit()
     pMax_ -= p_.field();
 }
 
-scalar Foam::eulerSolver::Venkat
+scalar Foam::euler2ndSolver::Venkat
 (
     const scalar& project,
     const scalar& deltaMin,

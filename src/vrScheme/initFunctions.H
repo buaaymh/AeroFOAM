@@ -52,7 +52,7 @@ void Foam::vrScheme::matInit()
         vrScheme::Matrix B_ij = vrScheme::Matrix::Zero();
         const vector normal = mesh_.Sf()[faceI]/mesh_.magSf()[faceI];
         const vector dp = cmptDivide(vector(1/delta_[faceI], delta_[faceI], pow3(delta_[faceI])),
-                                     cmptMultiply(vrWeight_, vrWeight_));
+                                     cmptMultiply(vrWeight_, vrWeight_)) * mesh_.magSf()[faceI] * 0.25;
         for (label gaussI = 0; gaussI != 9; ++gaussI)
         {
             vrScheme::Matrix tempA_i  = vrScheme::Matrix::Zero();
@@ -60,6 +60,7 @@ void Foam::vrScheme::matInit()
             vrScheme::Matrix tempB_ij = vrScheme::Matrix::Zero();
             const vector delta_i = quadPoints[gaussI] - mesh_.C()[i];
             const vector delta_j = quadPoints[gaussI] - mesh_.C()[j];
+            const vector dpwTemp = Quad9::w[gaussI] * dp;
             symmTensor Dn0_i = Foam::basisPoly(delta_i, rLengthScale_[i], basisConst_[i]);
             symmTensor Dn1_i = Foam::basisPolyDn1(delta_i, rLengthScale_[i], normal);
             symmTensor Dn2_i = Foam::basisPolyDn2(rLengthScale_[i], normal);
@@ -73,18 +74,18 @@ void Foam::vrScheme::matInit()
                     const vector m_i(Dn0_i[m], Dn1_i[m], Dn2_i[m]);
                     const vector n_j(Dn0_j[n], Dn1_j[n], Dn2_j[n]);
                     const vector m_j(Dn0_j[m], Dn1_j[m], Dn2_j[m]);
-                    tempA_i(m, n)  = dp&vector(cmptMultiply(n_i, m_i));
-                    tempA_j(m, n)  = dp&vector(cmptMultiply(n_j, m_j));
-                    tempB_ij(m, n) = dp&vector(cmptMultiply(n_i, m_j));
+                    tempA_i(m, n)  = dpwTemp&vector(cmptMultiply(n_i, m_i));
+                    tempA_j(m, n)  = dpwTemp&vector(cmptMultiply(n_j, m_j));
+                    tempB_ij(m, n) = dpwTemp&vector(cmptMultiply(n_i, m_j));
                 }    
             }
-            A_i  += Quad9::w[gaussI] * tempA_i;
-            A_j  += Quad9::w[gaussI] * tempA_j;
-            B_ij += Quad9::w[gaussI] * tempB_ij;
+            A_i  += tempA_i;
+            A_j  += tempA_j;
+            B_ij += tempB_ij;
         }
-        rA_[i] += A_i * mesh_.magSf()[faceI] * 0.25;
-        rA_[j] += A_j * mesh_.magSf()[faceI] * 0.25;
-        B_[faceI] = B_ij * mesh_.magSf()[faceI] * 0.25;
+        rA_[i] += A_i;
+        rA_[j] += A_j;
+        B_[faceI] = B_ij;
     }
     forAll(mesh_.C(), cellI) rA_[cellI] = rA_[cellI].inverse();
 }

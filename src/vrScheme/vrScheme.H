@@ -64,6 +64,7 @@ private:
     const fvMesh& mesh_;
     volVectorField rLengthScale_;
     volSymmTensorField basisConst_;
+    std::vector<bool> p0_;
     //- Linear system
     std::vector<Matrix> rA_;
     std::vector<Matrix> B_;
@@ -76,11 +77,30 @@ private:
     std::vector<std::vector<vector>> quad_;
     scalarField delta_;
     vector vrWeight_;
+    Switch adaptive_;
+    Switch positive_;
     // Private Member Functions
     //- Disallow default bitwise copy construct
     vrScheme(const vrScheme&);
     //- Disallow default bitwise assignment
     void operator=(const vrScheme&);
+
+    void detectP0(const volVectorField& rhoGrad);
+
+    void positiveCorrect
+    (
+        const volScalarField& rho,
+        const volVectorField& U,
+        const volScalarField& p,
+        volVectorField& rhoGrad,
+        volTensorField& UGrad,
+        volVectorField& pGrad,
+        volSymmTensorField& d2Rho,
+        volSymmTensorField& d2Ux,
+        volSymmTensorField& d2Uy,
+        volSymmTensorField& d2Uz,
+        volSymmTensorField& d2P
+    );
 
 public:
 
@@ -103,9 +123,9 @@ public:
         const volScalarField& rho,
         const volVectorField& U,
         const volScalarField& p,
-        const volVectorField& rhoGrad,
-        const volTensorField& UGrad,
-        const volVectorField& pGrad,
+        volVectorField& rhoGrad,
+        volTensorField& UGrad,
+        volVectorField& pGrad,
         volSymmTensorField& d2Rho,
         volSymmTensorField& d2Ux,
         volSymmTensorField& d2Uy,
@@ -118,6 +138,8 @@ public:
     const volSymmTensorField& basisConst() const { return basisConst_; }
 
     const std::vector<vector>& quadrature(label faceI) const { return quad_[faceI]; }
+
+    const scalarField& delta() const { return delta_; }
 
     void gaussQuad4
     (

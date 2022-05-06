@@ -1,4 +1,4 @@
-void Foam::eulerSolver::solveFlowPseudoTimeSystem
+void Foam::solver::solveFlowPseudoTimeSystem
 (
     const scalar& dt,
     const scalar& alpha,

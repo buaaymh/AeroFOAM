@@ -1,11 +1,28 @@
-void Foam::vrScheme::updateCoefficients
+void Foam::vrScheme::detectP0(const volVectorField& rhoGrad)
+{
+    p0_ = std::vector<bool>(mesh_.nCells(), false);
+    label count = 0;
+    forAll(mesh_.C(), cellI)
+    {
+        if (cmptMax(cmptMag(rhoGrad[cellI])) < 1e-3)
+        {
+            p0_[cellI] = true;
+            count++;
+        }
+    }
+    reduce(count, sumOp<label>());
+    const scalar percent = 100*scalar(count)/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
+    Info << "P0 cells percent = " << percent << " %." << endl;
+}
+
+void Foam::vrScheme::positiveCorrect
 (
     const volScalarField& rho,
     const volVectorField& U,
     const volScalarField& p,
-    const volVectorField& rhoGrad,
-    const volTensorField& UGrad,
-    const volVectorField& pGrad,
+    volVectorField& rhoGrad,
+    volTensorField& UGrad,
+    volVectorField& pGrad,
     volSymmTensorField& d2Rho,
     volSymmTensorField& d2Ux,
     volSymmTensorField& d2Uy,
@@ -13,6 +30,25 @@ void Foam::vrScheme::updateCoefficients
     volSymmTensorField& d2P
 )
 {
+
+}
+
+void Foam::vrScheme::updateCoefficients
+(
+    const volScalarField& rho,
+    const volVectorField& U,
+    const volScalarField& p,
+    volVectorField& rhoGrad,
+    volTensorField& UGrad,
+    volVectorField& pGrad,
+    volSymmTensorField& d2Rho,
+    volSymmTensorField& d2Ux,
+    volSymmTensorField& d2Uy,
+    volSymmTensorField& d2Uz,
+    volSymmTensorField& d2P
+)
+{
+    if (adaptive_) { detectP0(rhoGrad); }
     bRho_ = std::vector<vrScheme::Column>(mesh_.nCells(), vrScheme::Column::Zero());
     bUx_ = std::vector<vrScheme::Column>(mesh_.nCells(), vrScheme::Column::Zero());
     bUy_ = std::vector<vrScheme::Column>(mesh_.nCells(), vrScheme::Column::Zero());
@@ -24,6 +60,7 @@ void Foam::vrScheme::updateCoefficients
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
+        if (p0_[i] && p0_[j]) continue;
         const vector normal = mesh_.Sf()[faceI]/mesh_.magSf()[faceI];
         vrScheme::Column bRho_i = vrScheme::Column::Zero();
         vrScheme::Column bUx_i = vrScheme::Column::Zero();
@@ -38,13 +75,15 @@ void Foam::vrScheme::updateCoefficients
         const scalar dRho0 = rho[j] - rho[i];
         const vector dU0   = U[j] - U[i];
         const scalar dP0   = p[j] - p[i];
+        scalar temp = 0.25 * mesh_.magSf()[faceI] / delta_[faceI];
         for (label gaussI = 0; gaussI != 4; ++gaussI)
         {
             const vector delta_i = quad_[faceI][gaussI] - mesh_.C()[i];
             const vector delta_j = quad_[faceI][gaussI] - mesh_.C()[j];
-            const scalar dRho = (dRho0 + (rhoGrad[j]&delta_j) - (rhoGrad[i]&delta_i)) * Quad4::w[gaussI];
-            const vector dU   = (dU0 + (UGrad[j]&delta_j) - (UGrad[i]&delta_i)) * Quad4::w[gaussI];
-            const scalar dP   = (dP0 + (pGrad[j]&delta_j) - (pGrad[i]&delta_i)) * Quad4::w[gaussI];
+            const scalar wTemp = Quad4::w[gaussI] * temp;
+            const scalar dRho = (dRho0 + (rhoGrad[j]&delta_j) - (rhoGrad[i]&delta_i)) * wTemp;
+            const vector dU   = (dU0 + (UGrad[j]&delta_j) - (UGrad[i]&delta_i)) * wTemp;
+            const scalar dP   = (dP0 + (pGrad[j]&delta_j) - (pGrad[i]&delta_i)) * wTemp;
             //cell i
             vrScheme::Column Dn0 = Foam::basisPolyEigen(delta_i, rLengthScale_[i], basisConst_[i]);
             bRho_i += dRho   * Dn0;
@@ -60,17 +99,16 @@ void Foam::vrScheme::updateCoefficients
             bUx_j  -= dU.x() * Dn0;
             bP_j   -= dP     * Dn0;
         }
-        scalar temp = 0.25 * mesh_.magSf()[faceI] / delta_[faceI];
-        bRho_[i] += bRho_i * temp;
-        bUx_[i] += bUx_i * temp;
-        bUy_[i] += bUy_i * temp;
-        bUz_[i] += bUz_i * temp;
-        bP_[i] += bP_i * temp;
-        bRho_[j] += bRho_j * temp;
-        bUx_[j] += bUx_j * temp;
-        bUy_[j] += bUy_j * temp;
-        bUz_[j] += bUz_j * temp;
-        bP_[j] += bP_j * temp;
+        bRho_[i] += bRho_i;
+        bUx_[i] += bUx_i;
+        bUy_[i] += bUy_i;
+        bUz_[i] += bUz_i;
+        bP_[i] += bP_i;
+        bRho_[j] += bRho_j;
+        bUx_[j] += bUx_j;
+        bUy_[j] += bUy_j;
+        bUz_[j] += bUz_j;
+        bP_[j] += bP_j;
         
         const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
         const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
@@ -93,65 +131,77 @@ void Foam::vrScheme::updateCoefficients
         bUz_[j] -= dU1.z() * Dn1;
         bP_[j] -= dP1 * Dn1;
     }
-
-    for (int iter = 0; iter != 7; ++iter)
+    forAll(mesh_.cells(), cellI)
     {
-        const labelUList& owner = mesh_.owner();
-        const labelUList& neighbour = mesh_.neighbour();
-        forAll(mesh_.cells(), cellI)
+        if (p0_[cellI])
         {
-            const labelList& cellFaces = mesh_.cells()[cellI];
-            vrScheme::Column d2RhoI = bRho_[cellI];
-            vrScheme::Column d2UxI = bUx_[cellI];
-            vrScheme::Column d2UyI = bUy_[cellI];
-            vrScheme::Column d2UzI = bUz_[cellI];
-            vrScheme::Column d2PI = bP_[cellI];
-            forAll(cellFaces, f)
+            d2Rho[cellI] = symmTensor::zero;
+            d2Ux[cellI] = symmTensor::zero;
+            d2Uy[cellI] = symmTensor::zero;
+            d2Uz[cellI] = symmTensor::zero;
+            d2P[cellI] = symmTensor::zero;
+            continue;
+        }
+        const labelList& cellFaces = mesh_.cells()[cellI];
+        vrScheme::Column d2RhoI = bRho_[cellI];
+        vrScheme::Column d2UxI = bUx_[cellI];
+        vrScheme::Column d2UyI = bUy_[cellI];
+        vrScheme::Column d2UzI = bUz_[cellI];
+        vrScheme::Column d2PI = bP_[cellI];
+        forAll(cellFaces, f)
+        {
+            const label faceI = cellFaces[f];
+            if (mesh_.isInternalFace(faceI))
             {
-                const label faceI = cellFaces[f];
-                if (mesh_.isInternalFace(faceI))
+                label j = owner[faceI];
+                if (j != cellI) /* j < cellI */
                 {
-                    label j = owner[faceI];
-                    if (j != cellI) /* j < cellI */
-                    {
-                        d2RhoI += B_[faceI] * vrScheme::Column(d2Rho[j][0], d2Rho[j][1], d2Rho[j][2],
-                                                               d2Rho[j][3], d2Rho[j][4], d2Rho[j][5]);
-                        d2UxI  += B_[faceI] * vrScheme::Column(d2Ux[j][0], d2Ux[j][1], d2Ux[j][2],
-                                                               d2Ux[j][3], d2Ux[j][4], d2Ux[j][5]);
-                        d2UyI  += B_[faceI] * vrScheme::Column(d2Uy[j][0], d2Uy[j][1], d2Uy[j][2],
-                                                               d2Uy[j][3], d2Uy[j][4], d2Uy[j][5]);
-                        d2UzI  += B_[faceI] * vrScheme::Column(d2Uz[j][0], d2Uz[j][1], d2Uz[j][2],
-                                                               d2Uz[j][3], d2Uz[j][4], d2Uz[j][5]);
-                        d2PI += B_[faceI] * vrScheme::Column(d2P[j][0], d2P[j][1], d2P[j][2],
-                                                             d2P[j][3], d2P[j][4], d2P[j][5]);
-                    }
-                    else /* j > cellI */
-                    {
-                        j = neighbour[faceI];
-                        d2RhoI += B_[faceI].transpose() * vrScheme::Column(d2Rho[j][0], d2Rho[j][1], d2Rho[j][2],
-                                                                           d2Rho[j][3], d2Rho[j][4], d2Rho[j][5]);
-                        d2UxI  += B_[faceI].transpose() * vrScheme::Column(d2Ux[j][0], d2Ux[j][1], d2Ux[j][2],
-                                                                           d2Ux[j][3], d2Ux[j][4], d2Ux[j][5]);
-                        d2UyI  += B_[faceI].transpose() * vrScheme::Column(d2Uy[j][0], d2Uy[j][1], d2Uy[j][2],
-                                                                           d2Uy[j][3], d2Uy[j][4], d2Uy[j][5]);
-                        d2UzI  += B_[faceI].transpose() * vrScheme::Column(d2Uz[j][0], d2Uz[j][1], d2Uz[j][2],
-                                                                           d2Uz[j][3], d2Uz[j][4], d2Uz[j][5]);
-                        d2PI += B_[faceI].transpose() * vrScheme::Column(d2P[j][0], d2P[j][1], d2P[j][2],
-                                                                         d2P[j][3], d2P[j][4], d2P[j][5]);
-                    }
+                    d2RhoI += B_[faceI] * vrScheme::Column(d2Rho[j][0], d2Rho[j][1], d2Rho[j][2],
+                                                            d2Rho[j][3], d2Rho[j][4], d2Rho[j][5]);
+                    d2UxI  += B_[faceI] * vrScheme::Column(d2Ux[j][0], d2Ux[j][1], d2Ux[j][2],
+                                                            d2Ux[j][3], d2Ux[j][4], d2Ux[j][5]);
+                    d2UyI  += B_[faceI] * vrScheme::Column(d2Uy[j][0], d2Uy[j][1], d2Uy[j][2],
+                                                            d2Uy[j][3], d2Uy[j][4], d2Uy[j][5]);
+                    d2UzI  += B_[faceI] * vrScheme::Column(d2Uz[j][0], d2Uz[j][1], d2Uz[j][2],
+                                                            d2Uz[j][3], d2Uz[j][4], d2Uz[j][5]);
+                    d2PI += B_[faceI] * vrScheme::Column(d2P[j][0], d2P[j][1], d2P[j][2],
+                                                            d2P[j][3], d2P[j][4], d2P[j][5]);
+                }
+                else /* j > cellI */
+                {
+                    j = neighbour[faceI];
+                    d2RhoI += B_[faceI].transpose() * vrScheme::Column(d2Rho[j][0], d2Rho[j][1], d2Rho[j][2],
+                                                                       d2Rho[j][3], d2Rho[j][4], d2Rho[j][5]);
+                    d2UxI  += B_[faceI].transpose() * vrScheme::Column(d2Ux[j][0], d2Ux[j][1], d2Ux[j][2],
+                                                                       d2Ux[j][3], d2Ux[j][4], d2Ux[j][5]);
+                    d2UyI  += B_[faceI].transpose() * vrScheme::Column(d2Uy[j][0], d2Uy[j][1], d2Uy[j][2],
+                                                                       d2Uy[j][3], d2Uy[j][4], d2Uy[j][5]);
+                    d2UzI  += B_[faceI].transpose() * vrScheme::Column(d2Uz[j][0], d2Uz[j][1], d2Uz[j][2],
+                                                                        d2Uz[j][3], d2Uz[j][4], d2Uz[j][5]);
+                    d2PI += B_[faceI].transpose() * vrScheme::Column(d2P[j][0], d2P[j][1], d2P[j][2],
+                                                                     d2P[j][3], d2P[j][4], d2P[j][5]);
                 }
             }
-            d2RhoI = rA_[cellI] * d2RhoI;
-            d2UxI = rA_[cellI] * d2UxI;
-            d2UyI = rA_[cellI] * d2UyI;
-            d2UzI = rA_[cellI] * d2UzI;
-            d2PI = rA_[cellI] * d2PI;
-            d2Rho[cellI] = symmTensor(d2RhoI(0), d2RhoI(1), d2RhoI(2), d2RhoI(3), d2RhoI(4), d2RhoI(5));
-            d2Ux[cellI] = symmTensor(d2UxI(0), d2UxI(1), d2UxI(2), d2UxI(3), d2UxI(4), d2UxI(5));
-            d2Uy[cellI] = symmTensor(d2UyI(0), d2UyI(1), d2UyI(2), d2UyI(3), d2UyI(4), d2UyI(5));
-            d2Uz[cellI] = symmTensor(d2UzI(0), d2UzI(1), d2UzI(2), d2UzI(3), d2UzI(4), d2UzI(5));
-            d2P[cellI] = symmTensor(d2PI(0), d2PI(1), d2PI(2), d2PI(3), d2PI(4), d2PI(5));
         }
+        d2RhoI = rA_[cellI] * d2RhoI;
+        d2UxI = rA_[cellI] * d2UxI;
+        d2UyI = rA_[cellI] * d2UyI;
+        d2UzI = rA_[cellI] * d2UzI;
+        d2PI = rA_[cellI] * d2PI;
+        d2Rho[cellI] = symmTensor(d2RhoI(0), d2RhoI(1), d2RhoI(2), d2RhoI(3), d2RhoI(4), d2RhoI(5));
+        d2Ux[cellI] = symmTensor(d2UxI(0), d2UxI(1), d2UxI(2), d2UxI(3), d2UxI(4), d2UxI(5));
+        d2Uy[cellI] = symmTensor(d2UyI(0), d2UyI(1), d2UyI(2), d2UyI(3), d2UyI(4), d2UyI(5));
+        d2Uz[cellI] = symmTensor(d2UzI(0), d2UzI(1), d2UzI(2), d2UzI(3), d2UzI(4), d2UzI(5));
+        d2P[cellI] = symmTensor(d2PI(0), d2PI(1), d2PI(2), d2PI(3), d2PI(4), d2PI(5));
+    }
+    if (positive_)
+    {
+        positiveCorrect
+        (
+            rho, U, p,
+            rhoGrad, UGrad, pGrad,
+            d2Rho, d2Ux, d2Uy, d2Uz, d2P
+        );
     }
     d2Rho.correctBoundaryConditions();
     d2Ux.correctBoundaryConditions();

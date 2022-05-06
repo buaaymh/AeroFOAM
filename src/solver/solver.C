@@ -24,15 +24,12 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "eulerSolver.H"
+#include "solver.H"
 #include "AUSMplusUpFlux.H"
 #include "hllcFlux.H"
 #include "roeFlux.H"
 
-// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
-
-// Construct from components
-Foam::eulerSolver::eulerSolver
+Foam::solver::solver
 (
     const fluidProperties& fluidProps,
     volScalarField& rho,
@@ -124,48 +121,10 @@ Foam::eulerSolver::eulerSolver
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
     ),
-    rhoLimit_
-    (
-        IOobject
-        (
-            "rhoLimit",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 0)
-    ),
-    ULimit_
-    (
-        IOobject
-        (
-            "ULimit",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless, vector::zero)
-    ),
-    pLimit_
-    (
-        IOobject
-        (
-            "pLimit",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 0)
-    ),
-    rhoMin_(scalarField(mesh_.nCells())),
-    rhoMax_(scalarField(mesh_.nCells())),
-    UMin_(vectorField(mesh_.nCells())),
-    UMax_(vectorField(mesh_.nCells())),
-    pMin_(scalarField(mesh_.nCells())),
-    pMax_(scalarField(mesh_.nCells())),
     volProjections_(vectorField(mesh_.nCells())),
     localDtDv_(scalarField(mesh_.nCells()))
 {
+    Info << "=================Solver Information==================" << endl;
     word flux = mesh_.schemesDict().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");
     Info << "The flux scheme is " << flux << endl;
     if (flux == "hllc")
@@ -182,18 +141,73 @@ Foam::eulerSolver::eulerSolver
     volProjectionsInit();
 }
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+void Foam::solver::correctFields()
+{
+    const dimensionedScalar boundMin("boundMin", dimless, 0.001);
+    const dimensionedScalar boundMax("boundMax", dimless, 100.0);
+    U_.ref() = rhoU_ / rho_;
+    p_.ref() = (rhoE_ - 0.5*rho_*magSqr(U_))*(fluidProps_.gamma-1.0);
+    rho_.correctBoundaryConditions();
+    U_.correctBoundaryConditions();
+    p_.correctBoundaryConditions();
+    const bool rhoBool = Foam::boundMinMax(rho_, boundMin, boundMax);
+    const bool pBool   = Foam::boundMinMax(p_, boundMin, boundMax);
+    if (rhoBool || pBool)
+    {
+        rhoU_ = rho_ * U_;
+        rhoE_ = p_/(fluidProps_.gamma-1.0) + 0.5*rho_*magSqr(U_);
+    }
+    T_.ref() = p_ * fluidProps_.gamma / rho_;
+    c_ = sqrt(T_.primitiveField());
+    Ma_.primitiveFieldRef() = mag(U_.primitiveFieldRef())/c_;
+    const volScalarField::Boundary& rhoBf = rho_.boundaryFieldRef();
+    const volVectorField::Boundary& UBf = U_.boundaryFieldRef();
+    const volScalarField::Boundary& pBf = p_.boundaryFieldRef();
+    volVectorField::Boundary& rhoUBf = rhoU_.boundaryFieldRef();
+    volScalarField::Boundary& rhoEBf = rhoE_.boundaryFieldRef();
+    volScalarField::Boundary& TBf = T_.boundaryFieldRef();
+    volScalarField::Boundary& MaBf = Ma_.boundaryFieldRef();
+    rhoUBf = rhoBf * UBf;
+    rhoEBf = pBf/(fluidProps_.gamma-1.0) + 0.5*rhoBf*magSqr(UBf);
+    TBf = pBf * fluidProps_.gamma / rhoBf;
+    MaBf = mag(UBf)/sqrt(TBf);
+}
 
-#include "limitGrad.H"
+void Foam::solver::updateLTS()
+{
+    scalar localCFL = mesh_.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("LocalCFL", 1.0);
+    localDtDv_ = localCFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
+}
 
-#include "evaluateFlowRes.H"
+void Foam::solver::volProjectionsInit()
+{
+    volProjections_ = vectorField(mesh_.nCells(), vector::zero);
+    // Get face-to-cell addressing: face area point from owner to neighbour
+    const auto& owner = mesh_.owner();
+    const auto& neighbour = mesh_.neighbour();
+    // Get the face area vector
+    const surfaceVectorField& Sf = mesh_.Sf();
+    forAll(owner, faceI)
+    {
+        const vector faceVector = 0.5*cmptMag(Sf[faceI]);
+        volProjections_[owner[faceI]] += faceVector;
+        volProjections_[neighbour[faceI]] += faceVector;
+    }
+    forAll(mesh_.boundary(), patchI)
+    {   
+        scalar temp = 0.25;
+        if (mesh_.boundary()[patchI].coupled()) temp = 0.5;
+        const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+        const auto& Sf = mesh_.boundary()[patchI].Sf();
+        forAll(bfaceCells, faceI)
+            volProjections_[bfaceCells[faceI]] += temp*cmptMag(Sf[faceI]);
+    }
+}
+
 
 #include "solveFlowLinearSystem.H"
 
 #include "solveFlowPseudoTimeSystem.H"
 
-#include "correctFields.H"
-
-#include "localTimeStep.H"
 
 // ************************************************************************* //
