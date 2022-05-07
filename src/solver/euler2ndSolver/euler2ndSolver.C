@@ -46,7 +46,7 @@ Foam::euler2ndSolver::euler2ndSolver
             mesh_
         ),
         mesh_,
-        dimensionedScalar(dimless, 0)
+        dimensionedScalar(dimless, 1)
     ),
     ULimit_
     (
@@ -57,7 +57,7 @@ Foam::euler2ndSolver::euler2ndSolver
             mesh_
         ),
         mesh_,
-        dimensionedVector(dimless, vector::zero)
+        dimensionedVector(dimless, vector::one)
     ),
     pLimit_
     (
@@ -68,7 +68,7 @@ Foam::euler2ndSolver::euler2ndSolver
             mesh_
         ),
         mesh_,
-        dimensionedScalar(dimless, 0)
+        dimensionedScalar(dimless, 1)
     ),
     rhoMin_(scalarField(mesh_.nCells())),
     rhoMax_(scalarField(mesh_.nCells())),

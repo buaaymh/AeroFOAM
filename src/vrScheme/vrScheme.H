@@ -141,6 +141,8 @@ public:
 
     const scalarField& delta() const { return delta_; }
 
+    const std::vector<bool>& p0() const { return p0_; }
+
     void gaussQuad4
     (
         label faceI,
