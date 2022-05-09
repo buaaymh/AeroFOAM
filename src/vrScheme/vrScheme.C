@@ -57,6 +57,7 @@ Foam::vrScheme::vrScheme
         dimensionedSymmTensor(dimless, symmTensor::zero)
     ),
     p0_(mesh_.nCells(), false),
+    trouble_(mesh_.nCells(), false),
     rA_(mesh_.nCells(), vrScheme::Matrix::Zero()),
     B_(mesh_.nInternalFaces(), vrScheme::Matrix::Zero()),
     bRho_(mesh_.nCells(), vrScheme::Column::Zero()),
@@ -65,7 +66,8 @@ Foam::vrScheme::vrScheme
     bUz_(mesh_.nCells(), vrScheme::Column::Zero()),
     bP_(mesh_.nCells(), vrScheme::Column::Zero()),
     quad_(mesh_.nInternalFaces(), std::vector<vector>(4, vector::zero)),
-    delta_(mag(mesh_.delta()))
+    delta_(mag(mesh_.delta())),
+    limit_(mesh_.nCells(), 0)
 {
     vrWeight_ = mesh_.schemesDict().subDict("vrSchemes").lookup<vector>("weightList");
     adaptive_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
@@ -84,6 +86,10 @@ Foam::vrScheme::vrScheme
 #include "quadPoints.H"
 
 #include "basisFunc.H"
+
+#include "WAPFunc.H"
+
+#include "limitFunc.H"
 
 #include "updateCoefficients.H"
 

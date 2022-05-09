@@ -1,38 +1,3 @@
-void Foam::vrScheme::detectP0(const volVectorField& rhoGrad)
-{
-    p0_ = std::vector<bool>(mesh_.nCells(), false);
-    label count = 0;
-    forAll(mesh_.C(), cellI)
-    {
-        if (cmptMax(cmptMag(rhoGrad[cellI])) < 1e-3)
-        {
-            p0_[cellI] = true;
-            count++;
-        }
-    }
-    reduce(count, sumOp<label>());
-    const scalar percent = 100*scalar(count)/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-    Info << "P0 cells percent = " << percent << " %." << endl;
-}
-
-void Foam::vrScheme::positiveCorrect
-(
-    const volScalarField& rho,
-    const volVectorField& U,
-    const volScalarField& p,
-    volVectorField& rhoGrad,
-    volTensorField& UGrad,
-    volVectorField& pGrad,
-    volSymmTensorField& d2Rho,
-    volSymmTensorField& d2Ux,
-    volSymmTensorField& d2Uy,
-    volSymmTensorField& d2Uz,
-    volSymmTensorField& d2P
-)
-{
-
-}
-
 void Foam::vrScheme::updateCoefficients
 (
     const volScalarField& rho,
@@ -171,15 +136,15 @@ void Foam::vrScheme::updateCoefficients
                 {
                     j = neighbour[faceI];
                     d2RhoI += B_[faceI].transpose() * vrScheme::Column(d2Rho[j][0], d2Rho[j][1], d2Rho[j][2],
-                                                                       d2Rho[j][3], d2Rho[j][4], d2Rho[j][5]);
+                                                                    d2Rho[j][3], d2Rho[j][4], d2Rho[j][5]);
                     d2UxI  += B_[faceI].transpose() * vrScheme::Column(d2Ux[j][0], d2Ux[j][1], d2Ux[j][2],
-                                                                       d2Ux[j][3], d2Ux[j][4], d2Ux[j][5]);
+                                                                    d2Ux[j][3], d2Ux[j][4], d2Ux[j][5]);
                     d2UyI  += B_[faceI].transpose() * vrScheme::Column(d2Uy[j][0], d2Uy[j][1], d2Uy[j][2],
-                                                                       d2Uy[j][3], d2Uy[j][4], d2Uy[j][5]);
+                                                                    d2Uy[j][3], d2Uy[j][4], d2Uy[j][5]);
                     d2UzI  += B_[faceI].transpose() * vrScheme::Column(d2Uz[j][0], d2Uz[j][1], d2Uz[j][2],
                                                                         d2Uz[j][3], d2Uz[j][4], d2Uz[j][5]);
                     d2PI += B_[faceI].transpose() * vrScheme::Column(d2P[j][0], d2P[j][1], d2P[j][2],
-                                                                     d2P[j][3], d2P[j][4], d2P[j][5]);
+                                                                    d2P[j][3], d2P[j][4], d2P[j][5]);
                 }
             }
         }
@@ -194,6 +159,12 @@ void Foam::vrScheme::updateCoefficients
         d2Uz[cellI] = symmTensor(d2UzI(0), d2UzI(1), d2UzI(2), d2UzI(3), d2UzI(4), d2UzI(5));
         d2P[cellI] = symmTensor(d2PI(0), d2PI(1), d2PI(2), d2PI(3), d2PI(4), d2PI(5));
     }
+    limitWBAP
+    (
+        rho, U, p,
+        rhoGrad, UGrad, pGrad,
+        d2Rho, d2Ux, d2Uy, d2Uz, d2P
+    );
     if (positive_)
     {
         positiveCorrect

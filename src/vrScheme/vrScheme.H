@@ -65,6 +65,7 @@ private:
     volVectorField rLengthScale_;
     volSymmTensorField basisConst_;
     std::vector<bool> p0_;
+    std::vector<bool> trouble_;
     //- Linear system
     std::vector<Matrix> rA_;
     std::vector<Matrix> B_;
@@ -76,6 +77,7 @@ private:
     //- Quadrature points
     std::vector<std::vector<vector>> quad_;
     scalarField delta_;
+    scalarField limit_;
     vector vrWeight_;
     Switch adaptive_;
     Switch positive_;
@@ -86,6 +88,21 @@ private:
     void operator=(const vrScheme&);
 
     void detectP0(const volVectorField& rhoGrad);
+
+    void limitWBAP
+    (
+        const volScalarField& rho,
+        const volVectorField& U,
+        const volScalarField& p,
+        volVectorField& rhoGrad,
+        volTensorField& UGrad,
+        volVectorField& pGrad,
+        volSymmTensorField& d2Rho,
+        volSymmTensorField& d2Ux,
+        volSymmTensorField& d2Uy,
+        volSymmTensorField& d2Uz,
+        volSymmTensorField& d2P
+    );
 
     void positiveCorrect
     (
@@ -278,6 +295,26 @@ tensor vectorPolyGrad
     const symmTensor& d2Uy,
     const symmTensor& d2Uz,
     const vector& rLengthScale
+);
+
+// * * * * * * * * * * * * * * * WAP Functions * * * * * * * * * * * * * * //
+
+vector vectorWAP
+(
+    const std::vector<vector>& list,
+    scalar value
+);
+
+symmTensor symmTensorWAP
+(
+    const std::vector<symmTensor>& list,
+    scalar value
+);
+
+tensor tensorWAP
+(
+    const std::vector<tensor>& list,
+    scalar value
 );
 
 } // End namespace Foam
