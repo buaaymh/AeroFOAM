@@ -174,6 +174,9 @@ void Foam::vrScheme::updateCoefficients
             d2Rho, d2Ux, d2Uy, d2Uz, d2P
         );
     }
+    rhoGrad.correctBoundaryConditions();
+    UGrad.correctBoundaryConditions();
+    pGrad.correctBoundaryConditions();
     d2Rho.correctBoundaryConditions();
     d2Ux.correctBoundaryConditions();
     d2Uy.correctBoundaryConditions();
