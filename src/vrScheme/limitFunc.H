@@ -201,12 +201,16 @@ void Foam::vrScheme::positiveCorrect
     forAll(mesh_.C(), cellI)
     {
         // if (p0_[cellI] || !trouble_[cellI]) continue;
+        const symmTensor basisFuncs
+        (
+            0.5*(1-basisConst_[cellI].xx()), 1-basisConst_[cellI].xy(), 1-basisConst_[cellI].xz(),
+                                       0.5*(1-basisConst_[cellI].yy()), 1-basisConst_[cellI].yz(),
+                                                                   0.5*(1-basisConst_[cellI].yy())
+        );
         const scalar deltaRho = cmptSum(cmptDivide(cmptMag(rhoGrad[cellI]), rLengthScale_[cellI]))
-                              + 0.5 * (mag(d2Rho[cellI].xx()) + mag(d2Rho[cellI].yy()) + mag(d2Rho[cellI].zz()))
-                              + mag(d2Rho[cellI].xy()) + mag(d2Rho[cellI].xz()) + mag(d2Rho[cellI].yz());
+                              + cmptSum(cmptMultiply(cmptMag(d2Rho[cellI]), basisFuncs));
         const scalar deltaP   = cmptSum(cmptDivide(cmptMag(pGrad[cellI]), rLengthScale_[cellI]))
-                              + 0.5 * (mag(d2P[cellI].xx()) + mag(d2P[cellI].yy()) + mag(d2P[cellI].zz()))
-                              + mag(d2P[cellI].xy()) + mag(d2P[cellI].xz()) + mag(d2P[cellI].yz());
+                              + cmptSum(cmptMultiply(cmptMag(d2P[cellI]), basisFuncs));
         scalar temp = min(rho[cellI]-deltaRho, p[cellI]-deltaP);
         if (temp < 0)
         {
