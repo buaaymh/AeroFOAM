@@ -51,7 +51,7 @@ void Foam::vrScheme::matInit()
         vrScheme::Matrix A_j  = vrScheme::Matrix::Zero();
         vrScheme::Matrix B_ij = vrScheme::Matrix::Zero();
         const vector normal = mesh_.Sf()[faceI]/mesh_.magSf()[faceI];
-        const vector dp = cmptDivide(vector(1/delta_[faceI], delta_[faceI], pow3(delta_[faceI])),
+        const vector dp = cmptMultiply(vector(1/delta_[faceI], delta_[faceI], pow3(delta_[faceI])),
                                      cmptMultiply(vrWeight_, vrWeight_)) * mesh_.magSf()[faceI] * 0.25;
         for (label gaussI = 0; gaussI != 9; ++gaussI)
         {

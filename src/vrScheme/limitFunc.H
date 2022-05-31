@@ -10,24 +10,21 @@ void Foam::vrScheme::detectP0(const volVectorField& rhoGrad)
             count++;
         }
     }
-    // reduce(count, sumOp<label>());
-    // const scalar percent = 100*scalar(count)/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-    // Info << "P0 cells percent = " << percent << " %." << endl;
 }
 
 void Foam::vrScheme::limitWBAP
 (
     const volScalarField& rho,
     const volVectorField& U,
-    const volScalarField& p,
+    const volScalarField& T,
     volVectorField& rhoGrad,
     volTensorField& UGrad,
-    volVectorField& pGrad,
+    volVectorField& TGrad,
     volSymmTensorField& d2Rho,
     volSymmTensorField& d2Ux,
     volSymmTensorField& d2Uy,
     volSymmTensorField& d2Uz,
-    volSymmTensorField& d2P
+    volSymmTensorField& d2T
 )
 {
     trouble_ = std::vector<bool>(mesh_.nCells(), false);
@@ -39,33 +36,31 @@ void Foam::vrScheme::limitWBAP
         const label i = owner[faceI];
         const label j = neighbour[faceI];
         if (p0_[i] && p0_[j]) continue;
-                
-        const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
-        const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-        const scalar rho_i = rho[i] + scalarPoly(delta_i, rhoGrad[i], d2Rho[i], rLengthScale_[i], basisConst_[i]);
-        const scalar rho_j = rho[j] + scalarPoly(delta_j, rhoGrad[j], d2Rho[j], rLengthScale_[j], basisConst_[j]);
-        const scalar temp = mag(rho_i-rho_j)*mesh_.magSf()[faceI];
-        limit_[i] += temp;
-        limit_[j] += temp;
+
+        const vector delta_ij = mesh_.C()[i] - mesh_.C()[j];
+        const scalar rho_j = rho[j] + scalarPoly( delta_ij, rhoGrad[j], d2Rho[j], rLengthScale_[j], basisConst_[j]);
+        const scalar rho_i = rho[i] + scalarPoly(-delta_ij, rhoGrad[i], d2Rho[i], rLengthScale_[i], basisConst_[i]);
+        limit_[i] += mag(rho_j-rho[i])*mesh_.magSf()[faceI];
+        limit_[j] += mag(rho_i-rho[j])*mesh_.magSf()[faceI];
     }
     label count = 0;
     forAll(mesh_.cells(), cellI)
     {
         const scalar temp = limit_[cellI] / (mesh_.V()[cellI]*rho[cellI]);
-        if (temp > 1.0)
+        if (temp > IS_)
         {
             trouble_[cellI] = true;
             count++;
         }
     }
-    // const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))
-    //                         /scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-    // Info << "trouble cells percent = " << percent << " %." << endl;
+    const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))
+                            /scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
+    Info << "Trouble cell [%] = " << percent << endl;
     std::vector<symmTensor> d2RhoCorrected(count);
     std::vector<symmTensor> d2UxCorrected(count);
     std::vector<symmTensor> d2UyCorrected(count);
     std::vector<symmTensor> d2UzCorrected(count);
-    std::vector<symmTensor> d2PCorrected(count);
+    std::vector<symmTensor> d2TCorrected(count);
     count = 0;
 
     // Limiting procedure
@@ -78,12 +73,12 @@ void Foam::vrScheme::limitWBAP
         std::vector<symmTensor> d2UxList;
         std::vector<symmTensor> d2UyList;
         std::vector<symmTensor> d2UzList;
-        std::vector<symmTensor> d2PList;
+        std::vector<symmTensor> d2TList;
         d2RhoList.push_back(d2Rho[cellI]);
         d2UxList.push_back(d2Ux[cellI]);
         d2UyList.push_back(d2Uy[cellI]);
         d2UzList.push_back(d2Uz[cellI]);
-        d2PList.push_back(d2P[cellI]);
+        d2TList.push_back(d2T[cellI]);
         forAll(cellFaces, f)
         {
             const label faceI = cellFaces[f];
@@ -95,14 +90,14 @@ void Foam::vrScheme::limitWBAP
                 d2UxList.push_back(d2Ux[j]);
                 d2UyList.push_back(d2Uy[j]);
                 d2UzList.push_back(d2Uz[j]);
-                d2PList.push_back(d2P[j]);
+                d2TList.push_back(d2T[j]);
             }
         }
-        d2RhoCorrected[count] = symmTensorWAP(d2RhoList, 100);
-        d2UxCorrected[count] = symmTensorWAP(d2UxList, 100);
-        d2UyCorrected[count] = symmTensorWAP(d2UyList, 100);
-        d2UzCorrected[count] = symmTensorWAP(d2UzList, 100);
-        d2PCorrected[count++] = symmTensorWAP(d2PList, 100);
+        d2RhoCorrected[count] = symmTensorWAP(d2RhoList, np_);
+        d2UxCorrected[count] = symmTensorWAP(d2UxList, np_);
+        d2UyCorrected[count] = symmTensorWAP(d2UyList, np_);
+        d2UzCorrected[count] = symmTensorWAP(d2UzList, np_);
+        d2TCorrected[count++] = symmTensorWAP(d2TList, np_);
     }
     count = 0;
     forAll(mesh_.cells(), cellI)
@@ -112,11 +107,11 @@ void Foam::vrScheme::limitWBAP
         d2Ux[cellI] = d2UxCorrected[count];
         d2Uy[cellI] = d2UyCorrected[count];
         d2Uz[cellI] = d2UzCorrected[count];
-        d2P[cellI] = d2PCorrected[count++];
+        d2T[cellI] = d2TCorrected[count++];
     }
     std::vector<vector> rhoGradCorrected(count);
     std::vector<tensor> UGradCorrected(count);
-    std::vector<vector> pGradCorrected(count);
+    std::vector<vector> TGradCorrected(count);
     count = 0;
 
     forAll(mesh_.cells(), cellI)
@@ -125,10 +120,10 @@ void Foam::vrScheme::limitWBAP
         const labelList& cellFaces = mesh_.cells()[cellI];
         std::vector<vector> rhoGradList;
         std::vector<tensor> UGradList;
-        std::vector<vector> pGradList;
+        std::vector<vector> TGradList;
         rhoGradList.push_back(rhoGrad[cellI]);
         UGradList.push_back(UGrad[cellI]);
-        pGradList.push_back(pGrad[cellI]);
+        TGradList.push_back(TGrad[cellI]);
         forAll(cellFaces, f)
         {
             const label faceI = cellFaces[f];
@@ -161,17 +156,17 @@ void Foam::vrScheme::limitWBAP
                                                          d2Uz[j].xx()*temp.xx()+d2Uz[j].xy()*temp.xy()+d2Uz[j].xz()*temp.xz(),
                                                          d2Uz[j].xy()*temp.yx()+d2Uz[j].yy()*temp.yy()+d2Uz[j].yz()*temp.yz(),
                                                          d2Uz[j].xz()*temp.zx()+d2Uz[j].yz()*temp.zy()+d2Uz[j].zz()*temp.zz());
-                const vector pGrad_j = pGrad[j] + vector(d2P[j].xx()*temp.xx()+d2P[j].xy()*temp.xy()+d2P[j].xz()*temp.xz(),
-                                                         d2P[j].xy()*temp.yx()+d2P[j].yy()*temp.yy()+d2P[j].yz()*temp.yz(),
-                                                         d2P[j].xz()*temp.zx()+d2P[j].yz()*temp.zy()+d2P[j].zz()*temp.zz());
+                const vector TGrad_j = TGrad[j] + vector(d2T[j].xx()*temp.xx()+d2T[j].xy()*temp.xy()+d2T[j].xz()*temp.xz(),
+                                                         d2T[j].xy()*temp.yx()+d2T[j].yy()*temp.yy()+d2T[j].yz()*temp.yz(),
+                                                         d2T[j].xz()*temp.zx()+d2T[j].yz()*temp.zy()+d2T[j].zz()*temp.zz());
                 rhoGradList.push_back(rhoGrad_j);
                 UGradList.push_back(UGrad_j);
-                pGradList.push_back(pGrad_j);
+                TGradList.push_back(TGrad_j);
             }
         }
-        rhoGradCorrected[count] = vectorWAP(rhoGradList, 50);
-        UGradCorrected[count] = tensorWAP(UGradList, 50);
-        pGradCorrected[count++] = vectorWAP(pGradList, 50);
+        rhoGradCorrected[count] = vectorWAP(rhoGradList, np_);
+        UGradCorrected[count] = tensorWAP(UGradList, np_);
+        TGradCorrected[count++] = vectorWAP(TGradList, np_);
     }
     count = 0;
     forAll(mesh_.cells(), cellI)
@@ -179,7 +174,7 @@ void Foam::vrScheme::limitWBAP
         if (!trouble_[cellI]) continue;
         rhoGrad[cellI] = rhoGradCorrected[count];
         UGrad[cellI] = UGradCorrected[count];
-        pGrad[cellI] = pGradCorrected[count++];
+        TGrad[cellI] = TGradCorrected[count++];
     }
 }
 
@@ -187,20 +182,20 @@ void Foam::vrScheme::positiveCorrect
 (
     const volScalarField& rho,
     const volVectorField& U,
-    const volScalarField& p,
+    const volScalarField& T,
     volVectorField& rhoGrad,
     volTensorField& UGrad,
-    volVectorField& pGrad,
+    volVectorField& TGrad,
     volSymmTensorField& d2Rho,
     volSymmTensorField& d2Ux,
     volSymmTensorField& d2Uy,
     volSymmTensorField& d2Uz,
-    volSymmTensorField& d2P
+    volSymmTensorField& d2T
 )
 {
     forAll(mesh_.C(), cellI)
     {
-        // if (p0_[cellI] || !trouble_[cellI]) continue;
+        if (p0_[cellI] || !trouble_[cellI]) continue;
         const symmTensor basisFuncs
         (
             0.5*(1-basisConst_[cellI].xx()), 1-basisConst_[cellI].xy(), 1-basisConst_[cellI].xz(),
@@ -209,20 +204,20 @@ void Foam::vrScheme::positiveCorrect
         );
         const scalar deltaRho = cmptSum(cmptDivide(cmptMag(rhoGrad[cellI]), rLengthScale_[cellI]))
                               + cmptSum(cmptMultiply(cmptMag(d2Rho[cellI]), basisFuncs));
-        const scalar deltaP   = cmptSum(cmptDivide(cmptMag(pGrad[cellI]), rLengthScale_[cellI]))
-                              + cmptSum(cmptMultiply(cmptMag(d2P[cellI]), basisFuncs));
-        scalar temp = min(rho[cellI]-deltaRho, p[cellI]-deltaP);
+        const scalar deltaT   = cmptSum(cmptDivide(cmptMag(TGrad[cellI]), rLengthScale_[cellI]))
+                              + cmptSum(cmptMultiply(cmptMag(d2T[cellI]), basisFuncs));
+        scalar temp = min(rho[cellI]-deltaRho, T[cellI]-deltaT);
         if (temp < 0)
         {
-            temp = min(rho[cellI]/deltaRho, p[cellI]/deltaP);
+            temp = min(rho[cellI]/deltaRho, T[cellI]/deltaT);
             rhoGrad[cellI] *= temp;
             UGrad[cellI] *= temp;
-            pGrad[cellI] *= temp;
+            TGrad[cellI] *= temp;
             d2Rho[cellI] *= temp;
             d2Ux[cellI] *= temp;
             d2Uy[cellI] *= temp;
             d2Uz[cellI] *= temp;
-            d2P[cellI] *= temp;
+            d2T[cellI] *= temp;
         }
     }
 }

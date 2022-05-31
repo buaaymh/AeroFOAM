@@ -33,10 +33,10 @@ Foam::euler3rdSolver::euler3rdSolver
     const fluidProperties& fluidProps,
     volScalarField& rho,
     volVectorField& U,
-    volScalarField& p
+    volScalarField& T
 )
 :
-    solver(fluidProps, rho, U, p),
+    solver(fluidProps, rho, U, T),
     vr_(mesh_),
     d2Rho_
     (
@@ -82,11 +82,11 @@ Foam::euler3rdSolver::euler3rdSolver
         mesh_,
         dimensionedSymmTensor(dimless, symmTensor::zero)
     ),
-    d2P_
+    d2T_
     (
         IOobject
         (
-            "d2P",
+            "d2T",
             mesh_.time().timeName(),
             mesh_
         ),

@@ -26,32 +26,6 @@ License
 #include "fvCFD.H"
 #include "dbnsFlux.H"
 
-void Foam::consToPrim
-(
-    scalar& rho,
-    vector& rhoU,
-    scalar& rhoE,
-    const scalar& gamma
-)
-{
-    rhoU /= rho;
-    rhoE -= rho * magSqr(rhoU);
-    rhoE *= gamma - 1;
-}
-
-void Foam::primToCons
-(
-    scalar& rho,
-    vector& U,
-    scalar& p,
-    const scalar& gamma
-)
-{
-    p /= (gamma - 1.0);
-    p += 0.5*rho*magSqr(U);
-    U *= rho;
-}
-
 void Foam::evaluateFlux
 (
     scalar& rhoFlux,

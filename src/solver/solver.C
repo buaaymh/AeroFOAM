@@ -34,7 +34,7 @@ Foam::solver::solver
     const fluidProperties& fluidProps,
     volScalarField& rho,
     volVectorField& U,
-    volScalarField& p
+    volScalarField& T
 )
 :
     fluidProps_(fluidProps),
@@ -42,7 +42,19 @@ Foam::solver::solver
     normal_(mesh_.Sf()/mesh_.magSf()),
     rho_(rho),
     U_(U),
-    p_(p),
+    T_(T),
+    p_
+    (
+        IOobject
+        (
+            "p",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        rho_*T_/fluidProps_.gamma
+    ),
     rhoU_
     (
         IOobject
@@ -62,18 +74,6 @@ Foam::solver::solver
             mesh_
         ),
         p_/(fluidProps_.gamma-1.0) + 0.5*rho_*magSqr(U_)
-    ),
-    T_
-    (
-        IOobject
-        (
-            "T",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        fluidProps_.gamma*p_/rho_
     ),
     c_(sqrt(T_.primitiveField())),
     Ma_
@@ -110,11 +110,11 @@ Foam::solver::solver
         mesh_,
         dimensionedTensor(dimless/dimLength, tensor::zero)
     ),
-    pGrad_
+    TGrad_
     (
         IOobject
         (
-            "pGrad",
+            "TGrad",
             mesh_.time().timeName(),
             mesh_
         ),
@@ -143,33 +143,31 @@ Foam::solver::solver
 
 void Foam::solver::correctFields()
 {
-    const dimensionedScalar boundMin("boundMin", dimless, 0.001);
-    const dimensionedScalar boundMax("boundMax", dimless, 100.0);
     U_.ref() = rhoU_ / rho_;
-    p_.ref() = (rhoE_ - 0.5*rho_*magSqr(U_))*(fluidProps_.gamma-1.0);
-    rho_.correctBoundaryConditions();
-    U_.correctBoundaryConditions();
-    p_.correctBoundaryConditions();
-    const bool rhoBool = Foam::boundMinMax(rho_, boundMin, boundMax);
-    const bool pBool   = Foam::boundMinMax(p_, boundMin, boundMax);
-    if (rhoBool || pBool)
+    T_.ref() = (rhoE_/rho_ - 0.5*magSqr(U_))*(fluidProps_.gamma-1.0)*fluidProps_.gamma;
+    const bool rhoBool = Foam::positiveCorrect(rho_);
+    const bool TBool   = Foam::positiveCorrect(T_);
+    if (rhoBool || TBool)
     {
         rhoU_ = rho_ * U_;
-        rhoE_ = p_/(fluidProps_.gamma-1.0) + 0.5*rho_*magSqr(U_);
+        rhoE_ = (T_/((fluidProps_.gamma-1.0)*fluidProps_.gamma) + 0.5*magSqr(U_))*rho_;
     }
-    T_.ref() = p_ * fluidProps_.gamma / rho_;
+    p_.ref() = T_*rho_/fluidProps_.gamma;
     c_ = sqrt(T_.primitiveField());
     Ma_.primitiveFieldRef() = mag(U_.primitiveFieldRef())/c_;
+    rho_.correctBoundaryConditions();
+    U_.correctBoundaryConditions();
+    T_.correctBoundaryConditions();
     const volScalarField::Boundary& rhoBf = rho_.boundaryFieldRef();
     const volVectorField::Boundary& UBf = U_.boundaryFieldRef();
-    const volScalarField::Boundary& pBf = p_.boundaryFieldRef();
+    const volScalarField::Boundary& TBf = T_.boundaryFieldRef();
     volVectorField::Boundary& rhoUBf = rhoU_.boundaryFieldRef();
     volScalarField::Boundary& rhoEBf = rhoE_.boundaryFieldRef();
-    volScalarField::Boundary& TBf = T_.boundaryFieldRef();
+    volScalarField::Boundary& pBf = p_.boundaryFieldRef();
     volScalarField::Boundary& MaBf = Ma_.boundaryFieldRef();
     rhoUBf = rhoBf * UBf;
-    rhoEBf = pBf/(fluidProps_.gamma-1.0) + 0.5*rhoBf*magSqr(UBf);
-    TBf = pBf * fluidProps_.gamma / rhoBf;
+    rhoEBf = (TBf/((fluidProps_.gamma-1.0)*fluidProps_.gamma) + 0.5*magSqr(UBf))*rhoBf;
+    pBf = TBf*rhoBf/fluidProps_.gamma;
     MaBf = mag(UBf)/sqrt(TBf);
 }
 

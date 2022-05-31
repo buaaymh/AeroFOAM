@@ -87,14 +87,14 @@ protected:
     volScalarField& rho_;
     //- Velocity
     volVectorField& U_;
+    //- Static temperature
+    volScalarField& T_;
     //- Static pressure
-    volScalarField& p_;
+    volScalarField p_;
     //- Momentum
     volVectorField rhoU_;
     //- Energy
     volScalarField rhoE_;
-    //- Static temperature
-    volScalarField T_;
     //- Sound speed
     scalarField c_;
     //- Mach number
@@ -103,8 +103,8 @@ protected:
     volVectorField rhoGrad_;
     //- Velocity grad
     volTensorField UGrad_;
-    //- pressure grad
-    volVectorField pGrad_;
+    //- temperature grad
+    volVectorField TGrad_;
     //- Riemann solver
     std::unique_ptr<dbnsFlux> riemann_;
     //- Volume projections
@@ -119,7 +119,7 @@ public:
         const fluidProperties& fluidProps,
         volScalarField& rho,
         volVectorField& U,
-        volScalarField& p
+        volScalarField& T
     );
 
     // Destructor - default
@@ -148,7 +148,7 @@ public:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE,
-        scalarField& resNuTilda
+        scalarField& resNuTilde
     ) {};
 
     virtual void solveFlowLinearSystem
@@ -163,7 +163,7 @@ public:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE,
-        scalarField& resNuTilda
+        scalarField& resNuTilde
     ) {};
 
     virtual void solveFlowPseudoTimeSystem
@@ -183,7 +183,7 @@ public:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE,
-        scalarField& resNuTilda,
+        scalarField& resNuTilde,
         scalar& resL1
     ) {};
 

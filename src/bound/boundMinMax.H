@@ -46,11 +46,9 @@ namespace Foam
 // * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
 
 //- Bound the given scalar field if it has gone unbounded for min and max
-bool boundMinMax
+bool positiveCorrect
 (
-    volScalarField& vsf,
-    const dimensionedScalar& vsf0,
-    const dimensionedScalar& vsf1
+    volScalarField& vsf
 );
 
 

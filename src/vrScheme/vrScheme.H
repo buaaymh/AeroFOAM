@@ -73,11 +73,13 @@ private:
     std::vector<Column> bUx_;
     std::vector<Column> bUy_;
     std::vector<Column> bUz_;
-    std::vector<Column> bP_;
+    std::vector<Column> bT_;
     //- Quadrature points
     std::vector<std::vector<vector>> quad_;
     scalarField delta_;
     scalarField limit_;
+    scalar np_;
+    scalar IS_;
     vector vrWeight_;
     Switch adaptive_;
     Switch positive_;
@@ -93,30 +95,30 @@ private:
     (
         const volScalarField& rho,
         const volVectorField& U,
-        const volScalarField& p,
+        const volScalarField& T,
         volVectorField& rhoGrad,
         volTensorField& UGrad,
-        volVectorField& pGrad,
+        volVectorField& TGrad,
         volSymmTensorField& d2Rho,
         volSymmTensorField& d2Ux,
         volSymmTensorField& d2Uy,
         volSymmTensorField& d2Uz,
-        volSymmTensorField& d2P
+        volSymmTensorField& d2T
     );
 
     void positiveCorrect
     (
         const volScalarField& rho,
         const volVectorField& U,
-        const volScalarField& p,
+        const volScalarField& T,
         volVectorField& rhoGrad,
         volTensorField& UGrad,
-        volVectorField& pGrad,
+        volVectorField& TGrad,
         volSymmTensorField& d2Rho,
         volSymmTensorField& d2Ux,
         volSymmTensorField& d2Uy,
         volSymmTensorField& d2Uz,
-        volSymmTensorField& d2P
+        volSymmTensorField& d2T
     );
 
 public:
@@ -139,15 +141,15 @@ public:
     (
         const volScalarField& rho,
         const volVectorField& U,
-        const volScalarField& p,
+        const volScalarField& T,
         volVectorField& rhoGrad,
         volTensorField& UGrad,
-        volVectorField& pGrad,
+        volVectorField& TGrad,
         volSymmTensorField& d2Rho,
         volSymmTensorField& d2Ux,
         volSymmTensorField& d2Uy,
         volSymmTensorField& d2Uz,
-        volSymmTensorField& d2P
+        volSymmTensorField& d2T
     );
 
     const volVectorField& rLengthScale() const { return rLengthScale_; }

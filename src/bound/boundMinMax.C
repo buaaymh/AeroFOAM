@@ -29,18 +29,17 @@ License
 
 // * * * * * * * * * * * * * * * Global Functions  * * * * * * * * * * * * * //
 
-bool Foam::boundMinMax
+bool Foam::positiveCorrect
 (
-    volScalarField& vsf,
-    const dimensionedScalar& vsf0,
-    const dimensionedScalar& vsf1
+    volScalarField& vsf
 )
 {
+    const dimensionedScalar vsf0("boundMin", dimless, SMALL);
     scalar minVsf = min(vsf).value();
     scalar maxVsf = max(vsf).value();
     bool changed = false;
 
-    if (minVsf < vsf0.value() || maxVsf > vsf1.value())
+    if (minVsf < vsf0.value())
     {
         Info<< "bounding " << vsf.name()
             << ", min: " << minVsf
@@ -62,26 +61,6 @@ bool Foam::boundMinMax
             vsf0.value()
         );
         Info<< "new min: " << gMin(vsf.internalField()) << endl;
-        vsf.correctBoundaryConditions();
-        changed = true;
-    }
-
-    if (maxVsf > vsf1.value())
-    {
-        vsf.primitiveFieldRef() = min
-        (
-            min
-            (
-                vsf.primitiveField(),
-                fvc::average(min(vsf, vsf1))().primitiveField()
-                *neg(vsf1.value() - vsf.primitiveField())
-                // This is needed when all values are above max
-                // HJ, 18/Apr/2009
-              + pos(vsf1.value() - vsf.primitiveField())*vsf1.value()
-            ),
-            vsf1.value()
-        );
-        Info<< "new max: " << gMax(vsf.internalField()) << endl;
         vsf.correctBoundaryConditions();
         changed = true;
     }

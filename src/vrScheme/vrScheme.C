@@ -64,11 +64,13 @@ Foam::vrScheme::vrScheme
     bUx_(mesh_.nCells(), vrScheme::Column::Zero()),
     bUy_(mesh_.nCells(), vrScheme::Column::Zero()),
     bUz_(mesh_.nCells(), vrScheme::Column::Zero()),
-    bP_(mesh_.nCells(), vrScheme::Column::Zero()),
+    bT_(mesh_.nCells(), vrScheme::Column::Zero()),
     quad_(mesh_.nInternalFaces(), std::vector<vector>(4, vector::zero)),
     delta_(mag(mesh_.delta())),
     limit_(mesh_.nCells(), 0)
 {
+    np_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("np", 10);
+    IS_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("IS", 1.0);
     vrWeight_ = mesh_.schemesDict().subDict("vrSchemes").lookup<vector>("weightList");
     adaptive_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
     positive_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);

@@ -58,7 +58,7 @@ class euler3rdSolver: public solver
     volSymmTensorField d2Ux_;
     volSymmTensorField d2Uy_;
     volSymmTensorField d2Uz_;
-    volSymmTensorField d2P_;
+    volSymmTensorField d2T_;
     // Private Member Functions
     //- Disallow default bitwise copy construct
     euler3rdSolver(const euler3rdSolver&);
@@ -73,7 +73,7 @@ public:
         const fluidProperties& fluidProps,
         volScalarField& rho,
         volVectorField& U,
-        volScalarField& p
+        volScalarField& T
     );
 
     // Destructor - default

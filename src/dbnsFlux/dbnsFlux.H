@@ -74,8 +74,8 @@ public:
         const scalar& rho_R,
         const vector& U_L,
         const vector& U_R,
-        const scalar& p_L,
-        const scalar& p_R,
+        const scalar& T_L,
+        const scalar& T_R,
         const vector& normal,
         const scalar& gamma
     ) const = 0;
@@ -84,22 +84,6 @@ public:
 /*---------------------------------------------------------------------------*\
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
-
-void consToPrim
-(
-    scalar& rho,
-    vector& rhoU,
-    scalar& rhoE,
-    const scalar& gamma
-);
-
-void primToCons
-(
-    scalar& rho,
-    vector& U,
-    scalar& p,
-    const scalar& gamma
-);
 
 void evaluateFlux
 (
