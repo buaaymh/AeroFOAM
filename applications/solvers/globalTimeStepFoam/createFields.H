@@ -78,10 +78,11 @@ volScalarField p
     ),
     mesh
 );
-
+rho.correctBoundaryConditions();
+U.correctBoundaryConditions();
+p.correctBoundaryConditions();
 Info << "====================================================" << endl;
-
-eulerSolver solver
+euler2ndSolver solver
 (
     fluidProps,
     rho,

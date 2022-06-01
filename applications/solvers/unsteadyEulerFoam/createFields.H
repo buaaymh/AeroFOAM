@@ -78,18 +78,24 @@ volScalarField p
     ),
     mesh
 );
-
+rho.correctBoundaryConditions();
+U.correctBoundaryConditions();
+p.correctBoundaryConditions();
 Info << "====================================================" << endl;
 
-eulerSolver solver
-(
-    fluidProps,
-    rho,
-    U,
-    p
-);
-solver.correctFields();
+std::unique_ptr<solver> solver;
+label order = mesh.schemesDict().lookup<label>("order");
+if (fluidProps.simulationType == "Euler")
+{
+    if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
+    else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
+}
+else
+{
+    Info << "Error in simulationType!" << endl;
+}
+solver->correctFields();
 // Resident
-scalarField resRho(mesh.nCells());
-vectorField resRhoU(mesh.nCells());
-scalarField resRhoE(mesh.nCells());
+scalarField resRho_1(mesh.nCells());
+vectorField resRhoU_1(mesh.nCells());
+scalarField resRhoE_1(mesh.nCells());

@@ -33,10 +33,10 @@ Foam::euler3rdSolver::euler3rdSolver
     const fluidProperties& fluidProps,
     volScalarField& rho,
     volVectorField& U,
-    volScalarField& T
+    volScalarField& p
 )
 :
-    solver(fluidProps, rho, U, T),
+    solver(fluidProps, rho, U, p),
     vr_(mesh_),
     d2Rho_
     (

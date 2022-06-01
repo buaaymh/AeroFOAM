@@ -78,17 +78,35 @@ volScalarField p
     ),
     mesh
 );
+rho.correctBoundaryConditions();
+U.correctBoundaryConditions();
+p.correctBoundaryConditions();
+// Create the output path directory
+fileName outputDir = mesh.time().path()/"postProcessing";
+// Creathe the directory
+mkDir(outputDir);
+// File pointer to direct the output to
+autoPtr<OFstream> outputFilePtr;
+// Open the file in the newly created directory
+outputFilePtr.reset(new OFstream(outputDir/"residuals.dat"));
+outputFilePtr() << "# Residuals" << endl;
+outputFilePtr() << "# Step" << tab << "CPU" << tab << "L1(resRho)" << endl;
 
 Info << "====================================================" << endl;
 
-eulerSolver solver
-(
-    fluidProps,
-    rho,
-    U,
-    p
-);
-solver.correctFields();
+std::unique_ptr<solver> solver;
+label order = mesh.schemesDict().lookup<label>("order");
+if (fluidProps.simulationType == "Euler")
+{
+    if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
+    else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
+}
+else
+{
+    Info << "Error in simulationType!" << endl;
+}
+
+solver->correctFields();
 // Resident
 scalarField resRho(mesh.nCells());
 vectorField resRhoU(mesh.nCells());

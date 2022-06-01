@@ -33,10 +33,10 @@ Foam::euler2ndSolver::euler2ndSolver
     const fluidProperties& fluidProps,
     volScalarField& rho,
     volVectorField& U,
-    volScalarField& T
+    volScalarField& p
 )
 :
-    solver(fluidProps, rho, U, T),
+    solver(fluidProps, rho, U, p),
     rhoLimit_
     (
         IOobject

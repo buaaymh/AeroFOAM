@@ -73,7 +73,7 @@ public:
         const fluidProperties& fluidProps,
         volScalarField& rho,
         volVectorField& U,
-        volScalarField& T
+        volScalarField& p
     );
 
     // Destructor - default

@@ -30,8 +30,9 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "eulerSolver.H"
-
+#include "solver.H"
+#include "euler2ndSolver.H"
+#include "euler3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -43,81 +44,92 @@ int main(int argc, char *argv[])
     #include "createMesh.H"
 
     #include "createFields.H"
-    // #include "createControls.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     const scalar k11_22 = (3.0 - Foam::sqrt(3.0)) / 6.0;
+
     const label innerIter = mesh.solutionDict().subDict("LUSGS").lookupOrDefault<label>("innerIter", 20);
     const scalar tolerance = mesh.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("tolerance", 1e-6);
     const scalar relTol = mesh.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("relTol", 0.001);
     
     while (runTime.run())
     {
-        runTime++;
-        Info<< "Time = " << runTime.value() << " s" << nl;
-
         const scalar dt = runTime.deltaT().value();
         const scalarField dt_dv(dt/mesh.V().field());
 
-        scalarField rho_0(solver.rho());
-        vectorField rhoU_0(solver.rhoU());
-        scalarField rhoE_0(solver.rhoE());
+        scalarField rho_0(solver->rho());
+        vectorField rhoU_0(solver->rhoU());
+        scalarField rhoE_0(solver->rhoE());
 
-        scalarField resRho_1(resRho);
-        vectorField resRhoU_1(resRhoU);
-        scalarField resRhoE_1(resRhoE);
+        scalarField resRho_2(resRho_1);
+        vectorField resRhoU_2(resRhoU_1);
+        scalarField resRhoE_2(resRhoE_1);
 
         scalar L1_deltaRho_0 = 0.0;
         scalar L1_deltaRho   = 0.0;
         
         // Stage 1
+        label count = 0;
         for (int i = 0; i < innerIter; ++i)
         {
-            solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
-            scalarField pseudoResRho((rho_0 - solver.rho())/dt_dv + k11_22* resRho);
-            vectorField pseudoResRhoU((rhoU_0 - solver.rhoU())/dt_dv + k11_22*resRhoU);
-            scalarField pseudoResRhoE((rhoE_0 - solver.rhoE())/dt_dv + k11_22*resRhoE);
+            count++;
+            solver->evaluateFlowRes(resRho_1, resRhoU_1, resRhoE_1);
+            scalarField pseudoResRho((rho_0 - solver->rho())/dt_dv    + k11_22* resRho_1);
+            vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_1);
+            scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_1);
             if (i == 0)
-                solver.solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
-            else
             {
-                solver.solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
-                if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
+                if (L1_deltaRho_0 < tolerance)
                 {
-                    Info << "LUSGS 1 converged in " << i+1 << " iterations, and final dRho = " << L1_deltaRho << endl;
+                    L1_deltaRho = L1_deltaRho_0;
                     break;
                 }
             }
-            solver.correctFields();
+            else
+            {
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
+                if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
+            }
+            solver->correctFields();
         }
+        Info << "LUSGS 1 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
+
         // Stage 2
+        count = 0;
         for (int i = 0; i < innerIter; ++i)
         {
-            solver.evaluateFlowRes(resRho_1, resRhoU_1, resRhoE_1);
-            scalarField pseudoResRho((rho_0 - solver.rho())/dt_dv + k11_22*(resRho+resRho_1));
-            vectorField pseudoResRhoU((rhoU_0 - solver.rhoU())/dt_dv + k11_22*(resRhoU+resRhoU_1));
-            scalarField pseudoResRhoE((rhoE_0 - solver.rhoE())/dt_dv + k11_22*(resRhoE+resRhoE_1));
+            count++;
+            solver->evaluateFlowRes(resRho_2, resRhoU_2, resRhoE_2);
+            scalarField pseudoResRho((rho_0 - solver->rho())/dt_dv    + k11_22*(resRho_1+resRho_2));
+            vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*(resRhoU_1+resRhoU_2));
+            scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*(resRhoE_1+resRhoE_2));
             if (i == 0)
-                solver.solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
-            else
             {
-                solver.solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
-                if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
+                if (L1_deltaRho_0 < tolerance)
                 {
-                    Info << "LUSGS 2 converged in " << i+1 << " iterations, and final dRho = " << L1_deltaRho << endl;
+                    L1_deltaRho = L1_deltaRho_0;
                     break;
                 }
             }
-            solver.correctFields();
+            else
+            {
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
+                if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance) break;
+            }
+            solver->correctFields();
         }
+        Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
 
-        solver.rho()  = rho_0  + 0.5 * dt_dv * (resRho + resRho_1);
-        solver.rhoU() = rhoU_0 + 0.5 * dt_dv * (resRhoU + resRhoU_1);
-        solver.rhoE() = rhoE_0 + 0.5 * dt_dv * (resRhoE + resRhoE_1);
-
-        solver.correctFields();
-
+        solver->rho()  = rho_0  + 0.5 * dt_dv * (resRho_1 + resRho_2);
+        solver->rhoU() = rhoU_0 + 0.5 * dt_dv * (resRhoU_1 + resRhoU_2);
+        solver->rhoE() = rhoE_0 + 0.5 * dt_dv * (resRhoE_1 + resRhoE_2);
+        
+        runTime++;
+        Info<< "Time = " << runTime.value() << " s" << nl;
+        solver->correctFields();
         runTime.write();
 	
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
@@ -129,7 +141,6 @@ int main(int argc, char *argv[])
 
     return(0);
 }
-
 
 // ************************************************************************* //
 

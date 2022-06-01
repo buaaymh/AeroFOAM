@@ -87,10 +87,10 @@ protected:
     volScalarField& rho_;
     //- Velocity
     volVectorField& U_;
-    //- Static temperature
-    volScalarField& T_;
     //- Static pressure
-    volScalarField p_;
+    volScalarField& p_;
+    //- Static temperature
+    volScalarField T_;
     //- Momentum
     volVectorField rhoU_;
     //- Energy
@@ -119,7 +119,7 @@ public:
         const fluidProperties& fluidProps,
         volScalarField& rho,
         volVectorField& U,
-        volScalarField& T
+        volScalarField& p
     );
 
     // Destructor - default

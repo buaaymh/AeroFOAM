@@ -25,13 +25,14 @@ Application
     unsteady2ndFoam
 
 Description
-    Density-based compressible flow solver based on cell-centered 2nd schemes.
+    Density-based compressible flow solver based on cell-centered 3rd schemes.
 
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "eulerSolver.H"
-
+#include "solver.H"
+#include "euler2ndSolver.H"
+#include "euler3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -46,34 +47,19 @@ int main(int argc, char *argv[])
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+    const scalar tolerance = mesh.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("tolerance", 1e-6);
+    label step = 0;
+    
     while (runTime.run())
     {
-        const scalarField dt_dv(runTime.deltaT().value()/mesh.V().field());
+        solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
 
-        scalarField rho_0(solver.rho());
-        vectorField rhoU_0(solver.rhoU());
-        scalarField rhoE_0(solver.rhoE());
+        const scalar L1Res = gSum(mag(resRho));
+        outputFilePtr() << step++ << tab << runTime.elapsedCpuTime() << tab << L1Res << endl;
+        if (L1Res < tolerance) break;
 
-        // Stage 1
-        solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
-        solver.rho()  = rho_0  + resRho  * dt_dv;
-        solver.rhoU() = rhoU_0 + resRhoU * dt_dv;
-        solver.rhoE() = rhoE_0 + resRhoE * dt_dv;
-        solver.correctFields();
-
-        // Stage 2
-        solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
-        solver.rho()  = 0.75 * rho_0  + 0.25 * (solver.rho()  + resRho  * dt_dv);
-        solver.rhoU() = 0.75 * rhoU_0 + 0.25 * (solver.rhoU() + resRhoU * dt_dv);
-        solver.rhoE() = 0.75 * rhoE_0 + 0.25 * (solver.rhoE() + resRhoE * dt_dv);
-        solver.correctFields();
-
-        // Stage 3
-        solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
-        solver.rho()  = 1.0/3 * rho_0  + 2.0/3 * (solver.rho()  + resRho  * dt_dv);
-        solver.rhoU() = 1.0/3 * rhoU_0 + 2.0/3 * (solver.rhoU() + resRhoU * dt_dv);
-        solver.rhoE() = 1.0/3 * rhoE_0 + 2.0/3 * (solver.rhoE() + resRhoE * dt_dv);
-        solver.correctFields();
+        solver->solveFlowLinearSystem(resRho, resRhoU, resRhoE);
+        solver->correctFields();
 
         runTime++;
         Info<< "Time = " << runTime.value() << " s" << nl;
@@ -88,7 +74,6 @@ int main(int argc, char *argv[])
 
     return(0);
 }
-
 
 // ************************************************************************* //
 

@@ -202,7 +202,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
         {
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];
-            const fvPatchScalarField& pBound = T_.boundaryField()[patchI];
+            const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
             const scalarField rhoInter = rhoBound.patchInternalField();
             const vectorField UInter = UBound.patchInternalField();
             const scalarField pInter = pBound.patchInternalField();

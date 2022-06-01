@@ -1,3 +1,0 @@
-unsteady2ndFoam.C
-
-EXE = $(FOAM_USER_APPBIN)/unsteady2ndFoam

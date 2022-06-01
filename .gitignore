@@ -13,6 +13,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+applications/test
 tutorials/
 linux64GccDPInt32Opt/
 lnInclude/

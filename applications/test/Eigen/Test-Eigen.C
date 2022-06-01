@@ -31,6 +31,8 @@ Description
 
 #include "fvCFD.H"
 #include <iostream>
+#include <time.h>
+#include <vector>
 #include <Eigen/Dense>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -42,6 +44,29 @@ int main(int argc, char *argv[])
            0, 2;
     Eigen::Matrix<float, 2, 2> mat_1 = mat.inverse().cast<float>();
     std::cout << mat_1 << std::endl;
+
+    // clock_t start, end;
+    // label n = 2000000;
+    // start = std::clock();
+    // std::vector<Eigen::Matrix<scalar, 6, 6>> eigenMatsD(n, Eigen::Matrix<scalar, 6, 6>::Ones());
+    // std::vector<Eigen::Matrix<float, 6, 6>> eigenMatsF(n, Eigen::Matrix<float, 6, 6>::Ones());
+    // std::vector<symmTensor> coefs(n, symmTensor::one);
+
+    // Eigen::Matrix<scalar, 6, 1> temp = Eigen::Matrix<scalar, 6, 1>::Zero();
+    // for (int j = 0; j != 500; j++)
+    // {
+    //     for (int i = 0; i != n; ++i)
+    //     {
+    //         Eigen::Matrix<scalar, 6, 1> col(coefs[i][0], coefs[i][1], coefs[i][2],
+    //                                         coefs[i][3], coefs[i][4], coefs[i][5]);
+    //         temp += eigenMatsD[i] * col;
+    //         temp += eigenMatsF[i].cast<scalar>() * col;
+    //     }
+    //     temp *= 0;
+    // }
+    // end = std::clock();
+    // Info <<"CPU Time = "<<scalar(end-start)/CLOCKS_PER_SEC<< "s" <<endl;
+
     return 0;
 }
 

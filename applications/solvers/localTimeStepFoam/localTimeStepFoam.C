@@ -25,12 +25,12 @@ Application
     unsteady2ndFoam
 
 Description
-    Density-based compressible flow solver based on cell-centered 3rd schemes.
+    Density-based compressible flow solver based on cell-centered 2nd schemes.
 
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "eulerSolver.H"
+#include "euler2ndSolver.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -46,10 +46,41 @@ int main(int argc, char *argv[])
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+    const scalar tolerance = mesh.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("tolerance", 1e-6);
+    label step = 0;
+
     while (runTime.run())
     {
+        scalarField rho_0(solver.rho());
+        vectorField rhoU_0(solver.rhoU());
+        scalarField rhoE_0(solver.rhoE());
+
+        // Stage 1
+        solver.updateLTS();
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
-        solver.solveFlowLinearSystem(resRho, resRhoU, resRhoE);
+        solver.rho()  = rho_0  + resRho  * solver.LTS();
+        solver.rhoU() = rhoU_0 + resRhoU * solver.LTS();
+        solver.rhoE() = rhoE_0 + resRhoE * solver.LTS();
+        solver.correctFields();
+
+        const scalar L1Res = gSum(mag(resRho));
+        outputFilePtr() << step++ << tab << runTime.elapsedCpuTime() << tab << L1Res << endl;
+        if (L1Res < tolerance) break;
+
+        // Stage 2
+        solver.updateLTS();
+        solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
+        solver.rho()  = 0.75 * rho_0  + 0.25 * (solver.rho()  + resRho  * solver.LTS());
+        solver.rhoU() = 0.75 * rhoU_0 + 0.25 * (solver.rhoU() + resRhoU * solver.LTS());
+        solver.rhoE() = 0.75 * rhoE_0 + 0.25 * (solver.rhoE() + resRhoE * solver.LTS());
+        solver.correctFields();
+
+        // Stage 3
+        solver.updateLTS();
+        solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
+        solver.rho()  = 1.0/3 * rho_0  + 2.0/3 * (solver.rho()  + resRho  * solver.LTS());
+        solver.rhoU() = 1.0/3 * rhoU_0 + 2.0/3 * (solver.rhoU() + resRhoU * solver.LTS());
+        solver.rhoE() = 1.0/3 * rhoE_0 + 2.0/3 * (solver.rhoE() + resRhoE * solver.LTS());
         solver.correctFields();
 
         runTime++;
