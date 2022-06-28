@@ -90,7 +90,7 @@ autoPtr<OFstream> outputFilePtr;
 // Open the file in the newly created directory
 outputFilePtr.reset(new OFstream(outputDir/"residuals.dat"));
 outputFilePtr() << "# Residuals" << endl;
-outputFilePtr() << "# Step" << tab << "CPU" << tab << "L1(resRho)" << endl;
+outputFilePtr() << "# Step" << tab << "CPU" << tab << "L2(resRho)" << endl;
 
 Info << "====================================================" << endl;
 

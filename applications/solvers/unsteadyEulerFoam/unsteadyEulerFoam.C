@@ -49,9 +49,9 @@ int main(int argc, char *argv[])
 
     const scalar k11_22 = (3.0 - Foam::sqrt(3.0)) / 6.0;
 
-    const label innerIter = mesh.solutionDict().subDict("LUSGS").lookupOrDefault<label>("innerIter", 20);
-    const scalar tolerance = mesh.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("tolerance", 1e-6);
-    const scalar relTol = mesh.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("relTol", 0.001);
+    const label innerIter = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
+    const scalar tolerance = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
+    const scalar relTol = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
     
     while (runTime.run())
     {

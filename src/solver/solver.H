@@ -143,30 +143,14 @@ public:
         scalarField& resRhoE
     ) {};
 
-    virtual void evaluateTurbRes
-    (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
-        scalarField& resNuTilde
-    ) {};
-
-    virtual void solveFlowLinearSystem
+    void solveFlowLinearSystem
     (
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
     );
 
-    virtual void solveTurbLinearSystem
-    (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
-        scalarField& resNuTilde
-    ) {};
-
-    virtual void solveFlowPseudoTimeSystem
+    void solveFlowPseudoTimeSystem
     (
         const scalar& dt,
         const scalar& alpha,
@@ -175,17 +159,6 @@ public:
         scalarField& resRhoE,
         scalar& resL1
     );
-
-    virtual void solveTurbPseudoTimeSystem
-    (
-        const scalar& dt,
-        const scalar& alpha,
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
-        scalarField& resNuTilde,
-        scalar& resL1
-    ) {};
 
     virtual void correctFields();
 
@@ -194,6 +167,35 @@ public:
 private:
 
     void volProjectionsInit();
+    
+    void evaluateMatrixLDU
+    (
+        scalarField& L,
+        scalarField& U,
+        scalarField& D
+    );
+
+    void matrixVectorProduct
+    (
+        const scalarField& L,
+        const scalarField& U,
+        const scalarField& v_Rho,
+        const vectorField& v_RhoU,
+        const scalarField& v_RhoE,
+        scalarField& y_Rho,
+        vectorField& y_RhoU,
+        scalarField& y_RhoE
+    );
+
+    void precondition
+    (
+        const scalarField& L,
+        const scalarField& U,
+        const scalarField& D,
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE
+    );
 
 };
 
@@ -201,6 +203,23 @@ private:
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
 
+void ApplyGivens
+(
+    const scalar s,
+    const scalar c,
+    scalar& h1,
+    scalar& h2
+);
+
+scalar Sign(scalar x, scalar y);
+
+void GenerateGivens
+(
+    scalar& dx,
+    scalar& dy,
+    scalar& s,
+    scalar& c
+);
 
 } // End namespace Foam
 

@@ -4,7 +4,7 @@ void Foam::vrScheme::detectP0(const volVectorField& rhoGrad)
     label count = 0;
     forAll(mesh_.C(), cellI)
     {
-        if (cmptSum(cmptDivide(cmptMag(rhoGrad[cellI]), rLengthScale_[cellI])) < 1e-3)
+        if (cmptSum(cmptDivide(cmptMag(rhoGrad[cellI]), rLengthScale_[cellI])) < 1e-6)
         {
             p0_[cellI] = true;
             count++;

@@ -173,7 +173,7 @@ void Foam::solver::correctFields()
 
 void Foam::solver::updateLTS()
 {
-    scalar localCFL = mesh_.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("LocalCFL", 1.0);
+    scalar localCFL = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("LocalCFL", 1.0);
     localDtDv_ = localCFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
 }
 
@@ -202,10 +202,8 @@ void Foam::solver::volProjectionsInit()
     }
 }
 
+#include "lusgsGMRES.H"
 
 #include "solveFlowLinearSystem.H"
-
-#include "solveFlowPseudoTimeSystem.H"
-
 
 // ************************************************************************* //
