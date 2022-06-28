@@ -179,6 +179,7 @@ private:
     (
         const scalarField& L,
         const scalarField& U,
+        const scalarField& D,
         const scalarField& v_Rho,
         const vectorField& v_RhoU,
         const scalarField& v_RhoE,
