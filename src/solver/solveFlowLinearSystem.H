@@ -1,23 +1,3 @@
-// void Foam::solver::solveFlowLinearSystem
-// (
-//     scalarField& resRho,
-//     vectorField& resRhoU,
-//     scalarField& resRhoE
-// )
-// {
-//     // Calculate L, U and D
-//     updateLTS();
-//     scalarField L(mesh_.nInternalFaces());
-//     scalarField U(mesh_.nInternalFaces());
-//     scalarField D(1.0/localDtDv_);
-//     evaluateMatrixLDU(L, U, D);
-//     // Preconditioning step
-//     precondition(L, U, D, resRho, resRhoU, resRhoE);
-//     rho_.primitiveFieldRef()  += resRho;
-//     rhoU_.primitiveFieldRef() += resRhoU;
-//     rhoE_.primitiveFieldRef() += resRhoE;
-// }
-
 void Foam::solver::solveFlowLinearSystem
 (
     scalarField& resRho,
