@@ -81,16 +81,20 @@ volScalarField p
 rho.correctBoundaryConditions();
 U.correctBoundaryConditions();
 p.correctBoundaryConditions();
-// Create the output path directory
-fileName outputDir = mesh.time().path()/"postProcessing";
-// Creathe the directory
-mkDir(outputDir);
+
 // File pointer to direct the output to
 autoPtr<OFstream> outputFilePtr;
-// Open the file in the newly created directory
-outputFilePtr.reset(new OFstream(outputDir/"residuals.dat"));
-outputFilePtr() << "# Residuals" << endl;
-outputFilePtr() << "# Step" << tab << "CPU" << tab << "L2(resRho)" << endl;
+if (Pstream::master())
+{
+    // Create the output path directory
+    fileName outputDir = mesh.time().path()/"postProcessing";
+    // Creathe the directory
+    mkDir(outputDir);
+    // Open the file in the newly created directory
+    outputFilePtr.reset(new OFstream(outputDir/"residuals.dat"));
+    outputFilePtr() << "# Residuals" << endl;
+    outputFilePtr() << "# Step" << tab << "CPU" << tab << "L2(resRho)" << endl;
+}
 
 Info << "====================================================" << endl;
 

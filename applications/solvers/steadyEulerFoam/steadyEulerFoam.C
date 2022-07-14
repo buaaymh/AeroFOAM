@@ -48,14 +48,18 @@ int main(int argc, char *argv[])
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     const scalar tolerance = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
-    label step = 0;
     
     while (runTime.run())
     {
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
 
         const scalar L2Res = Foam::sqrt(gSumSqr(resRho));
-        outputFilePtr() << step++ << tab << runTime.elapsedCpuTime() << tab << L2Res << endl;
+        if (Pstream::master())
+        {
+            outputFilePtr() << runTime.value() << tab
+                            << runTime.elapsedCpuTime() << tab
+                            << L2Res << endl;
+        }
         if (L2Res < tolerance) break;
 
         solver->solveFlowLinearSystem(resRho, resRhoU, resRhoE);
