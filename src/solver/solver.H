@@ -173,7 +173,7 @@ private:
         scalarField& L,
         scalarField& U,
         scalarField& D
-    );
+    ) const;
 
     void matrixVectorProduct
     (
@@ -186,7 +186,7 @@ private:
         scalarField& y_Rho,
         vectorField& y_RhoU,
         scalarField& y_RhoE
-    );
+    ) const;
 
     void precondition
     (
@@ -196,7 +196,7 @@ private:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
-    );
+    ) const;
 
 };
 

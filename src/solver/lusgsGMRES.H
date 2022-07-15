@@ -3,7 +3,7 @@ void Foam::solver::evaluateMatrixLDU
     scalarField& L,
     scalarField& U,
     scalarField& D
-)
+) const
 {
     const scalar omega = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relaxOmega", 1.2);
     // Calculate L, U and D
@@ -44,7 +44,7 @@ void Foam::solver::matrixVectorProduct
     scalarField& y_Rho,
     vectorField& y_RhoU,
     scalarField& y_RhoE
-)
+) const
 {
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
@@ -88,7 +88,7 @@ void Foam::solver::precondition
     scalarField& resRho,
     vectorField& resRhoU,
     scalarField& resRhoE
-)
+) const
 {
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
