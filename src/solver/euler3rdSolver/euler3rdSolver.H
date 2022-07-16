@@ -51,7 +51,13 @@ namespace Foam
 
 class euler3rdSolver: public solver
 {
-    // Private Data
+    // Private Member Functions
+    //- Disallow default bitwise copy construct
+    euler3rdSolver(const euler3rdSolver&);
+    //- Disallow default bitwise assignment
+    void operator=(const euler3rdSolver&);
+
+protected:
     vrScheme vr_;
     //- Quadratic polynomial coefficients
     volSymmTensorField d2Rho_;
@@ -59,11 +65,6 @@ class euler3rdSolver: public solver
     volSymmTensorField d2Uy_;
     volSymmTensorField d2Uz_;
     volSymmTensorField d2T_;
-    // Private Member Functions
-    //- Disallow default bitwise copy construct
-    euler3rdSolver(const euler3rdSolver&);
-    //- Disallow default bitwise assignment
-    void operator=(const euler3rdSolver&);
 
 public:
 
