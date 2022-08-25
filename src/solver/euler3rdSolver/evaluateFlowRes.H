@@ -268,7 +268,7 @@ void Foam::euler3rdSolver::evaluateFlowRes
             const vectorField UInter = UBound.patchInternalField();
             const scalarField pInter = pBound.patchInternalField();
             const scalarField& Ma = Ma_.boundaryField()[patchI];
-            const scalarField& Vn = normal&UBound;
+            const scalarField Vn = normal&UBound;
             forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux;
@@ -277,24 +277,22 @@ void Foam::euler3rdSolver::evaluateFlowRes
                 const label i = bfaceCells[faceI];
                 if (Ma[faceI] < 1.0)
                 {
-                    const scalar c2 = pInter[faceI]*fluidProps_.gamma/rhoInter[faceI];
-                    const scalar rhoc = rhoInter[faceI]*sqrt(c2);
-                    scalar rho, p; vector U;
                     if (Vn[faceI] < 0)
                     {
-                        p = 0.5*(pBound[faceI]+pInter[faceI]-rhoc*(normal[faceI]&(UBound[faceI]-UInter[faceI])));
-                        rho = rhoBound[faceI] + (p-pBound[faceI])/c2;
-                        U = UBound[faceI] + normal[faceI]*(p-pBound[faceI])/rhoc;
+                        const scalar T_i = pInter[faceI]*fluidProps_.gamma/rhoInter[faceI];
+                        const scalar T_j = pBound[faceI]*fluidProps_.gamma/rhoBound[faceI];
+                        riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                               rhoInter[faceI], rhoBound[faceI],
+                                               UInter[faceI], UBound[faceI],
+                                               T_i, T_j,
+                                               normal[faceI], fluidProps_.gamma);
                     }
                     else
                     {
-                        p = pBound[faceI];
-                        rho = rhoInter[faceI] + (p-pInter[faceI])/c2;
-                        U = UInter[faceI] - normal[faceI]*(p-pInter[faceI])/rhoc;
+                        Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                           rhoInter[faceI], UInter[faceI], pBound[faceI],
+                                           normal[faceI], fluidProps_.gamma);
                     }
-                    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                       rho, U, p,
-                                       normal[faceI], fluidProps_.gamma);
                 }
                 else
                 {
