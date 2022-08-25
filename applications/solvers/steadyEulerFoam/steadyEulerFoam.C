@@ -51,9 +51,12 @@ int main(int argc, char *argv[])
     
     while (runTime.run())
     {
-        solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
+        runTime++;
+        Info<< "Time = " << runTime.value() << " s" << nl;
 
-        const scalar L2Res = Foam::sqrt(gSumSqr(resRho));
+        solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
+        const scalar L2Res = Foam::sqrt(gSum(Foam::magSqr(resRho) * mesh.V()));
+        Info << "Residual for density = " << L2Res << endl;
         if (Pstream::master())
         {
             outputFilePtr() << runTime.value() << tab
@@ -65,8 +68,6 @@ int main(int argc, char *argv[])
         solver->solveFlowLinearSystem(resRho, resRhoU, resRhoE);
         solver->correctFields();
 
-        runTime++;
-        Info<< "Time = " << runTime.value() << " s" << nl;
         runTime.write();
 	
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
