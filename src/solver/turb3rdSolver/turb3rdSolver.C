@@ -39,6 +39,7 @@ Foam::turb3rdSolver::turb3rdSolver
 :
     euler3rdSolver(fluidProps, rho, U, p),
     ST_inf(110.4/fluidProps.T_inf),
+    Ma_Re_inf(fluidProps.Mach_inf/fluidProps.Re_inf),
     nuTilde_(nuTilde),
     nuTildeGrad_
     (
@@ -53,7 +54,8 @@ Foam::turb3rdSolver::turb3rdSolver
     ),
     laminarViscosity_(scalarField(mesh_.nCells())),
     eddyViscosity_(scalarField(mesh_.nCells())),
-    nuMax_(scalarField(mesh_.nCells()))
+    nuMax_(scalarField(mesh_.nCells())),
+    delta_(scalarField(mesh_.nCells()))
 {
     Info << "Ths solver is 3rd order for Turbulence flow." << nl
          << "Ths scheme is VR with AV." << nl
@@ -62,20 +64,6 @@ Foam::turb3rdSolver::turb3rdSolver
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-scalar Foam::turb3rdSolver::eddyViscosityFunc
-(
-    const scalar nuTilde,
-    const scalar laminarViscosity,
-    const scalar rho
-) const
-{
-    if (nuTilde <= 0.0) return 0.0;
-    const scalar nu  = laminarViscosity/rho;
-    const scalar X3  = pow3(nuTilde/nu);
-    const scalar fv1 = X3/(X3+pow3(Cv1));
-    return rho*nuTilde*fv1;
-}
-
 void Foam::turb3rdSolver::correctFields()
 {
     U_.ref() = rhoU_ / rho_;
@@ -83,6 +71,7 @@ void Foam::turb3rdSolver::correctFields()
     rho_.correctBoundaryConditions();
     U_.correctBoundaryConditions();
     p_.correctBoundaryConditions();
+    nuTilde_.correctBoundaryConditions();
     const bool rhoBool = Foam::positiveCorrect(rho_);
     const bool pBool   = Foam::positiveCorrect(p_);
     if (rhoBool || pBool)
@@ -93,7 +82,7 @@ void Foam::turb3rdSolver::correctFields()
     T_.ref() = p_ * fluidProps_.gamma / rho_;
     c_ = sqrt(T_.primitiveField());
     Ma_.primitiveFieldRef() = mag(U_.primitiveFieldRef())/c_;
-    laminarViscosity_ = pow(T_.primitiveField(), 2.0/3.0)*(1.0+ST_inf)/(T_.primitiveField()+ST_inf);
+    laminarViscosity_ = pow(T_.primitiveField(), 1.5)*(1.0+ST_inf)/(T_.primitiveField()+ST_inf);
     forAll(mesh_.cells(), cellI)
         eddyViscosity_[cellI] = eddyViscosityFunc(nuTilde_[cellI], laminarViscosity_[cellI], rho_[cellI]);
     nuMax_ = max(4.0/3.0, fluidProps_.gamma)*(laminarViscosity_/Pr_Lam + eddyViscosity_/Pr_Turb)/rho_.primitiveField();
@@ -112,16 +101,24 @@ void Foam::turb3rdSolver::correctFields()
 
 void Foam::turb3rdSolver::updateLTS()
 {
-    scalar localCFL = mesh_.solutionDict().subDict("LUSGS").lookupOrDefault<scalar>("LocalCFL", 1.0);
+    scalar localCFL = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("LocalCFL", 1.0);
     scalarField lambdaAc = volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one);
     scalarField lambdaAv = magSqr(volProjections_)*nuMax_/mesh_.V();
     localDtDv_ = localCFL/(lambdaAc+lambdaAv);
 }
 
+#include "functions.H"
+
+#include "evaluateFlux.H"
+
+#include "evaluateFlowRes.H"
+
 #include "evaluateTurbRes.H"
 
-#include "solveTurbLinearSystem.H"
+#include "evaluateTurbSource.H"
 
-#include "solveTurbPseudoTimeSystem.H"
+#include "evaluateMatrixLDU.H"
+
+#include "solveTurbLinearSystem.H"
 
 // ************************************************************************* //

@@ -59,6 +59,7 @@ struct fluidProperties
     scalar gamma,       /* Gas constant */
            AOA,         /* Angle of attack */
            Mach_inf,    /* Free-stream Mach number */
+           Re_inf,      /* Reynolds number */
            T_inf,       /* Free-stream Temperature */
            p_inf;       /* Free-stream pressure */
 };
@@ -164,28 +165,13 @@ public:
 
     virtual void updateLTS();
 
-private:
+protected:
 
-    void volProjectionsInit();
-    
-    void evaluateMatrixLDU
+    virtual void evaluateMatrixLDU
     (
         scalarField& L,
         scalarField& U,
         scalarField& D
-    ) const;
-
-    void matrixVectorProduct
-    (
-        const scalarField& L,
-        const scalarField& U,
-        const scalarField& D,
-        const scalarField& v_Rho,
-        const vectorField& v_RhoU,
-        const scalarField& v_RhoE,
-        scalarField& y_Rho,
-        vectorField& y_RhoU,
-        scalarField& y_RhoE
     ) const;
 
     void precondition
@@ -197,30 +183,12 @@ private:
         vectorField& resRhoU,
         scalarField& resRhoE
     ) const;
+    
+private:
+
+    void volProjectionsInit();
 
 };
-
-/*---------------------------------------------------------------------------*\
-                           Methods Declaration
-\*---------------------------------------------------------------------------*/
-
-void ApplyGivens
-(
-    const scalar s,
-    const scalar c,
-    scalar& h1,
-    scalar& h2
-);
-
-scalar Sign(scalar x, scalar y);
-
-void GenerateGivens
-(
-    scalar& dx,
-    scalar& dy,
-    scalar& s,
-    scalar& c
-);
 
 } // End namespace Foam
 

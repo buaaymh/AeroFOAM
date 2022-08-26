@@ -36,6 +36,7 @@ Author
 #define turb3rdSolver_H
 
 #include "euler3rdSolver.H"
+#include "wallDist.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,12 +52,28 @@ namespace Foam
 class turb3rdSolver: public euler3rdSolver
 {
     //- Prandtl numbers
-    scalar Pr_Lam  = 0.72;
-    scalar Pr_Turb = 0.9;
+    const scalar Pr_Lam  = 0.72;
+    const scalar Pr_Turb = 0.9;
     //- Constant
-    scalar Cv1 = 7.1;
+    const scalar sigma = 2.0/3.0;
+    const scalar k = 0.41;
+    const scalar Cb1 = 0.1355;
+    const scalar Cb2 = 0.622;
+    const scalar Cv1 = 7.1;
+    const scalar Cn1 = 16.0;
+    const scalar Ct3 = 1.2;
+    const scalar Ct4 = 0.5;
+    const scalar Cw1 = Cb1/sqr(k)+(1.0+Cb2)/sigma;
+    const scalar Cw2 = 0.3;
+    const scalar Cw3 = 2.0;
+    
+    const scalar k2 = sqr(k);
+    const scalar Cv1_3 = pow3(Cv1);
+    const scalar Cw3_6 = pow(Cw3, 6.0);
+    const scalar Cb2_sigma = Cb2/sigma;
 
     scalar ST_inf;
+    scalar Ma_Re_inf;
     //- nuTilde
     volScalarField& nuTilde_;
     //- nuTilde grad
@@ -67,11 +84,66 @@ class turb3rdSolver: public euler3rdSolver
     scalarField eddyViscosity_;
     //- nuMax
     scalarField nuMax_;
+    //- hybrid delta
+    scalarField delta_;
     // Private Member Functions
     //- Disallow default bitwise copy construct
     turb3rdSolver(const turb3rdSolver&);
     //- Disallow default bitwise assignment
     void operator=(const turb3rdSolver&);
+
+    void evaluateFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& rho_L,
+        const scalar& rho_R,
+        const vector& U_L,
+        const vector& U_R,
+        const scalar& T_L,
+        const scalar& T_R,
+        const tensor& UGrad_L,
+        const tensor& UGrad_R,
+        const vector& TGrad_L,
+        const vector& TGrad_R,
+        const scalar& nuTilde_L,
+        const scalar& nuTilde_R,
+        const scalar& dxTilde,
+        const vector& normal
+    ) const;
+    
+    void evaluateWallFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& rho,
+        const vector& U,
+        const scalar& T,
+        const tensor& UGrad,
+        const vector& normal
+    ) const;
+
+    void evaluateInletOutletFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& rho,
+        const vector& U,
+        const scalar& p,
+        const scalar& nuTilde,
+        const tensor& UGrad,
+        const vector& TGrad,
+        const vector& normal
+    ) const;
+
+    void evaluateTurbSource
+    (
+        scalarField& resNuTilde,
+        scalarField& D
+    ) const;
 
     scalar eddyViscosityFunc
     (
@@ -79,6 +151,26 @@ class turb3rdSolver: public euler3rdSolver
         const scalar laminarViscosity,
         const scalar rho
     ) const;
+
+    scalar effectiveNuFunc
+    (
+        const scalar nu,
+        const scalar nuTilde
+    ) const;
+
+    void computeProjectedGradient
+    (
+        const vector& normal,
+        const vector& edgeVec,
+        const scalar& var_i,
+        const scalar& var_j,
+        const vector& grad_i,
+        const vector& grad_j,
+        scalar& proj_vector_ij,
+        scalar& correctedMeanGrad
+    ) const;
+
+    void calculateDelta();
 
 public:
 
@@ -96,37 +188,54 @@ public:
     virtual ~turb3rdSolver() {};
 
     // Member Functions
+    const scalarField& nuTilde() const { return nuTilde_.primitiveField(); }
+    scalarField& nuTilde() { return nuTilde_.primitiveFieldRef(); }
 
-    void evaluateTurbRes
+    void evaluateFlowRes
     (
         scalarField& resRho,
         vectorField& resRhoU,
-        scalarField& resRhoE,
-        scalarField& resNuTilde
+        scalarField& resRhoE
+    );
+
+    void evaluateTurbRes
+    (
+        scalarField& resNuTilde,
+        scalarField& L,
+        scalarField& U,
+        scalarField& D
     );
 
     void solveTurbLinearSystem
     (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
-        scalarField& resNuTilde
+        scalarField& resNuTilde,
+        const scalarField& L,
+        const scalarField& U,
+        const scalarField& D
     );
 
-    virtual void solveTurbPseudoTimeSystem
+    void solveTurbPseudoTimeSystem
     (
         const scalar& dt,
         const scalar& alpha,
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
         scalarField& resNuTilde,
-        scalar& resL1
+        const scalarField& L,
+        const scalarField& U,
+        const scalarField& D
     );
 
     void correctFields();
 
     void updateLTS();
+
+protected:
+    
+    void evaluateMatrixLDU
+    (
+        scalarField& L,
+        scalarField& U,
+        scalarField& D
+    ) const;
 
 };
 

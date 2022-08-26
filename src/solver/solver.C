@@ -202,8 +202,6 @@ void Foam::solver::volProjectionsInit()
     }
 }
 
-#include "lusgsGMRES.H"
-
 #include "solveFlowLinearSystem.H"
 
 // ************************************************************************* //
