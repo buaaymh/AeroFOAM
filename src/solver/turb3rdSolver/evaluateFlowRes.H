@@ -209,21 +209,16 @@ void Foam::turb3rdSolver::evaluateFlowRes
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
             }
         }
-        if (name == "wall")
+        if (type == "wall")
         {
-            const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
+            const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
             const fvPatchScalarField& TBound = T_.boundaryField()[patchI];
             forAll(bfaceCells, faceI)
             {
-                scalar rhoFlux  = 0.0;
                 vector rhoUFlux = vector::zero;
-                scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[faceI];
-                evaluateWallFlux(rhoFlux, rhoUFlux, rhoEFlux, rhoBound[faceI], U_[i], TBound[faceI],
-                                 UGrad_[i], normal[faceI]);
-                resRho[i]  -= rhoFlux * magSf[faceI];
-                resRhoU[i] -= rhoUFlux * magSf[faceI];
-                resRhoE[i] -= rhoEFlux * magSf[faceI];                 
+                evaluateWallFlux(rhoUFlux, pBound[faceI], TBound[faceI], UGrad_[i], normal[faceI]);
+                resRhoU[i] -= rhoUFlux * magSf[faceI];              
             }
         }
         if (name == "inlet")

@@ -115,11 +115,8 @@ class turb3rdSolver: public euler3rdSolver
     
     void evaluateWallFlux
     (
-        scalar& rhoFlux,
         vector& rhoUFlux,
-        scalar& rhoEFlux,
-        const scalar& rho,
-        const vector& U,
+        const scalar& p,
         const scalar& T,
         const tensor& UGrad,
         const vector& normal

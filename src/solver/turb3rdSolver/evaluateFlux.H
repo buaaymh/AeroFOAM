@@ -45,18 +45,14 @@ void Foam::turb3rdSolver::evaluateFlux
 
 void Foam::turb3rdSolver::evaluateWallFlux
 (
-    scalar& rhoFlux,
     vector& rhoUFlux,
-    scalar& rhoEFlux,
-    const scalar& rho,
-    const vector& U,
+    const scalar& p,
     const scalar& T,
     const tensor& UGrad,
     const vector& normal
 ) const
 {
-    riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                           rho, rho, U, -U, T, T, normal, fluidProps_.gamma);
+    rhoUFlux = p*normal;
     const scalar two3 = 2.0/3.0;
     const scalar laminarViscosity = pow(T, 1.5)*(1.0+ST_inf)/(T+ST_inf);
     tensor tau;
