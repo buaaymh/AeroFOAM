@@ -36,6 +36,7 @@ Author
 #define vrScheme_H
 
 #include "fvCFD.H"
+#include "processorFvPatch.H"
 #include <array>
 #include <vector>
 #include <Eigen/Dense>

@@ -43,6 +43,26 @@ void Foam::vrScheme::limitWBAP
         limit_[i] += mag(rho_j-rho[i])*mesh_.magSf()[faceI];
         limit_[j] += mag(rho_i-rho[j])*mesh_.magSf()[faceI];
     }
+    forAll(mesh_.boundary(), patchI)
+    {
+        const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+        const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
+        if (isA<processorFvPatch>(mesh_.boundary()[patchI]))
+        {
+            const vectorField delta = mesh_.boundary()[patchI].Cn()-mesh_.C().boundaryField()[patchI].patchNeighbourField();
+            const vectorField rLengthScale_neigh = rLengthScale_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField basisConst_neigh = basisConst_.boundaryField()[patchI].patchNeighbourField();
+            const scalarField rho_neigh = rho.boundaryField()[patchI].patchNeighbourField();
+            const vectorField rhoGrad_neigh = rhoGrad.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2Rho_neigh = d2Rho.boundaryField()[patchI].patchNeighbourField();
+            forAll(bfaceCells, j)
+            {
+                const label i = bfaceCells[j];
+                const scalar rho_j = rho_neigh[j] + scalarPoly(delta[j], rhoGrad_neigh[j], d2Rho_neigh[j], rLengthScale_neigh[j], basisConst_neigh[j]);
+                limit_[i] += mag(rho_j-rho[i])*magSf[j];
+            }
+        }
+    }
     label count = 0;
     forAll(mesh_.cells(), cellI)
     {
