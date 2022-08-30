@@ -66,37 +66,12 @@ Foam::turb3rdSolver::turb3rdSolver
 
 void Foam::turb3rdSolver::correctFields()
 {
-    U_.ref() = rhoU_ / rho_;
-    p_.ref() = (rhoE_ - 0.5*rho_*magSqr(U_))*(fluidProps_.gamma-1.0);
-    rho_.correctBoundaryConditions();
-    U_.correctBoundaryConditions();
-    p_.correctBoundaryConditions();
+    euler3rdSolver::correctFields();
     nuTilde_.correctBoundaryConditions();
-    const bool rhoBool = Foam::positiveCorrect(rho_);
-    const bool pBool   = Foam::positiveCorrect(p_);
-    if (rhoBool || pBool)
-    {
-        rhoU_ = rho_ * U_;
-        rhoE_ = p_/(fluidProps_.gamma-1.0) + 0.5*rho_*magSqr(U_);
-    }
-    T_.ref() = p_ * fluidProps_.gamma / rho_;
-    c_ = sqrt(T_.primitiveField());
-    Ma_.primitiveFieldRef() = mag(U_.primitiveFieldRef())/c_;
     laminarViscosity_ = pow(T_.primitiveField(), 1.5)*(1.0+ST_inf)/(T_.primitiveField()+ST_inf);
     forAll(mesh_.cells(), cellI)
         eddyViscosity_[cellI] = eddyViscosityFunc(nuTilde_[cellI], laminarViscosity_[cellI], rho_[cellI]);
     nuMax_ = max(4.0/3.0, fluidProps_.gamma)*(laminarViscosity_/Pr_Lam + eddyViscosity_/Pr_Turb)/rho_.primitiveField();
-    const volScalarField::Boundary& rhoBf = rho_.boundaryFieldRef();
-    const volVectorField::Boundary& UBf = U_.boundaryFieldRef();
-    const volScalarField::Boundary& pBf = p_.boundaryFieldRef();
-    volVectorField::Boundary& rhoUBf = rhoU_.boundaryFieldRef();
-    volScalarField::Boundary& rhoEBf = rhoE_.boundaryFieldRef();
-    volScalarField::Boundary& TBf = T_.boundaryFieldRef();
-    volScalarField::Boundary& MaBf = Ma_.boundaryFieldRef();
-    rhoUBf = rhoBf * UBf;
-    rhoEBf = pBf/(fluidProps_.gamma-1.0) + 0.5*rhoBf*magSqr(UBf);
-    TBf = pBf * fluidProps_.gamma / rhoBf;
-    MaBf = mag(UBf)/sqrt(TBf);
 }
 
 void Foam::turb3rdSolver::updateLTS()

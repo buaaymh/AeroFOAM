@@ -141,36 +141,6 @@ Foam::solver::solver
     volProjectionsInit();
 }
 
-void Foam::solver::correctFields()
-{
-    U_.ref() = rhoU_ / rho_;
-    p_.ref() = (rhoE_ - 0.5*rho_*magSqr(U_)) * (fluidProps_.gamma-1.0);
-    const bool rhoBool = Foam::positiveCorrect(rho_);
-    const bool pBool   = Foam::positiveCorrect(p_);
-    if (rhoBool || pBool)
-    {
-        rhoU_ = rho_ * U_;
-        rhoE_ = p_/(fluidProps_.gamma-1.0) + 0.5*rho_*magSqr(U_);
-    }
-    T_.ref() = p_*fluidProps_.gamma/rho_;
-    c_ = sqrt(T_.primitiveField());
-    Ma_.primitiveFieldRef() = mag(U_.primitiveFieldRef())/c_;
-    rho_.correctBoundaryConditions();
-    U_.correctBoundaryConditions();
-    p_.correctBoundaryConditions();
-    const volScalarField::Boundary& rhoBf = rho_.boundaryFieldRef();
-    const volVectorField::Boundary& UBf = U_.boundaryFieldRef();
-    const volScalarField::Boundary& pBf = p_.boundaryFieldRef();
-    volVectorField::Boundary& rhoUBf = rhoU_.boundaryFieldRef();
-    volScalarField::Boundary& rhoEBf = rhoE_.boundaryFieldRef();
-    volScalarField::Boundary& TBf = T_.boundaryFieldRef();
-    volScalarField::Boundary& MaBf = Ma_.boundaryFieldRef();
-    rhoUBf = rhoBf * UBf;
-    rhoEBf = pBf/(fluidProps_.gamma-1.0) + 0.5*rhoBf*magSqr(UBf);
-    TBf = pBf*fluidProps_.gamma/rhoBf;
-    MaBf = mag(UBf)/sqrt(TBf);
-}
-
 void Foam::solver::updateLTS()
 {
     scalar localCFL = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("LocalCFL", 1.0);
@@ -201,6 +171,10 @@ void Foam::solver::volProjectionsInit()
             volProjections_[bfaceCells[faceI]] += temp*cmptMag(Sf[faceI]);
     }
 }
+
+#include "correctFields.H"
+
+#include "GMRES.H"
 
 #include "solveFlowLinearSystem.H"
 
