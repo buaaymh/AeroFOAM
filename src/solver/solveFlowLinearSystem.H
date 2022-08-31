@@ -63,19 +63,6 @@ void Foam::solver::evaluateMatrixLDU
         D[i] += L[faceI];
         D[j] += U[faceI];
     }
-    forAll(mesh_.boundary(), patchI)
-    {
-        const word type = mesh_.boundary()[patchI].type();
-        const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-        const vectorField& Sf = mesh_.boundary()[patchI].Sf();
-        const scalarField& magSf = mesh_.boundary()[patchI].magSf();
-        if (type == "symmetryPlane" || type == "wall") continue;
-        forAll(bfaceCells, faceI)
-        {
-            const label i = bfaceCells[faceI];
-            D[i] += 0.5*omega*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
-        }
-    }
 }
 
 void Foam::solver::precondition
