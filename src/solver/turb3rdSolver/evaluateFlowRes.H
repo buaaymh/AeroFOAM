@@ -109,11 +109,10 @@ void Foam::turb3rdSolver::evaluateFlowRes
                     const vector U_j = U_neigh[j] + vectorPoly(delta_j, UGrad_neigh[j], d2Ux_neigh[j], d2Uy_neigh[j], d2Uz_neigh[j], rLengthScale_neigh[j], basisConst_neigh[j]);
                     const scalar T_i = T_[i]      + scalarPoly(delta_i, TGrad_[i],      d2T_[i],      rLengthScale[i],       basisConst[i]);
                     const scalar T_j = T_neigh[j] + scalarPoly(delta_j, TGrad_neigh[j], d2T_neigh[j], rLengthScale_neigh[j], basisConst_neigh[j]);
-
                     const tensor UGrad_i = vectorPolyGrad(delta_i, UGrad_[i], d2Ux_[i], d2Uy_[i], d2Uz_[i], rLengthScale[i]);
-                    const tensor UGrad_j = vectorPolyGrad(delta_j, UGrad_neigh[j], d2Ux_neigh[j], d2Uy_neigh[j], d2Uz_neigh[j], rLengthScale[j]);
+                    const tensor UGrad_j = vectorPolyGrad(delta_j, UGrad_neigh[j], d2Ux_neigh[j], d2Uy_neigh[j], d2Uz_neigh[j], rLengthScale_neigh[j]);
                     const vector TGrad_i = scalarPolyGrad(delta_i, TGrad_[i], d2T_[i], rLengthScale[i]);
-                    const vector TGrad_j = scalarPolyGrad(delta_j, TGrad_neigh[j], d2T_neigh[j], rLengthScale[j]);
+                    const vector TGrad_j = scalarPolyGrad(delta_j, TGrad_neigh[j], d2T_neigh[j], rLengthScale_neigh[j]);
             
                     evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
                                  rho_i, rho_j, U_i, U_j, T_i, T_j, UGrad_i, UGrad_j, TGrad_i, TGrad_j, nuTilde_[i], nuTilde_neigh[j],
