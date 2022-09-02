@@ -2,7 +2,6 @@ void Foam::solver::matrixVectorProduct
 (
     const scalarField& L,
     const scalarField& U,
-    const scalarField& D,
     const scalarField& v_Rho,
     const vectorField& v_RhoU,
     const scalarField& v_RhoE,
@@ -81,7 +80,7 @@ void Foam::solver::solveFlowLinearSystem
     List<scalarField> v_Rho(nDirs+1, scalarField(mesh_.nCells()));
     List<vectorField> v_RhoU(nDirs+1, vectorField(mesh_.nCells()));
     List<scalarField> v_RhoE(nDirs+1, scalarField(mesh_.nCells()));
-    matrixVectorProduct(L, U, D, dRho, dRhoU, dRhoE, v_Rho[0], v_RhoU[0], v_RhoE[0]);
+    matrixVectorProduct(L, U, dRho, dRhoU, dRhoE, v_Rho[0], v_RhoU[0], v_RhoE[0]);
     v_Rho[0]  = resRho  - v_Rho[0];
     v_RhoU[0] = resRhoU - v_RhoU[0];
     v_RhoE[0] = resRhoE - v_RhoE[0];
@@ -109,8 +108,9 @@ void Foam::solver::solveFlowLinearSystem
         for (i = 0; i < nDirs; i++)
         {
             if (g[i] < relTol*initialRes) break;
-            matrixVectorProduct(L, U, D, v_Rho[i], v_RhoU[i], v_RhoE[i], v_Rho[i+1], v_RhoU[i+1], v_RhoE[i+1]);
+            matrixVectorProduct(L, U, v_Rho[i], v_RhoU[i], v_RhoE[i], v_Rho[i+1], v_RhoU[i+1], v_RhoE[i+1]);
             precondition(L, U, D, v_Rho[i+1], v_RhoU[i+1], v_RhoE[i+1]);
+            scalar nrm = gSumSqr(v_Rho[i+1]) + gSum(magSqr(v_RhoU[i+1])) + gSumSqr(v_RhoE[i+1]);
             for (label j = 0; j <= i; j++)
             {
                 scalar prob = gSumProd(v_Rho[i+1], v_Rho[j]) + gSumProd(v_RhoU[i+1], v_RhoU[j]) + gSumProd(v_RhoE[i+1], v_RhoE[j]);
@@ -118,7 +118,16 @@ void Foam::solver::solveFlowLinearSystem
                 v_Rho[i+1]  -= prob * v_Rho[j];
                 v_RhoU[i+1] -= prob * v_RhoU[j];
                 v_RhoE[i+1] -= prob * v_RhoE[j];
-                
+                if (prob*prob > 0.98*nrm)
+                {
+                    prob = gSumProd(v_Rho[i+1], v_Rho[j]) + gSumProd(v_RhoU[i+1], v_RhoU[j]) + gSumProd(v_RhoE[i+1], v_RhoE[j]);
+                    H[j][i] += prob;
+                    v_Rho[i+1]  -= prob * v_Rho[j];
+                    v_RhoU[i+1] -= prob * v_RhoU[j];
+                    v_RhoE[i+1] -= prob * v_RhoE[j];
+                }
+                nrm -= sqr(H[j][i]);
+                nrm = max(nrm, 0.0);
             }
             beta = Foam::sqrt(gSumSqr(v_Rho[i+1]) + gSum(magSqr(v_RhoU[i+1])) + gSumSqr(v_RhoE[i+1]));
             H[i+1][i] = beta;
@@ -148,7 +157,7 @@ void Foam::solver::solveFlowLinearSystem
             dRhoE += y[k] * v_RhoE[k];
         }
         // Re-calculate the residual
-        matrixVectorProduct(L, U, D, dRho, dRhoU, dRhoE, v_Rho[0], v_RhoU[0], v_RhoE[0]);
+        matrixVectorProduct(L, U, dRho, dRhoU, dRhoE, v_Rho[0], v_RhoU[0], v_RhoE[0]);
         v_Rho[0]  = resRho  - v_Rho[0];
         v_RhoU[0] = resRhoU - v_RhoU[0];
         v_RhoE[0] = resRhoE - v_RhoE[0];
