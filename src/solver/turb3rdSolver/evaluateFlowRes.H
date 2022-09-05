@@ -149,7 +149,7 @@ void Foam::turb3rdSolver::evaluateFlowRes
                 resRhoU[i] -= rhoUFlux * magSf[faceI];              
             }
         }
-        if (type == "inlet" || type == "outlet" || name == "farField")
+        if (name == "inlet" || name == "outlet" || name == "farField")
         {
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];

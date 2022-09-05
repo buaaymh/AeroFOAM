@@ -126,7 +126,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
                 resRhoE[i] -= rhoEFlux * magSf[j];
             }
         }
-        if (type == "symmetryPlane" || type == "wall")
+        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
         {
             const scalarField& p_patch = p_.boundaryField()[patchI];
             forAll(bfaceCells, faceI)
@@ -136,7 +136,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
             }
         }
-        if (type == "inlet" || type == "outlet" || name == "farField")
+        if (name == "inlet" || name == "outlet" || name == "farField")
         {
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];
