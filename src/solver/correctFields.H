@@ -32,6 +32,7 @@ void Foam::solver::correctFields()
             const scalarField rhoInter = rhoBound.patchInternalField();
             const vectorField UInter = UBound.patchInternalField();
             const scalarField pInter = pBound.patchInternalField();
+            // const scalarField Ma = (UInter&normal)/sqrt(pInter*fluidProps_.gamma/rhoInter);
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
@@ -49,6 +50,12 @@ void Foam::solver::correctFields()
                     const scalar rhoc = rhoInter[faceI]*c_[i];
                     rhoBound[faceI] = rhoInter[faceI]+(pBound[faceI]-pInter[faceI])/sqr(c_[i]);
                     UBound[faceI] = UInter[faceI]+normal[faceI]*(pInter[faceI]-pBound[faceI])/rhoc;
+                    // if ((UBound[faceI]&normal[faceI]) < 0.0)
+                    // {
+                    //     UBound[faceI].x() = sign(UInter[faceI].x())*max(mag(UBound[faceI].x()), mag(UInter[faceI].x()));
+                    //     UBound[faceI].y() = sign(UInter[faceI].y())*max(mag(UBound[faceI].y()), mag(UInter[faceI].y()));
+                    //     UBound[faceI].z() = sign(UInter[faceI].z())*max(mag(UBound[faceI].z()), mag(UInter[faceI].z()));
+                    // }
                 }
                 if (Ma[faceI] >= 1.0)
                 {
