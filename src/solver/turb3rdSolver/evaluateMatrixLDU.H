@@ -15,7 +15,7 @@ void Foam::turb3rdSolver::evaluateMatrixLDU
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        const scalar magSf_vol = sqr(magSf[faceI])/mag((mesh_.C()[i]-mesh_.C()[j])&Sf[faceI]);
+        const scalar magSf_vol = Ma_Re_inf*sqr(magSf[faceI])/mag((mesh_.C()[i]-mesh_.C()[j])&Sf[faceI]);
         L[faceI] = 0.5*(omega*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]) + magSf_vol*nuMax_[i]);
         U[faceI] = 0.5*(omega*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI]) + magSf_vol*nuMax_[j]);
         D[i] += L[faceI];

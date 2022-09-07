@@ -78,7 +78,7 @@ void Foam::turb3rdSolver::updateLTS()
 {
     scalar localCFL = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("LocalCFL", 1.0);
     scalarField lambdaAc = volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one);
-    scalarField lambdaAv = magSqr(volProjections_)*nuMax_/mesh_.V();
+    scalarField lambdaAv = Ma_Re_inf*magSqr(volProjections_)*nuMax_/mesh_.V();
     localDtDv_ = localCFL/(lambdaAc+lambdaAv);
 }
 
