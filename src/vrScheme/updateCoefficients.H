@@ -10,7 +10,8 @@ void Foam::vrScheme::updateCoefficients
     volSymmTensorField& d2Ux,
     volSymmTensorField& d2Uy,
     volSymmTensorField& d2Uz,
-    volSymmTensorField& d2T
+    volSymmTensorField& d2T,
+    const scalar gamma
 )
 {
     if (adaptive_) { detectP0(rhoGrad); }
@@ -163,7 +164,7 @@ void Foam::vrScheme::updateCoefficients
     (
         rho, U, T,
         rhoGrad, UGrad, TGrad,
-        d2Rho, d2Ux, d2Uy, d2Uz, d2T
+        d2Rho, d2Ux, d2Uy, d2Uz, d2T, gamma
     );
     if (positive_)
     {

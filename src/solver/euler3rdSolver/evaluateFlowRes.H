@@ -12,7 +12,7 @@ void Foam::euler3rdSolver::evaluateFlowRes
     UGrad_   = fvc::grad(U_);
     TGrad_   = fvc::grad(T_);
     vr_.updateCoefficients(rho_, U_, T_, rhoGrad_, UGrad_, TGrad_,
-                           d2Rho_, d2Ux_, d2Uy_, d2Uz_, d2T_);
+                           d2Rho_, d2Ux_, d2Uy_, d2Uz_, d2T_, fluidProps_.gamma);
     const volVectorField& rLengthScale = vr_.rLengthScale();
     const volSymmTensorField& basisConst = vr_.basisConst();
     const std::vector<bool>& p0 = vr_.p0();

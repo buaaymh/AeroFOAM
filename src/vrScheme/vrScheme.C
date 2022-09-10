@@ -66,8 +66,7 @@ Foam::vrScheme::vrScheme
     bUz_(mesh_.nCells(), vrScheme::Column::Zero()),
     bT_(mesh_.nCells(), vrScheme::Column::Zero()),
     quad_(mesh_.nInternalFaces(), std::vector<vector>(4, vector::zero)),
-    delta_(mag(mesh_.delta())),
-    limit_(mesh_.nCells(), 0)
+    delta_(mag(mesh_.delta()))
 {
     np_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("np", 10);
     IS_ = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("IS", 1.0);

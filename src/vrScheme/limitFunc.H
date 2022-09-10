@@ -24,51 +24,39 @@ void Foam::vrScheme::limitWBAP
     volSymmTensorField& d2Ux,
     volSymmTensorField& d2Uy,
     volSymmTensorField& d2Uz,
-    volSymmTensorField& d2T
+    volSymmTensorField& d2T,
+    const scalar gamma
 )
 {
+    const labelUList& owner = mesh_.owner();
+    const labelUList& neighbour = mesh_.neighbour();
     trouble_ = std::vector<bool>(mesh_.nCells(), false);
-    limit_ = scalarField(mesh_.nCells(), 0.0);
-    const auto& owner = mesh_.owner();
-    const auto& neighbour = mesh_.neighbour();
-    forAll(owner, faceI)
-    {
-        const label i = owner[faceI];
-        const label j = neighbour[faceI];
-        if (p0_[i] && p0_[j]) continue;
-
-        const vector delta_ij = mesh_.C()[i] - mesh_.C()[j];
-        const scalar rho_j = rho[j] + scalarPoly( delta_ij, rhoGrad[j], d2Rho[j], rLengthScale_[j], basisConst_[j]);
-        const scalar rho_i = rho[i] + scalarPoly(-delta_ij, rhoGrad[i], d2Rho[i], rLengthScale_[i], basisConst_[i]);
-        limit_[i] += mag(rho_j-rho[i])*mesh_.magSf()[faceI];
-        limit_[j] += mag(rho_i-rho[j])*mesh_.magSf()[faceI];
-    }
-    forAll(mesh_.boundary(), patchI)
-    {
-        const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-        const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
-        if (isA<processorFvPatch>(mesh_.boundary()[patchI]))
-        {
-            const vectorField delta = mesh_.boundary()[patchI].delta();
-            const vectorField rLengthScale_neigh = rLengthScale_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField basisConst_neigh = basisConst_.boundaryField()[patchI].patchNeighbourField();
-            const scalarField rho_neigh = rho.boundaryField()[patchI].patchNeighbourField();
-            const vectorField rhoGrad_neigh = rhoGrad.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2Rho_neigh = d2Rho.boundaryField()[patchI].patchNeighbourField();
-            forAll(bfaceCells, j)
-            {
-                const label i = bfaceCells[j]; 
-                if (p0_[i]) continue;
-                const scalar rho_j = rho_neigh[j] + scalarPoly(delta[j], rhoGrad_neigh[j], d2Rho_neigh[j], rLengthScale_neigh[j], basisConst_neigh[j]);
-                limit_[i] += mag(rho_j-rho[i])*magSf[j];
-            }
-        }
-    }
+    const scalar temp = 1.0/((gamma-1.0)*gamma);
     label count = 0;
     forAll(mesh_.cells(), cellI)
     {
-        const scalar temp = limit_[cellI] / (mesh_.V()[cellI]*rho[cellI]);
-        if (temp > IS_)
+        scalar error = 0.0;
+        const labelList& cellFaces = mesh_.cells()[cellI];
+        const scalar rho_i = rho[cellI] + scalarPoly(vector::zero, rhoGrad[cellI], d2Rho[cellI], rLengthScale_[cellI], basisConst_[cellI]);
+        const vector U_i = U[cellI] + vectorPoly(vector::zero, UGrad[cellI], d2Ux[cellI], d2Uy[cellI], d2Uz[cellI], rLengthScale_[cellI], basisConst_[cellI]);
+        const scalar T_i = T[cellI] + scalarPoly(vector::zero, TGrad[cellI], d2T[cellI], rLengthScale_[cellI], basisConst_[cellI]);
+        const scalar rhoE_i = rho_i*(T_i*temp+0.5*magSqr(U_i));
+        const scalar rhoE_0 = rho[cellI]*(T[cellI]*temp+0.5*magSqr(U[cellI]));
+        forAll(cellFaces,f)
+        {
+            const label faceI = cellFaces[f];
+            if (mesh_.isInternalFace(faceI))
+            {
+                label j = owner[faceI];
+                if (j == cellI) { j = neighbour[faceI]; }
+                const vector delta = mesh_.C()[cellI] - mesh_.C()[j];
+                const scalar rho_j = rho[j] + scalarPoly(delta, rhoGrad[j], d2Rho[j], rLengthScale_[j], basisConst_[j]);
+                const vector U_j = U[j] + vectorPoly(delta, UGrad[j], d2Ux[j], d2Uy[j], d2Uz[j], rLengthScale_[j], basisConst_[j]);
+                const scalar T_j = T[j] + scalarPoly(delta, TGrad[j], d2T[j], rLengthScale_[j], basisConst_[j]);
+                error += mag(rho_j*(T_j*temp+0.5*magSqr(U_j))-rhoE_i)*mesh_.magSf()[faceI];
+            }
+        }
+        if (error/(mesh_.V()[cellI]*rhoE_0) > IS_)
         {
             trouble_[cellI] = true;
             count++;

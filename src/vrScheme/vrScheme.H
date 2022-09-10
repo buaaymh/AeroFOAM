@@ -105,7 +105,8 @@ private:
         volSymmTensorField& d2Ux,
         volSymmTensorField& d2Uy,
         volSymmTensorField& d2Uz,
-        volSymmTensorField& d2T
+        volSymmTensorField& d2T,
+        const scalar gamma
     );
 
     void positiveCorrect
@@ -151,7 +152,8 @@ public:
         volSymmTensorField& d2Ux,
         volSymmTensorField& d2Uy,
         volSymmTensorField& d2Uz,
-        volSymmTensorField& d2T
+        volSymmTensorField& d2T,
+        const scalar gamma
     );
 
     const volVectorField& rLengthScale() const { return rLengthScale_; }
