@@ -1,15 +1,22 @@
-void Foam::vrScheme::detectP0(const volVectorField& rhoGrad)
+void Foam::vrScheme::detectP0
+(
+    const volVectorField& rhoGrad,
+    const volTensorField& UGrad
+)
 {
     p0_ = std::vector<bool>(mesh_.nCells(), false);
     label count = 0;
     forAll(mesh_.C(), cellI)
     {
-        if (cmptSum(cmptDivide(cmptMag(rhoGrad[cellI]), rLengthScale_[cellI])) < 1e-6)
+        if (max(cmptSum(cmptMag(rhoGrad[cellI])), cmptSum(cmptMag(UGrad[cellI]))) < 1e-6)
         {
             p0_[cellI] = true;
             count++;
         }
     }
+    const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))
+                            /scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
+    Info << "P0 cell [%] = " << percent << ", ";
 }
 
 void Foam::vrScheme::limitWBAP
@@ -25,6 +32,7 @@ void Foam::vrScheme::limitWBAP
     volSymmTensorField& d2Uy,
     volSymmTensorField& d2Uz,
     volSymmTensorField& d2T,
+    const volScalarField& rhoE,
     const scalar gamma
 )
 {
@@ -33,6 +41,14 @@ void Foam::vrScheme::limitWBAP
     trouble_ = std::vector<bool>(mesh_.nCells(), false);
     const scalar temp = 1.0/((gamma-1.0)*gamma);
     label count = 0;
+    scalarField rhoE_max = rhoE.primitiveField();
+    forAll(mesh_.owner(), faceI)
+    {
+        const label i = owner[faceI];
+        const label j = neighbour[faceI];
+        rhoE_max[i] = max(rhoE_max[i], rhoE[j]);
+        rhoE_max[j] = max(rhoE_max[j], rhoE[i]);
+    }
     forAll(mesh_.cells(), cellI)
     {
         scalar error = 0.0;
@@ -41,7 +57,6 @@ void Foam::vrScheme::limitWBAP
         const vector U_i = U[cellI] + vectorPoly(vector::zero, UGrad[cellI], d2Ux[cellI], d2Uy[cellI], d2Uz[cellI], rLengthScale_[cellI], basisConst_[cellI]);
         const scalar T_i = T[cellI] + scalarPoly(vector::zero, TGrad[cellI], d2T[cellI], rLengthScale_[cellI], basisConst_[cellI]);
         const scalar rhoE_i = rho_i*(T_i*temp+0.5*magSqr(U_i));
-        const scalar rhoE_0 = rho[cellI]*(T[cellI]*temp+0.5*magSqr(U[cellI]));
         forAll(cellFaces,f)
         {
             const label faceI = cellFaces[f];
@@ -56,7 +71,7 @@ void Foam::vrScheme::limitWBAP
                 error += mag(rho_j*(T_j*temp+0.5*magSqr(U_j))-rhoE_i)*mesh_.magSf()[faceI];
             }
         }
-        if (error/(mesh_.V()[cellI]*rhoE_0) > IS_)
+        if (error/(mesh_.V()[cellI]*rhoE_max[cellI]) > IS_)
         {
             trouble_[cellI] = true;
             count++;

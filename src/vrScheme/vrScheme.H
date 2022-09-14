@@ -91,7 +91,7 @@ private:
     //- Disallow default bitwise assignment
     void operator=(const vrScheme&);
 
-    void detectP0(const volVectorField& rhoGrad);
+    void detectP0(const volVectorField& rhoGrad, const volTensorField& UGrad);
 
     void limitWBAP
     (
@@ -106,6 +106,7 @@ private:
         volSymmTensorField& d2Uy,
         volSymmTensorField& d2Uz,
         volSymmTensorField& d2T,
+        const volScalarField& rhoE,
         const scalar gamma
     );
 
@@ -153,6 +154,7 @@ public:
         volSymmTensorField& d2Uy,
         volSymmTensorField& d2Uz,
         volSymmTensorField& d2T,
+        const volScalarField& rhoE,
         const scalar gamma
     );
 

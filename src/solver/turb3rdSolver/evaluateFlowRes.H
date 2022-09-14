@@ -13,7 +13,7 @@ void Foam::turb3rdSolver::evaluateFlowRes
     UGrad_   = fvc::grad(U_);
     TGrad_   = fvc::grad(T_);
     vr_.updateCoefficients(rho_, U_, T_, rhoGrad_, UGrad_, TGrad_,
-                           d2Rho_, d2Ux_, d2Uy_, d2Uz_, d2T_, fluidProps_.gamma);
+                           d2Rho_, d2Ux_, d2Uy_, d2Uz_, d2T_, rhoE_, fluidProps_.gamma);
     // evaluate flux
     const volVectorField& rLengthScale = vr_.rLengthScale();
     const volSymmTensorField& basisConst = vr_.basisConst();

@@ -11,10 +11,11 @@ void Foam::vrScheme::updateCoefficients
     volSymmTensorField& d2Uy,
     volSymmTensorField& d2Uz,
     volSymmTensorField& d2T,
+    const volScalarField& rhoE,
     const scalar gamma
 )
 {
-    if (adaptive_) { detectP0(rhoGrad); }
+    if (adaptive_) { detectP0(rhoGrad, UGrad); }
     bRho_ = std::vector<vrScheme::Column>(mesh_.nCells(), vrScheme::Column::Zero());
     bUx_ = std::vector<vrScheme::Column>(mesh_.nCells(), vrScheme::Column::Zero());
     bUy_ = std::vector<vrScheme::Column>(mesh_.nCells(), vrScheme::Column::Zero());
@@ -164,7 +165,7 @@ void Foam::vrScheme::updateCoefficients
     (
         rho, U, T,
         rhoGrad, UGrad, TGrad,
-        d2Rho, d2Ux, d2Uy, d2Uz, d2T, gamma
+        d2Rho, d2Ux, d2Uy, d2Uz, d2T, rhoE, gamma
     );
     if (positive_)
     {
