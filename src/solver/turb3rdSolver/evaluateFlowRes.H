@@ -127,7 +127,7 @@ void Foam::turb3rdSolver::evaluateFlowRes
                 resRhoE[i] -= rhoEFlux * temp;
             }
         }
-        if (type == "symmetryPlane")
+        if (type == "symmetryPlane" || type == "symmetry")
         {
             const scalarField& p_patch = p_.boundaryField()[patchI];
             forAll(bfaceCells, faceI)
@@ -141,11 +141,13 @@ void Foam::turb3rdSolver::evaluateFlowRes
         {
             const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
             const fvPatchScalarField& TBound = T_.boundaryField()[patchI];
+            const word wallType = U_.boundaryField()[patchI].type();
             forAll(bfaceCells, faceI)
             {
                 vector rhoUFlux = vector::zero;
                 const label i = bfaceCells[faceI];
-                evaluateWallFlux(rhoUFlux, pBound[faceI], TBound[faceI], UGrad_[i], normal[faceI]);
+                if (wallType == "slip") rhoUFlux = pBound[faceI]*normal[faceI];
+                else evaluateWallFlux(rhoUFlux, pBound[faceI], TBound[faceI], UGrad_[i], normal[faceI]);
                 resRhoU[i] -= rhoUFlux * magSf[faceI];              
             }
         }

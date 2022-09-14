@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
         Info<< "Time = " << runTime.value() << " s" << nl;
 
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
-        const scalar L2Res = Foam::sqrt(gSum(Foam::magSqr(resRho) * mesh.V()));
+        const scalar L2Res = Foam::sqrt(gSumSqr(resRho));
         Info << "Residual for density = " << L2Res << endl;
         if (Pstream::master())
         {
@@ -67,7 +67,6 @@ int main(int argc, char *argv[])
 
         solver->solveFlowLinearSystem(resRho, resRhoU, resRhoE);
         solver->correctFields();
-
         runTime.write();
 	
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
