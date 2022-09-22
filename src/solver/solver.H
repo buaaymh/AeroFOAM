@@ -104,8 +104,8 @@ protected:
     volVectorField rhoGrad_;
     //- Velocity grad
     volTensorField UGrad_;
-    //- temperature grad
-    volVectorField TGrad_;
+    //- pressure grad
+    volVectorField pGrad_;
     //- Riemann solver
     std::unique_ptr<dbnsFlux> riemann_;
     //- Volume projections

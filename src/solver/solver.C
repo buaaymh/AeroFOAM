@@ -110,11 +110,11 @@ Foam::solver::solver
         mesh_,
         dimensionedTensor(dimless/dimLength, tensor::zero)
     ),
-    TGrad_
+    pGrad_
     (
         IOobject
         (
-            "TGrad",
+            "pGrad",
             mesh_.time().timeName(),
             mesh_
         ),

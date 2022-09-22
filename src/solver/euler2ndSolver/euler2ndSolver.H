@@ -55,17 +55,17 @@ class euler2ndSolver: public solver
     volScalarField rhoLimit_;
     //- Velocity limit
     volVectorField ULimit_;
-    //- temperature limit
-    volScalarField TLimit_;
+    //- pressure limit
+    volScalarField pLimit_;
     //- Density min and max
     scalarField rhoMin_;
     scalarField rhoMax_;
     //- Velocity min and max
     vectorField UMin_;
     vectorField UMax_;
-    //- temperature min and max
-    scalarField TMin_;
-    scalarField TMax_;
+    //- pressure min and max
+    scalarField pMin_;
+    scalarField pMax_;
 
     // Private Member Functions
     //- Disallow default bitwise copy construct

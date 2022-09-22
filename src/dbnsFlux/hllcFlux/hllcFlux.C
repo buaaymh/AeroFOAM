@@ -37,8 +37,8 @@ void Foam::hllcFlux::evaluateFlux
     const scalar& rho_R,
     const vector& U_L,
     const vector& U_R,
-    const scalar& T_L,
-    const scalar& T_R,
+    const scalar& p_L,
+    const scalar& p_R,
     const vector& normal,
     const scalar& gamma
 ) const
@@ -46,17 +46,15 @@ void Foam::hllcFlux::evaluateFlux
     const scalar temp  = 1.0/(gamma-1);
     // left & right state
     scalar rRho = 1.0/rho_L;
-    const scalar p_L = T_L*rho_L/gamma;
     const vector rhoU_L = rho_L*U_L;
     const scalar rhoE_L = p_L*temp + 0.5*rho_L*magSqr(U_L);
     const scalar H_L = (rhoE_L + p_L)*rRho;
-    const scalar a_L = Foam::sqrt(max(0.0, T_L));
+    const scalar a_L = Foam::sqrt(max(0.0, p_L*gamma*rRho));
     rRho = 1.0/rho_R;
-    const scalar p_R = T_R*rho_R/gamma;
     const vector rhoU_R = rho_R*U_R;
     const scalar rhoE_R = p_R*temp + 0.5*rho_R*magSqr(U_R);
     const scalar H_R = (rhoE_R + p_R)*rRho;
-    const scalar a_R = Foam::sqrt(max(0.0, T_R));
+    const scalar a_R = Foam::sqrt(max(0.0, p_R*gamma*rRho));
 
     // Compute qLeft and qRight (q_{l,r} = U_{l,r} \bullet n)
     const scalar qLeft  = (U_L & normal);

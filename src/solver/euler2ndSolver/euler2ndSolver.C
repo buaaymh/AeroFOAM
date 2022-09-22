@@ -59,11 +59,11 @@ Foam::euler2ndSolver::euler2ndSolver
         mesh_,
         dimensionedVector(dimless, vector::one)
     ),
-    TLimit_
+    pLimit_
     (
         IOobject
         (
-            "TLimit",
+            "pLimit",
             mesh_.time().timeName(),
             mesh_
         ),
@@ -74,8 +74,8 @@ Foam::euler2ndSolver::euler2ndSolver
     rhoMax_(scalarField(mesh_.nCells())),
     UMin_(vectorField(mesh_.nCells())),
     UMax_(vectorField(mesh_.nCells())),
-    TMin_(scalarField(mesh_.nCells())),
-    TMax_(scalarField(mesh_.nCells()))
+    pMin_(scalarField(mesh_.nCells())),
+    pMax_(scalarField(mesh_.nCells()))
 {
     Info << "Ths solver is 2nd order for Euler flow." << nl
          << "Ths limiter is Venkatakrishnan." << nl
