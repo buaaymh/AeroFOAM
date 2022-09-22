@@ -34,17 +34,17 @@ void Foam::solver::correctFields()
                 {
                     const label i = bfaceCells[faceI];
                     const scalar qn = U_[i]&normal[faceI];
-                    const scalar rhoc = c_[i]*rho_[i];
+                    const scalar rhoc = c_[i]*rho_[i]/fluidProps_.gamma;
                     if (qn < 0.0)
                     {
                         const scalar p = pBound[faceI];
                         pBound[faceI] = 0.5*(p+p_[i]-rhoc*(normal[faceI]&(UBound[faceI]-U_[i])));
-                        rhoBound[faceI] += (pBound[faceI]-p)/sqr(c_[i]);
+                        rhoBound[faceI] += (pBound[faceI]-p)*fluidProps_.gamma/sqr(c_[i]);
                         UBound[faceI] += normal[faceI]*(pBound[faceI]-p)/rhoc;
                     }
                     else
                     {
-                        rhoBound[faceI] = rho_[i]+(pBound[faceI]-p_[i])/sqr(c_[i]);
+                        rhoBound[faceI] = rho_[i]+(pBound[faceI]-p_[i])*fluidProps_.gamma/sqr(c_[i]);
                         UBound[faceI] = U_[i]+normal[faceI]*(p_[i]-pBound[faceI])/rhoc;
                     }
                 }
@@ -72,10 +72,10 @@ void Foam::solver::correctFields()
                 if (Ma[faceI] < 1.0)
                 {
                     const label i = bfaceCells[faceI];
-                    const scalar rhoc = rho_[i]*c_[i];
+                    const scalar rhoc = rho_[i]*c_[i]/fluidProps_.gamma;
                     const scalar p = pBound[faceI];
                     pBound[faceI] = 0.5*(p+p_[i]-rhoc*(normal[faceI]&(UBound[faceI]-U_[i])));
-                    rhoBound[faceI] += (pBound[faceI]-p)/sqr(c_[i]);
+                    rhoBound[faceI] += (pBound[faceI]-p)*fluidProps_.gamma/sqr(c_[i]);
                     UBound[faceI] += normal[faceI]*(pBound[faceI]-p)/rhoc;
                 }
             }
@@ -86,14 +86,14 @@ void Foam::solver::correctFields()
             {
                 const label i = bfaceCells[faceI];
                 const scalar Ma = mag(U_[i])/c_[i];
-                const scalar rhoc = rho_[i]*c_[i];
+                const scalar rhoc = rho_[i]*c_[i]/fluidProps_.gamma;
                 if (Ma >= 1.0)
                 {
                     pBound[faceI]   = p_[i];
                 }
                 else
                 {
-                    rhoBound[faceI] = rho_[i]+(pBound[faceI]-p_[i])/sqr(c_[i]);
+                    rhoBound[faceI] = rho_[i]+(pBound[faceI]-p_[i])*fluidProps_.gamma/sqr(c_[i]);
                     UBound[faceI] = U_[i]+normal[faceI]*(p_[i]-pBound[faceI])/rhoc;
                     if ((UBound[faceI]&normal[faceI]) < 0.0)
                     {
