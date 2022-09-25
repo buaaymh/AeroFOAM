@@ -37,7 +37,39 @@ Foam::euler3rdSolver::euler3rdSolver
 )
 :
     solver(fluidProps, rho, U, p),
-    vr_(mesh_),
+    rhoGradLimited_
+    (
+        IOobject
+        (
+            "rhoGradLimited",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless/dimLength, vector::zero)
+    ),
+    UGradLimited_
+    (
+        IOobject
+        (
+            "UGradLimited",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedTensor(dimless/dimLength, tensor::zero)
+    ),
+    pGradLimited_
+    (
+        IOobject
+        (
+            "pGradLimited",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless/dimLength, vector::zero)
+    ),
     d2Rho_
     (
         IOobject
@@ -82,25 +114,118 @@ Foam::euler3rdSolver::euler3rdSolver
         mesh_,
         dimensionedSymmTensor(dimless, symmTensor::zero)
     ),
-    d2T_
+    d2P_
     (
         IOobject
         (
-            "d2T",
+            "d2P",
             mesh_.time().timeName(),
             mesh_
         ),
         mesh_,
         dimensionedSymmTensor(dimless, symmTensor::zero)
-    )
+    ),
+    d2RhoLimited_
+    (
+        IOobject
+        (
+            "d2RhoLimited",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    ),
+    d2UxLimited_
+    (
+        IOobject
+        (
+            "d2UxLimited",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    ),
+    d2UyLimited_
+    (
+        IOobject
+        (
+            "d2UyLimited",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    ),
+    d2UzLimited_
+    (
+        IOobject
+        (
+            "d2UzLimited",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    ),
+    d2PLimited_
+    (
+        IOobject
+        (
+            "d2PLimited",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    ),
+    rLengthScale_
+    (
+        IOobject
+        (
+            "rLengthScale",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless, vector::zero)
+    ),
+    basisConst_
+    (
+        IOobject
+        (
+            "basisConst",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedSymmTensor(dimless, symmTensor::zero)
+    ),
+    p0_(mesh_.nCells(), false),
+    trouble_(mesh_.nCells(), false),
+    rA_(mesh_.nCells(), Matrix::Zero()),
+    B_(mesh_.nInternalFaces(), Matrix::Zero()),
+    quad_(mesh_.nInternalFaces(), std::vector<vector>(4, vector::zero))
 {
     Info << "Ths solver is 3rd order for Euler flow." << nl
          << "Ths scheme is VR with AV." << nl
          << "====================================================" << endl << endl;
+    initVrLinearSystem();
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+#include "initVrLinearSystem.H"
+
+#include "updateCoefficients.H"
+
+#include "limitCoefficients.H"
+
 #include "evaluateFlowRes.H"
+
+#include "basisFunc.H"
+
+#include "WBAPFunc.H"
 
 // ************************************************************************* //

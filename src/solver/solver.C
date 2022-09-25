@@ -178,4 +178,6 @@ void Foam::solver::volProjectionsInit()
 
 #include "solveFlowLinearSystem.H"
 
+#include "gauss.H"
+
 // ************************************************************************* //

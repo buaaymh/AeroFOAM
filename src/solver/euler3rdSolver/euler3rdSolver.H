@@ -36,7 +36,7 @@ Author
 #define euler3rdSolver_H
 
 #include "solver.H"
-#include "vrScheme.H"
+#include <Eigen/Dense>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,6 +51,12 @@ namespace Foam
 
 class euler3rdSolver: public solver
 {
+
+public:
+    using Matrix = Eigen::Matrix<scalar, 6, 6>;
+    using Column = Eigen::Matrix<scalar, 6, 1>;
+
+private:
     // Private Member Functions
     //- Disallow default bitwise copy construct
     euler3rdSolver(const euler3rdSolver&);
@@ -58,13 +64,38 @@ class euler3rdSolver: public solver
     void operator=(const euler3rdSolver&);
 
 protected:
-    vrScheme vr_;
+    //- Density grad
+    volVectorField rhoGradLimited_;
+    //- Velocity grad
+    volTensorField UGradLimited_;
+    //- pressure grad
+    volVectorField pGradLimited_;
     //- Quadratic polynomial coefficients
     volSymmTensorField d2Rho_;
     volSymmTensorField d2Ux_;
     volSymmTensorField d2Uy_;
     volSymmTensorField d2Uz_;
-    volSymmTensorField d2T_;
+    volSymmTensorField d2P_;
+    volSymmTensorField d2RhoLimited_;
+    volSymmTensorField d2UxLimited_;
+    volSymmTensorField d2UyLimited_;
+    volSymmTensorField d2UzLimited_;
+    volSymmTensorField d2PLimited_;
+    volVectorField rLengthScale_;
+    volSymmTensorField basisConst_;
+    std::vector<bool> p0_;
+    std::vector<bool> trouble_;
+    //- Linear system
+    std::vector<Matrix> rA_;
+    std::vector<Matrix> B_;
+    //- Quadrature points
+    std::vector<std::vector<vector>> quad_;
+
+    void initVrLinearSystem();
+
+    void updateCoefficients();
+
+    void limitCoefficients();
 
 public:
 
@@ -90,6 +121,105 @@ public:
     );
 
 };
+
+
+/*---------------------------------------------------------------------------*\
+                           Methods Declaration
+\*---------------------------------------------------------------------------*/
+
+// * * * * * * * * * * * *Taylor Basis Functions * * * * * * * * * * * * * * //
+
+symmTensor basisPoly
+(
+    const vector& delta,
+    const vector& rLengthScale,
+    const symmTensor& basisConst
+);
+
+symmTensor basisPolyDn1
+(
+    const vector& delta,
+    const vector& rLengthScale,
+    const vector& normal
+);
+
+symmTensor basisPolyDn2
+(
+    const vector& rLengthScale,
+    const vector& normal
+);
+
+euler3rdSolver::Column basisPolyEigen
+(
+    const vector& delta,
+    const vector& rLengthScale,
+    const symmTensor& basisConst
+);
+
+euler3rdSolver::Column basisPolyDn1Eigen
+(
+    const vector& delta,
+    const vector& rLengthScale,
+    const vector& normal
+);
+
+scalar scalarPoly
+(
+    const vector& delta,
+    const vector& grad,
+    const symmTensor& d2Val,
+    const vector& rLengthScale,
+    const symmTensor& basisConst
+);
+
+vector vectorPoly
+(
+    const vector& delta,
+    const tensor& grad,
+    const symmTensor& d2Ux,
+    const symmTensor& d2Uy,
+    const symmTensor& d2Uz,
+    const vector& rLengthScale,
+    const symmTensor& basisConst
+);
+
+vector scalarPolyGrad
+(
+    const vector& delta,
+    const vector& grad,
+    const symmTensor& d2Val,
+    const vector& rLengthScale
+);
+
+tensor vectorPolyGrad
+(
+    const vector& delta,
+    const tensor& grad,
+    const symmTensor& d2Ux,
+    const symmTensor& d2Uy,
+    const symmTensor& d2Uz,
+    const vector& rLengthScale
+);
+
+// * * * * * * * * * * * * * * * WBAP Functions * * * * * * * * * * * * * * //
+
+vector vectorWBAP
+(
+    const std::vector<vector>& list,
+    scalar value
+);
+
+symmTensor symmTensorWBAP
+(
+    const std::vector<symmTensor>& list,
+    scalar value
+);
+
+tensor tensorWBAP
+(
+    const std::vector<tensor>& list,
+    scalar value
+);
 
 } // End namespace Foam
 
