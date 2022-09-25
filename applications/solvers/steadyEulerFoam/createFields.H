@@ -103,7 +103,7 @@ label order = mesh.schemesDict().lookup<label>("order");
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
-    // else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
+    else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
 }
 else
 {
