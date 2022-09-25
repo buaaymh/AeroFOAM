@@ -31,12 +31,12 @@ void Foam::solver::matrixVectorProduct
         scalar dRhoFlux  = L[faceI]*v_Rho[i]  + 0.5*(rho1*phi1       - rho_[i]*phi0);
         vector dRhoUFlux = L[faceI]*v_RhoU[i] + 0.5*(rhoU1*phi1      - rhoU_[i]*phi0 + (p1-p_[i])*Sf[faceI]);
         scalar dRhoEFlux = L[faceI]*v_RhoE[i] + 0.5*((rhoE1+p1)*phi1 - (rhoE_[i]+p_[i])*phi0);
-        y_Rho[j]  -= dRhoFlux;
-        y_RhoU[j] -= dRhoUFlux;
-        y_RhoE[j] -= dRhoEFlux;
         y_Rho[i]  += dRhoFlux;
         y_RhoU[i] += dRhoUFlux;
         y_RhoE[i] += dRhoEFlux;
+        y_Rho[j]  -= dRhoFlux;
+        y_RhoU[j] -= dRhoUFlux;
+        y_RhoE[j] -= dRhoEFlux;
 
         rho1  = rho_[j]+v_Rho[j];
         rhoU1 = rhoU_[j]+v_RhoU[j];
