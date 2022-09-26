@@ -36,7 +36,6 @@ Author
 #define euler3rdSolver_H
 
 #include "solver.H"
-#include <Eigen/Dense>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
