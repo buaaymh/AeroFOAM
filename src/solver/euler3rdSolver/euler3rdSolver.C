@@ -202,6 +202,7 @@ Foam::euler3rdSolver::euler3rdSolver
         mesh_,
         dimensionedSymmTensor(dimless, symmTensor::zero)
     ),
+    N_h_(mesh_.nCells(), 0.0),
     p0_(mesh_.nCells(), false),
     trouble_(mesh_.nCells(), false),
     rA_(mesh_.nCells(), Matrix::Zero()),

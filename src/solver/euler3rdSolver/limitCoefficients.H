@@ -34,10 +34,10 @@ void Foam::euler3rdSolver::limitCoefficients()
                 const scalar rho_j = rho_[j] + scalarPoly(delta, rhoGrad_[j], d2Rho_[j], rLengthScale_[j], basisConst_[j]);
                 const vector U_j = U_[j] + vectorPoly(delta, UGrad_[j], d2Ux_[j], d2Uy_[j], d2Uz_[j], rLengthScale_[j], basisConst_[j]);
                 const scalar p_j = p_[j] + scalarPoly(delta, pGrad_[j], d2P_[j], rLengthScale_[j], basisConst_[j]);
-                error += mag(p_j*one_gamm1+0.5*rho_j*magSqr(U_j)-rhoE_i)*mesh_.magSf()[faceI];
+                error += mag(p_j*one_gamm1+0.5*rho_j*magSqr(U_j)-rhoE_i);
             }
         }
-        if (error/(mesh_.V()[cellI]*rhoE_max[cellI]) > IS)
+        if (error/(N_h_[cellI]*rhoE_max[cellI]) > IS)
         {
             trouble_[cellI] = true;
             count++;

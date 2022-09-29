@@ -89,4 +89,12 @@ void Foam::euler3rdSolver::initVrLinearSystem()
 
     // Quadrature points Init
     forAll(mesh_.owner(), faceI) { gaussQuad4(faceI, quad_[faceI]); }
+
+    // Initialize N*h^((k+1)/2)
+    forAll(mesh_.owner(), faceI)
+    {
+        const scalar h_k = pow(delta[faceI], 1.5);
+        N_h_[owner[faceI]] += h_k;
+        N_h_[neighbour[faceI]] += h_k;
+    }
 }

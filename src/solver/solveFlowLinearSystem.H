@@ -59,18 +59,8 @@ void Foam::solver::evaluateMatrixLDU
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        // L[faceI] = 0.5*omega*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
-        // U[faceI] = 0.5*omega*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI]);
-        const scalar H_L = ggm1*p_[i]/rho_[i] + 0.5*magSqr(U_[i]);
-        const scalar H_R = ggm1*p_[j]/rho_[j] + 0.5*magSqr(U_[j]);
-        const scalar rho_A = sqrt(rho_[i]*rho_[j]);
-        const scalar dd    = rho_A/rho_[i];
-        const scalar dd1   = 1.0/(1.0+dd);
-        const vector U_A   = (U_[i]+dd*U_[j])*dd1;
-        const scalar H_A   = (H_L+dd*H_R)*dd1;
-        const scalar c_A   = sqrt((fluidProps_.gamma-1)*(H_A-0.5*magSqr(U_A)));
-        L[faceI] = 0.5*omega*(mag(U_A&Sf[faceI])+c_A*magSf[faceI]);
-        U[faceI] = L[faceI];
+        L[faceI] = 0.5*omega*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
+        U[faceI] = 0.5*omega*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI]);
         D[i] += L[faceI];
         D[j] += U[faceI];
     }

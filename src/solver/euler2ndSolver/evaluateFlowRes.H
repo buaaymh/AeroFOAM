@@ -51,6 +51,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
         const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
         const word name = mesh_.boundary()[patchI].name();
         const word type = mesh_.boundary()[patchI].type();
+        const label start = mesh_.boundary()[patchI].start();
         if (isA<cyclicFvPatch>(mesh_.boundary()[patchI]))
         {
             const cyclicFvPatch& ownerPatch = refCast<const cyclicFvPatch>(mesh_.boundary()[patchI]);
@@ -129,6 +130,39 @@ void Foam::euler2ndSolver::evaluateFlowRes
                 vector rhoUFlux = p_i*normal[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
             }
+            // std::vector<vector> quadPoints(4, vector::zero);
+            // forAll(bfaceCells, faceI)
+            // {
+            //     const label i = bfaceCells[faceI];
+            //     scalar rhoFlux  = 0.0;
+            //     vector rhoUFlux = vector::zero;
+            //     scalar rhoEFlux = 0.0;
+            //     gaussQuad4(start+faceI, quadPoints);
+            //     for (label gaussI = 0; gaussI != 4; ++gaussI)
+            //     {
+            //         scalar rhoFluxTemp;
+            //         vector rhoUFluxTemp = vector::zero;
+            //         scalar rhoEFluxTemp;
+            //         const vector delta = quadPoints[gaussI] - mesh_.C()[i];
+            //         const scalar rho_i = rho_[i] + (rhoGrad_[i]&delta)*rhoLimit_[i];
+            //         const scalar p_i = p_[i] + (pGrad_[i]&delta)*pLimit_[i];
+            //         vector Normal = -vector(quadPoints[gaussI].x(), quadPoints[gaussI].y(), 0.0);
+            //         Normal /= mag(Normal);
+            //         const vector U_i = U_[i];
+            //         const vector U_correct = vector(+(U_i.x()*Normal.y()-U_i.y()*Normal.x())*Normal.y(),
+            //                                         -(U_i.x()*Normal.y()-U_i.y()*Normal.x())*Normal.x(), 0.0);
+            //         Foam::evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
+            //                            rho_i, U_correct, p_i,
+            //                            normal[faceI], fluidProps_.gamma);
+            //         rhoFlux  += rhoFluxTemp  * Quad4::w[gaussI];
+            //         rhoUFlux += rhoUFluxTemp * Quad4::w[gaussI];
+            //         rhoEFlux += rhoEFluxTemp * Quad4::w[gaussI];
+            //     }
+            //     const scalar temp = 0.25 * magSf[faceI];
+            //     resRho[i]  -= rhoFlux  * temp;
+            //     resRhoU[i] -= rhoUFlux * temp;
+            //     resRhoE[i] -= rhoEFlux * temp;
+            // }
         }
         if (name == "inlet" || name == "outlet" || name == "farField")
         {

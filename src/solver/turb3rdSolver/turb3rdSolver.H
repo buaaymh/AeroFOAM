@@ -101,12 +101,14 @@ class turb3rdSolver: public euler3rdSolver
         const scalar& rho_R,
         const vector& U_L,
         const vector& U_R,
-        const scalar& T_L,
-        const scalar& T_R,
+        const scalar& p_L,
+        const scalar& p_R,
+        const vector& rhoGrad_L,
+        const vector& rhoGrad_R,
         const tensor& UGrad_L,
         const tensor& UGrad_R,
-        const vector& TGrad_L,
-        const vector& TGrad_R,
+        const vector& pGrad_L,
+        const vector& pGrad_R,
         const scalar& nuTilde_L,
         const scalar& nuTilde_R,
         const scalar& dxTilde,
@@ -116,8 +118,8 @@ class turb3rdSolver: public euler3rdSolver
     void evaluateWallFlux
     (
         vector& rhoUFlux,
+        const scalar& rho,
         const scalar& p,
-        const scalar& T,
         const tensor& UGrad,
         const vector& normal
     ) const;
@@ -127,12 +129,16 @@ class turb3rdSolver: public euler3rdSolver
         scalar& rhoFlux,
         vector& rhoUFlux,
         scalar& rhoEFlux,
-        const scalar& rho,
-        const vector& U,
-        const scalar& p,
+        const scalar& rho_L,
+        const scalar& rho_R,
+        const vector& U_L,
+        const vector& U_R,
+        const scalar& p_L,
+        const scalar& p_R,
         const scalar& nuTilde,
+        const vector& rhoGrad,
         const tensor& UGrad,
-        const vector& TGrad,
+        const vector& pGrad,
         const vector& normal
     ) const;
 

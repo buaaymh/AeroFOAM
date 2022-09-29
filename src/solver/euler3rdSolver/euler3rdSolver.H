@@ -82,6 +82,7 @@ protected:
     volSymmTensorField d2PLimited_;
     volVectorField rLengthScale_;
     volSymmTensorField basisConst_;
+    scalarField N_h_;
     std::vector<bool> p0_;
     std::vector<bool> trouble_;
     //- Linear system

@@ -204,21 +204,45 @@ void Foam::euler3rdSolver::evaluateFlowRes
         }
         if (name == "inlet" || name == "outlet" || name == "farField")
         {
+            const vectorField Cn = mesh_.boundary()[patchI].Cn();
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];
             const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
+            std::vector<vector> quadPoints(4, vector::zero);
             forAll(bfaceCells, faceI)
             {
-                scalar rhoFlux;
+                scalar rhoFlux  = 0.0;
                 vector rhoUFlux = vector::zero;
-                scalar rhoEFlux;
+                scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[faceI]; 
-                Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                   rhoBound[faceI], UBound[faceI], pBound[faceI],
-                                   normal[faceI], fluidProps_.gamma);
-                resRho[i]  -= rhoFlux * magSf[faceI];
-                resRhoU[i] -= rhoUFlux * magSf[faceI];
-                resRhoE[i] -= rhoEFlux * magSf[faceI];
+                gaussQuad4(start+faceI, quadPoints);
+                for (label gaussI = 0; gaussI != 4; ++gaussI)
+                {
+                    scalar rhoFluxTemp;
+                    vector rhoUFluxTemp = vector::zero;
+                    scalar rhoEFluxTemp;
+                    const vector delta_i = quadPoints[gaussI] - Cn[faceI];
+                    const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rLengthScale_[i], basisConst_[i]);
+                    const vector U_i = U_[i] + vectorPoly(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rLengthScale_[i], basisConst_[i]);
+                    const scalar p_i = p_[i] + scalarPoly(delta_i, pGradLimited_[i], d2PLimited_[i], rLengthScale_[i], basisConst_[i]);
+                    riemann_->evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
+                                           rho_i, rhoBound[faceI], U_i, UBound[faceI], p_i, pBound[faceI],
+                                           normal[faceI], fluidProps_.gamma);
+                    rhoFlux  += rhoFluxTemp  * Quad4::w[gaussI];
+                    rhoUFlux += rhoUFluxTemp * Quad4::w[gaussI];
+                    rhoEFlux += rhoEFluxTemp * Quad4::w[gaussI];
+                }
+                const scalar temp = 0.25 * magSf[faceI];
+                resRho[i]  -= rhoFlux  * temp;
+                resRhoU[i] -= rhoUFlux * temp;
+                resRhoE[i] -= rhoEFlux * temp;
+                // Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                //                    rhoBound[faceI], UBound[faceI], pBound[faceI],
+                //                    normal[faceI], fluidProps_.gamma);
+                // resRho[i]  -= rhoFlux * magSf[faceI];
+                // resRhoU[i] -= rhoUFlux * magSf[faceI];
+                // resRhoE[i] -= rhoEFlux * magSf[faceI];
+
             }
         }
     }
