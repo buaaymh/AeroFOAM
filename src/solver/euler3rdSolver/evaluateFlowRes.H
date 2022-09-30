@@ -236,13 +236,6 @@ void Foam::euler3rdSolver::evaluateFlowRes
                 resRho[i]  -= rhoFlux  * temp;
                 resRhoU[i] -= rhoUFlux * temp;
                 resRhoE[i] -= rhoEFlux * temp;
-                // Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                //                    rhoBound[faceI], UBound[faceI], pBound[faceI],
-                //                    normal[faceI], fluidProps_.gamma);
-                // resRho[i]  -= rhoFlux * magSf[faceI];
-                // resRhoU[i] -= rhoUFlux * magSf[faceI];
-                // resRhoE[i] -= rhoEFlux * magSf[faceI];
-
             }
         }
     }
