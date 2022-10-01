@@ -54,7 +54,6 @@ void Foam::solver::evaluateMatrixLDU
     const labelUList& neighbour = mesh_.neighbour();
     const surfaceVectorField& Sf = mesh_.Sf();
     const surfaceScalarField& magSf = mesh_.magSf();
-    const scalar ggm1  = fluidProps_.gamma/(fluidProps_.gamma-1.0);
     forAll(owner, faceI)
     {
         const label i = owner[faceI];

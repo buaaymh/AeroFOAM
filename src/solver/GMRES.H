@@ -91,70 +91,65 @@ void Foam::solver::solveFlowLinearSystem
     for (label m = 0; m < innerIter; m++)
     {
         if (finalRes < relTol*initialRes) break;
-        RectangularMatrix<scalar> H(nDirs+1, nDirs, Zero);
-        scalarField g(nDirs+1, 0);
-        scalarField sn(nDirs+1, 0);
-        scalarField cs(nDirs+1, 0);
-        scalarField y(nDirs, 0);
-
+        // Create the Hesenberg matrix
+        scalarSquareMatrix H(nDirs, 0);
+        // Create y and b for Hessenberg matrix
+        scalarField yh(nDirs, 0);
+        scalarField bh(nDirs + 1, 0);
+        // Givens rotation vectors
+        scalarField c(nDirs, 0);
+        scalarField s(nDirs, 0);
         precondition(L, U, D, v_Rho[0], v_RhoU[0], v_RhoE[0]);
         scalar beta = Foam::sqrt(gSumSqr(v_Rho[0]) + gSum(magSqr(v_RhoU[0])) + gSumSqr(v_RhoE[0]));
-        v_Rho[0]  /= beta;
-        v_RhoU[0] /= beta;
-        v_RhoE[0] /= beta;
-
-        g[0] = beta;
-        label i = 0;
-        for (i = 0; i < nDirs; i++)
+        // Set initial rhs and bh[0] = beta
+        bh = 0;
+        bh[0] = beta;
+        for (label i = 0; i < nDirs; i++)
         {
-            if (g[i] < relTol*initialRes) break;
+            v_Rho[i]  /= beta;
+            v_RhoU[i] /= beta;
+            v_RhoE[i] /= beta;
             matrixVectorProduct(L, U, v_Rho[i], v_RhoU[i], v_RhoE[i], v_Rho[i+1], v_RhoU[i+1], v_RhoE[i+1]);
             precondition(L, U, D, v_Rho[i+1], v_RhoU[i+1], v_RhoE[i+1]);
-            scalar nrm = gSumSqr(v_Rho[i+1]) + gSum(magSqr(v_RhoU[i+1])) + gSumSqr(v_RhoE[i+1]);
             for (label j = 0; j <= i; j++)
             {
-                scalar prob = gSumProd(v_Rho[i+1], v_Rho[j]) + gSumProd(v_RhoU[i+1], v_RhoU[j]) + gSumProd(v_RhoE[i+1], v_RhoE[j]);
-                H[j][i] = prob;
-                v_Rho[i+1]  -= prob * v_Rho[j];
-                v_RhoU[i+1] -= prob * v_RhoU[j];
-                v_RhoE[i+1] -= prob * v_RhoE[j];
-                if (prob*prob > 0.98*nrm)
-                {
-                    prob = gSumProd(v_Rho[i+1], v_Rho[j]) + gSumProd(v_RhoU[i+1], v_RhoU[j]) + gSumProd(v_RhoE[i+1], v_RhoE[j]);
-                    H[j][i] += prob;
-                    v_Rho[i+1]  -= prob * v_Rho[j];
-                    v_RhoU[i+1] -= prob * v_RhoU[j];
-                    v_RhoE[i+1] -= prob * v_RhoE[j];
-                }
-                nrm -= sqr(H[j][i]);
-                nrm = max(nrm, 0.0);
+                beta = gSumProd(v_Rho[i+1], v_Rho[j]) + gSumProd(v_RhoU[i+1], v_RhoU[j]) + gSumProd(v_RhoE[i+1], v_RhoE[j]);;
+                H[j][i] = beta;
+                v_Rho[i+1]  -= beta * v_Rho[j];
+                v_RhoU[i+1] -= beta * v_RhoU[j];
+                v_RhoE[i+1] -= beta * v_RhoE[j];
             }
             beta = Foam::sqrt(gSumSqr(v_Rho[i+1]) + gSum(magSqr(v_RhoU[i+1])) + gSumSqr(v_RhoE[i+1]));
-            H[i+1][i] = beta;
-            v_Rho[i+1]  /= beta;
-            v_RhoU[i+1] /= beta;
-            v_RhoE[i+1] /= beta;
-
+            // Apply previous Givens rotations to new column of H.
             for (label j = 0; j < i; j++)
-                ApplyGivens(sn[j], cs[j], H[j][i], H[j+1][i]);
-            GenerateGivens(H[i][i], H[i+1][i], sn[i], cs[i]);
-            ApplyGivens(sn[i], cs[i], g[i], g[i+1]);
+            {
+                const scalar Hji = H[j][i];
+                H[j][i] = c[j]*Hji - s[j]*H[j+1][i];
+                H[j+1][i] = s[j]*Hji + c[j]*H[j + 1][i];
+            }
+            // Apply Givens rotation to current row.
+            givensRotation(H[i][i], beta, c[i], s[i]);
+            const scalar bhi = bh[i];
+            bh[i] = c[i]*bhi - s[i]*bh[i+1];
+            bh[i+1] = s[i]*bhi + c[i]*bh[i+1];
+            H[i][i] = c[i]*H[i][i] - s[i]*beta;
         }
-        /*---  Solve the least-squares system  ---*/
-        for (label k = 0; k < i; k++)
-            y[k] = g[k];
-        for (label k = i-1; k >= 0; k--)
+        // Back substitute to solve Hy = b
+        for (label i = nDirs-1; i >= 0; i--)
         {
-            y[k] /= H[k][k];
-            for (label j = k-1; j >= 0; j--)
-                y[j] -= H[j][k]*y[k];
+            scalar sum = bh[i];
+            for (label j = i+1; j < nDirs; j++)
+            {
+                sum -= H[i][j]*yh[j];
+            }
+            yh[i] = sum/H[i][i];
         }
-        /*---  Update solution ---*/
-        for (label k = 0; k < i; k++)
+        // Update solution
+        for (label i = 0; i < nDirs; i++)
         {
-            dRho  += y[k] * v_Rho[k];
-            dRhoU += y[k] * v_RhoU[k];
-            dRhoE += y[k] * v_RhoE[k];
+            dRho  += yh[i] * v_Rho[i];
+            dRhoU += yh[i] * v_RhoU[i];
+            dRhoE += yh[i] * v_RhoE[i];
         }
         // Re-calculate the residual
         matrixVectorProduct(L, U, dRho, dRhoU, dRhoE, v_Rho[0], v_RhoU[0], v_RhoE[0]);
@@ -170,56 +165,29 @@ void Foam::solver::solveFlowLinearSystem
     rhoE_.primitiveFieldRef() += dRhoE;
 }
 
-void Foam::ApplyGivens
+void Foam::givensRotation
 (
-    const scalar s,
-    const scalar c,
-    scalar& h1,
-    scalar& h2
+    const scalar& h,
+    const scalar& beta,
+    scalar& c,
+    scalar& s
 )
 {
-    scalar temp = c*h1 + s*h2;
-    h2 = c*h2 - s*h1;
-    h1 = temp;
-}
-
-scalar Foam::Sign(scalar x, scalar y)
-{
-    if (y == 0.0) return 0.0;
-    return mag(x) * (y < 0.0 ? -1.0 : 1.0);
-}
-
-void Foam::GenerateGivens
-(
-    scalar& dx,
-    scalar& dy,
-    scalar& s,
-    scalar& c
-)
-{
-    if ( (dx == 0.0) && (dy == 0.0) ) {
-        c = 1.0;
-        s = 0.0;
+    if (beta == 0)
+    {
+        c = 1;
+        s = 0;
     }
-    else if ( mag(dy) > mag(dx) ) {
-        scalar tmp = dx/dy;
-        dx = sqrt(1.0 + tmp*tmp);
-        s = Sign(1.0/dx, dy);
-        c = tmp*s;
+    else if (mag(beta) > mag(h))
+    {
+        scalar tau = -h/beta;
+        s = 1.0/Foam::sqrt(1.0 + sqr(tau));
+        c = s*tau;
     }
-    else if ( mag(dy) <= mag(dx) ) {
-        scalar tmp = dy/dx;
-        dy = sqrt(1.0 + tmp*tmp);
-        c = Sign(1.0/dy, dx);
-        s = tmp*c;
+    else
+    {
+        scalar tau = -beta/h;
+        c = 1.0/Foam::sqrt(1.0 + sqr(tau));
+        s = c*tau;
     }
-    else {
-        // dx and/or dy must be invalid
-        dx = 0.0;
-        dy = 0.0;
-        c = 1.0;
-        s = 0.0;
-    }
-    dx = mag(dx*dy);
-    dy = 0.0;
 }

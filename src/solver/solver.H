@@ -257,24 +257,13 @@ private:
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
 
-void ApplyGivens
+void givensRotation
 (
-    const scalar s,
-    const scalar c,
-    scalar& h1,
-    scalar& h2
+    const scalar& h,
+    const scalar& beta,
+    scalar& c,
+    scalar& s
 );
-
-scalar Sign(scalar x, scalar y);
-
-void GenerateGivens
-(
-    scalar& dx,
-    scalar& dy,
-    scalar& s,
-    scalar& c
-);
-
 
 /*---------------------------------------------------------------------------*\
                            Gauss Namespace  Declaration
