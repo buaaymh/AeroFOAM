@@ -146,7 +146,7 @@ public:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
-    ) {};
+    ) = 0;
 
     void solveFlowLinearSystem
     (
@@ -189,6 +189,26 @@ protected:
         vectorField& y_RhoU,
         scalarField& y_RhoE
     ) const;
+
+    virtual void matrixVectorProduct
+    (
+        const scalarField& resRho,
+        const vectorField& resRhoU,
+        const scalarField& resRhoE,
+        const scalarField& v_Rho,
+        const vectorField& v_RhoU,
+        const scalarField& v_RhoE,
+        scalarField& y_Rho,
+        vectorField& y_RhoU,
+        scalarField& y_RhoE
+    ) = 0;
+
+    virtual void correctPrimitiveBoundary
+    (
+        volScalarField& rho,
+        volVectorField& U,
+        volScalarField& p
+    );
 
     void precondition
     (

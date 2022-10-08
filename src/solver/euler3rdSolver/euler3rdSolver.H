@@ -35,7 +35,7 @@ Author
 #ifndef euler3rdSolver_H
 #define euler3rdSolver_H
 
-#include "solver.H"
+#include "euler2ndSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -48,7 +48,7 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-class euler3rdSolver: public solver
+class euler3rdSolver: public euler2ndSolver
 {
 
 public:

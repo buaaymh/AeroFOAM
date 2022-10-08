@@ -36,46 +36,7 @@ Foam::euler2ndSolver::euler2ndSolver
     volScalarField& p
 )
 :
-    solver(fluidProps, rho, U, p),
-    rhoLimit_
-    (
-        IOobject
-        (
-            "rhoLimit",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 1)
-    ),
-    ULimit_
-    (
-        IOobject
-        (
-            "ULimit",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless, vector::one)
-    ),
-    pLimit_
-    (
-        IOobject
-        (
-            "pLimit",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 1)
-    ),
-    rhoMin_(scalarField(mesh_.nCells())),
-    rhoMax_(scalarField(mesh_.nCells())),
-    UMin_(vectorField(mesh_.nCells())),
-    UMax_(vectorField(mesh_.nCells())),
-    pMin_(scalarField(mesh_.nCells())),
-    pMax_(scalarField(mesh_.nCells()))
+    solver(fluidProps, rho, U, p)
 {
     Info << "Ths solver is 2nd order for Euler flow." << nl
          << "Ths limiter is Venkatakrishnan." << nl
@@ -87,5 +48,7 @@ Foam::euler2ndSolver::euler2ndSolver
 #include "limitGrad.H"
 
 #include "evaluateFlowRes.H"
+
+#include "matrixVectorProduct.H"
 
 // ************************************************************************* //

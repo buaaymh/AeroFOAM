@@ -50,23 +50,6 @@ namespace Foam
 
 class euler2ndSolver: public solver
 {
-    // Private Data
-    //- Density limit
-    volScalarField rhoLimit_;
-    //- Velocity limit
-    volVectorField ULimit_;
-    //- pressure limit
-    volScalarField pLimit_;
-    //- Density min and max
-    scalarField rhoMin_;
-    scalarField rhoMax_;
-    //- Velocity min and max
-    vectorField UMin_;
-    vectorField UMax_;
-    //- pressure min and max
-    scalarField pMin_;
-    scalarField pMax_;
-
     // Private Member Functions
     //- Disallow default bitwise copy construct
     euler2ndSolver(const euler2ndSolver&);
@@ -96,11 +79,48 @@ public:
         scalarField& resRhoE
     );
 
+protected:
+
+    void matrixVectorProduct
+    (
+        const scalarField& resRho,
+        const vectorField& resRhoU,
+        const scalarField& resRhoE,
+        const scalarField& v_Rho,
+        const vectorField& v_RhoU,
+        const scalarField& v_RhoE,
+        scalarField& y_Rho,
+        vectorField& y_RhoU,
+        scalarField& y_RhoE
+    );
+
+    void evaluateFlowRes
+    (
+        const volScalarField& rho,
+        const volVectorField& U,
+        const volScalarField& p,
+        const volVectorField& rhoGrad,
+        const volTensorField& UGrad,
+        const volVectorField& pGrad,
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE
+    );
+
 private:
 
-    void limiterInit();
-
-    void limitGrad();
+    void limitGrad
+    (
+        const volScalarField& rho,
+        const volVectorField& U,
+        const volScalarField& p,
+        const volVectorField& rhoGrad,
+        const volTensorField& UGrad,
+        const volVectorField& pGrad,
+        volScalarField& rhoLimit,
+        volVectorField& ULimit,
+        volScalarField& pLimit
+    );
 
     scalar Venkat
     (

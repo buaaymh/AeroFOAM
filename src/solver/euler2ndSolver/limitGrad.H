@@ -1,11 +1,73 @@
-void Foam::euler2ndSolver::limitGrad()
+void Foam::euler2ndSolver::limitGrad
+(
+    const volScalarField& rho,
+    const volVectorField& U,
+    const volScalarField& p,
+    const volVectorField& rhoGrad,
+    const volTensorField& UGrad,
+    const volVectorField& pGrad,
+    volScalarField& rhoLimit,
+    volVectorField& ULimit,
+    volScalarField& pLimit
+)
 {
-    limiterInit();
-    rhoLimit_.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
-    ULimit_.primitiveFieldRef() = vectorField(mesh_.nCells(), vector::one);
-    pLimit_.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
+    scalarField rhoMin = rho.field();
+    scalarField rhoMax = rho.field();
+    vectorField UMin = U.field();
+    vectorField UMax = U.field();
+    scalarField pMin = p.field();
+    scalarField pMax = p.field();
     const auto& owner = mesh_.owner();
     const auto& neighbour = mesh_.neighbour();
+    forAll(owner, faceI)
+    {
+        const label i = owner[faceI];
+        const label j = neighbour[faceI];
+        // neighbors of node i
+        rhoMin[i] = min(rhoMin[i], rho[j]);
+        UMin[i] = min(UMin[i], U[j]);
+        pMin[i] = min(pMin[i], p[j]);
+        
+        rhoMax[i] = max(rhoMax[i], rho[j]);
+        UMax[i] = max(UMax[i], U[j]);
+        pMax[i] = max(pMax[i], p[j]);
+        // neighbors of node j
+        rhoMin[j] = min(rhoMin[j], rho[i]);
+        UMin[j] = min(UMin[j], U[i]);
+        pMin[j] = min(pMin[j], p[i]);
+        
+        rhoMax[j] = max(rhoMax[j], rho[i]);
+        UMax[j] = max(UMax[j], U[i]);
+        pMax[j] = max(pMax[j], p[i]);
+    }
+    forAll(mesh_.boundary(), patchI)
+    {
+        if(mesh_.boundary()[patchI].coupled())
+        {
+            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+            const scalarField rho_neigh  = rho.boundaryField()[patchI].patchNeighbourField();
+            const vectorField U_neigh = U.boundaryField()[patchI].patchNeighbourField();
+            const scalarField p_neigh = p.boundaryField()[patchI].patchNeighbourField();
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                // neighbors of node i
+                rhoMin[i] = min(rhoMin[i], rho_neigh[faceI]);
+                UMin[i] = min(UMin[i], U_neigh[faceI]);
+                pMin[i] = min(pMin[i], p_neigh[faceI]);
+                
+                rhoMax[i] = max(rhoMax[i], rho_neigh[faceI]);
+                UMax[i] = max(UMax[i], U_neigh[faceI]);
+                pMax[i] = max(pMax[i], p_neigh[faceI]);
+            }
+        }
+    }
+    rhoMin -= rho_.field();
+    UMin -= U.field();
+    pMin -= p.field();
+    rhoMax -= rho.field();
+    UMax -= U.field();
+    pMax -= p.field();
     forAll(owner, faceI)
     {
         const label i = owner[faceI];
@@ -14,23 +76,18 @@ void Foam::euler2ndSolver::limitGrad()
         const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
         const scalar eps2_i = 8*pow(magSqr(delta_i), 1.5);
         const scalar eps2_j = 8*pow(magSqr(delta_j), 1.5);
-
-        rhoLimit_[i] = min(rhoLimit_[i], Venkat(rhoGrad_[i]&delta_i, rhoMin_[i], rhoMax_[i], eps2_i));
-        rhoLimit_[j] = min(rhoLimit_[j], Venkat(rhoGrad_[j]&delta_j, rhoMin_[j], rhoMax_[j], eps2_j));
-        vector UProj = UGrad_[i]&delta_i;
-        vector UMax = UMax_[i];
-        vector UMin = UMin_[i];
-        ULimit_[i][0] = min(ULimit_[i][0], Venkat(UProj[0], UMin[0], UMax[0], eps2_i));
-        ULimit_[i][1] = min(ULimit_[i][1], Venkat(UProj[1], UMin[1], UMax[1], eps2_i));
-        ULimit_[i][2] = min(ULimit_[i][2], Venkat(UProj[2], UMin[2], UMax[2], eps2_i));
-        UProj = UGrad_[j]&delta_j;
-        UMax = UMax_[j];
-        UMin = UMin_[j];
-        ULimit_[j][0] = min(ULimit_[j][0], Venkat(UProj[0], UMin[0], UMax[0], eps2_j));
-        ULimit_[j][1] = min(ULimit_[j][1], Venkat(UProj[1], UMin[1], UMax[1], eps2_j));
-        ULimit_[j][2] = min(ULimit_[j][2], Venkat(UProj[2], UMin[2], UMax[2], eps2_j));
-        pLimit_[i] = min(pLimit_[i], Venkat(pGrad_[i]&delta_i, pMin_[i], pMax_[i], eps2_i));
-        pLimit_[j] = min(pLimit_[j], Venkat(pGrad_[j]&delta_j, pMin_[j], pMax_[j], eps2_j));
+        rhoLimit[i] = min(rhoLimit[i], Venkat(rhoGrad[i]&delta_i, rhoMin[i], rhoMax[i], eps2_i));
+        rhoLimit[j] = min(rhoLimit[j], Venkat(rhoGrad[j]&delta_j, rhoMin[j], rhoMax[j], eps2_j));
+        vector UProj = UGrad[i]&delta_i;
+        ULimit[i][0] = min(ULimit[i][0], Venkat(UProj[0], UMin[i][0], UMax[i][0], eps2_i));
+        ULimit[i][1] = min(ULimit[i][1], Venkat(UProj[1], UMin[i][1], UMax[i][1], eps2_i));
+        ULimit[i][2] = min(ULimit[i][2], Venkat(UProj[2], UMin[i][2], UMax[i][2], eps2_i));
+        UProj = UGrad[j]&delta_j;
+        ULimit[j][0] = min(ULimit[j][0], Venkat(UProj[0], UMin[j][0], UMax[j][0], eps2_j));
+        ULimit[j][1] = min(ULimit[j][1], Venkat(UProj[1], UMin[j][1], UMax[j][1], eps2_j));
+        ULimit[j][2] = min(ULimit[j][2], Venkat(UProj[2], UMin[j][2], UMax[j][2], eps2_j));
+        pLimit[i] = min(pLimit[i], Venkat(pGrad[i]&delta_i, pMin[i], pMax[i], eps2_i));
+        pLimit[j] = min(pLimit[j], Venkat(pGrad[j]&delta_j, pMin[j], pMax[j], eps2_j));
     }
     forAll(mesh_.boundary(), patchI)
     {
@@ -44,93 +101,18 @@ void Foam::euler2ndSolver::limitGrad()
                 const label i = bfaceCells[faceI];
                 const vector delta = Cf[faceI] - Cn[faceI];
                 const scalar eps2 = 8*pow(magSqr(delta), 1.5);
-                rhoLimit_[i] = min(rhoLimit_[i], Venkat(rhoGrad_[i]&delta, rhoMin_[i], rhoMax_[i], eps2));
-                const vector UProj = UGrad_[i]&delta;
-                const vector& UMax = UMax_[i];
-                const vector& UMin = UMin_[i];
-                ULimit_[i][0] = min(ULimit_[i][0], Venkat(UProj[0], UMin[0], UMax[0], eps2));
-                ULimit_[i][1] = min(ULimit_[i][1], Venkat(UProj[1], UMin[1], UMax[1], eps2));
-                ULimit_[i][2] = min(ULimit_[i][2], Venkat(UProj[2], UMin[2], UMax[2], eps2));
-                pLimit_[i] = min(pLimit_[i], Venkat(pGrad_[i]&delta, pMin_[i], pMax_[i], eps2));
+                rhoLimit[i] = min(rhoLimit[i], Venkat(rhoGrad[i]&delta, rhoMin[i], rhoMax[i], eps2));
+                const vector UProj = UGrad[i]&delta;
+                ULimit[i][0] = min(ULimit[i][0], Venkat(UProj[0], UMin[i][0], UMax[i][0], eps2));
+                ULimit[i][1] = min(ULimit[i][1], Venkat(UProj[1], UMin[i][1], UMax[i][1], eps2));
+                ULimit[i][2] = min(ULimit[i][2], Venkat(UProj[2], UMin[i][2], UMax[i][2], eps2));
+                pLimit[i] = min(pLimit[i], Venkat(pGrad[i]&delta, pMin[i], pMax[i], eps2));
             }
         }
     }
-}
-
-void Foam::euler2ndSolver::limiterInit()
-{
-    label i, j;
-    scalar rho_i, rho_j, p_i, p_j;
-    vector U_i, U_j;
-
-    rhoMin_ = rho_.field();
-    rhoMax_ = rho_.field();
-    UMin_ = U_.field();
-    UMax_ = U_.field();
-    pMin_ = p_.field();
-    pMax_ = p_.field();
-    // loop over interior faces
-    forAll(mesh_.owner(), faceI)
-    {
-        i = mesh_.owner()[faceI];
-        j = mesh_.neighbour()[faceI];
-        // left state
-        rho_i = rho_[i];
-        U_i = U_[i];
-        p_i = p_[i];
-        // right state
-        rho_j = rho_[j];
-        U_j = U_[j];
-        p_j = p_[j];
-        // neighbors of node i
-        rhoMin_[i] = min(rhoMin_[i], rho_j);
-        UMin_[i] = min(UMin_[i], U_j);
-        pMin_[i] = min(pMin_[i], p_j);
-        
-        rhoMax_[i] = max(rhoMax_[i], rho_j);
-        UMax_[i] = max(UMax_[i], U_j);
-        pMax_[i] = max(pMax_[i], p_j);
-        // neighbors of node j
-        rhoMin_[j] = min(rhoMin_[j], rho_i);
-        UMin_[j] = min(UMin_[j], U_i);
-        pMin_[j] = min(pMin_[j], p_i);
-        
-        rhoMax_[j] = max(rhoMax_[j], rho_i);
-        UMax_[j] = max(UMax_[j], U_i);
-        pMax_[j] = max(pMax_[j], p_i);
-    }
-    forAll(mesh_.boundary(), patchI)
-    {
-        if(mesh_.boundary()[patchI].coupled())
-        {
-            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-            const scalarField rho_neigh  = rho_.boundaryField()[patchI].patchNeighbourField();
-            const vectorField U_neigh = U_.boundaryField()[patchI].patchNeighbourField();
-            const scalarField p_neigh = p_.boundaryField()[patchI].patchNeighbourField();
-            forAll(bfaceCells, faceI)
-            {
-                i = bfaceCells[faceI];
-                // right state
-                rho_j = rho_neigh[faceI];
-                U_j = U_neigh[faceI];
-                p_j = p_neigh[faceI];
-                // neighbors of node i
-                rhoMin_[i] = min(rhoMin_[i], rho_j);
-                UMin_[i] = min(UMin_[i], U_j);
-                pMin_[i] = min(pMin_[i], p_j);
-                
-                rhoMax_[i] = max(rhoMax_[i], rho_j);
-                UMax_[i] = max(UMax_[i], U_j);
-                pMax_[i] = max(pMax_[i], p_j);
-            }
-        }
-    }
-    rhoMin_ -= rho_.field();
-    UMin_ -= U_.field();
-    pMin_ -= p_.field();
-    rhoMax_ -= rho_.field();
-    UMax_ -= U_.field();
-    pMax_ -= p_.field();
+    rhoLimit.correctBoundaryConditions();
+    ULimit.correctBoundaryConditions();
+    pLimit.correctBoundaryConditions();
 }
 
 scalar Foam::euler2ndSolver::Venkat
