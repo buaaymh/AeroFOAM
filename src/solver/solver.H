@@ -200,35 +200,6 @@ protected:
         scalarField& resRhoE
     ) const;
 
-    // using Jacobian = Eigen::Matrix<scalar, 5, 5>;
-    // using VarColum = Eigen::Matrix<scalar, 5, 1>;
-
-    // virtual void evaluateMatrixLDUEigen
-    // (
-    //     scalarField& L,
-    //     scalarField& U,
-    //     std::vector<Jacobian>& rD
-    // ) const;
-
-    // void preconditionEigen
-    // (
-    //     const scalarField& L,
-    //     const scalarField& U,
-    //     const std::vector<Jacobian>& rD,
-    //     scalarField& resRho,
-    //     vectorField& resRhoU,
-    //     scalarField& resRhoE
-    // ) const;
-
-    // Jacobian GetInviscidProjJac
-    // (
-    //     const scalar rho,
-    //     const vector U,
-    //     const scalar rhoE,
-    //     const vector normal,
-    //     const scalar scale
-    // ) const;
-
     void gaussQuad4
     (
         label faceI,

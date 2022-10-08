@@ -174,8 +174,6 @@ void Foam::solver::volProjectionsInit()
 
 #include "correctFields.H"
 
-// #include "EigenGMRES.H"
-
 #include "GMRES.H"
 
 #include "solveFlowLinearSystem.H"
