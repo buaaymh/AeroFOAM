@@ -58,9 +58,9 @@ void Foam::solver::matrixVectorProduct
 
 void Foam::solver::solveFlowLinearSystem
 (
-    scalarField& resRho,
-    vectorField& resRhoU,
-    scalarField& resRhoE
+    const scalarField& resRho,
+    const vectorField& resRhoU,
+    const scalarField& resRhoE
 )
 {
     // Read settings from dictionary
@@ -159,7 +159,7 @@ void Foam::solver::solveFlowLinearSystem
         finalRes = Foam::sqrt(gSumSqr(v_Rho[0]) + gSum(magSqr(v_RhoU[0])) + gSumSqr(v_RhoE[0]));
         solverIter++;
     }
-    Info << "GMRES iteration: " << solverIter << " Residual: " << finalRes << endl;
+    Info << "GMRES iterations=" << solverIter << ", initial residual=" << initialRes << ", final residual=" << finalRes << endl;
     rho_.primitiveFieldRef()  += dRho;
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;

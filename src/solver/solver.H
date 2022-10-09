@@ -150,18 +150,18 @@ public:
 
     void solveFlowLinearSystem
     (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE
+        const scalarField& resRho,
+        const vectorField& resRhoU,
+        const scalarField& resRhoE
     );
 
     void solveFlowPseudoTimeSystem
     (
         const scalar& dt,
         const scalar& alpha,
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
+        const scalarField& resRho,
+        const vectorField& resRhoU,
+        const scalarField& resRhoE,
         scalar& resL1
     );
 
@@ -215,9 +215,9 @@ protected:
         const scalarField& L,
         const scalarField& U,
         const scalarField& D,
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE
+        scalarField& dRho,
+        vectorField& dRhoU,
+        scalarField& dRhoE
     ) const;
 
     void gaussQuad4

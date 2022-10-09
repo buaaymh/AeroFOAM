@@ -1,8 +1,8 @@
 // void Foam::solver::solveFlowLinearSystem
 // (
-//     scalarField& resRho,
-//     vectorField& resRhoU,
-//     scalarField& resRhoE
+//     const scalarField& resRho,
+//     const vectorField& resRhoU,
+//     const scalarField& resRhoE
 // )
 // {
 //     updateLTS();
@@ -11,19 +11,22 @@
 //     scalarField D(1.0/localDtDv_);
 //     evaluateMatrixLDU(L, U, D);
 //     // Preconditioning step
-//     precondition(L, U, D, resRho, resRhoU, resRhoE);
-//     rho_.primitiveFieldRef()  += resRho;
-//     rhoU_.primitiveFieldRef() += resRhoU;
-//     rhoE_.primitiveFieldRef() += resRhoE;
+//     scalarField dRho(resRho);
+//     vectorField dRhoU(resRhoU);
+//     scalarField dRhoE(resRhoE);
+//     precondition(L, U, D, dRho, dRhoU, dRhoE);
+//     rho_.primitiveFieldRef()  += dRho;
+//     rhoU_.primitiveFieldRef() += dRhoU;
+//     rhoE_.primitiveFieldRef() += dRhoE;
 // }
 
 void Foam::solver::solveFlowPseudoTimeSystem
 (
     const scalar& dt,
     const scalar& alpha,
-    scalarField& resRho,
-    vectorField& resRhoU,
-    scalarField& resRhoE,
+    const scalarField& resRho,
+    const vectorField& resRhoU,
+    const scalarField& resRhoE,
     scalar& resL1
 )
 {
@@ -34,11 +37,14 @@ void Foam::solver::solveFlowPseudoTimeSystem
     scalarField D(1.0/localDtDv_ + mesh_.V().field()/dt);
     evaluateMatrixLDU(L, U, D);
     // Preconditioning step
-    precondition(L, U, D, resRho, resRhoU, resRhoE);
+    scalarField dRho(resRho);
+    vectorField dRhoU(resRhoU);
+    scalarField dRhoE(resRhoE);
+    precondition(L, U, D, dRho, dRhoU, dRhoE);
     resL1 = gSum(mag(resRho)*mesh_.V());
-    rho_.primitiveFieldRef()  += resRho;
-    rhoU_.primitiveFieldRef() += resRhoU;
-    rhoE_.primitiveFieldRef() += resRhoE;
+    rho_.primitiveFieldRef()  += dRho;
+    rhoU_.primitiveFieldRef() += dRhoU;
+    rhoE_.primitiveFieldRef() += dRhoE;
 }
 
 void Foam::solver::evaluateMatrixLDU
@@ -63,6 +69,17 @@ void Foam::solver::evaluateMatrixLDU
         D[i] += L[faceI];
         D[j] += U[faceI];
     }
+    forAll(mesh_.boundary(), patchI)
+    {
+        const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+        const vectorField& Sf = mesh_.Sf().boundaryField()[patchI];
+        const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
+        forAll(bfaceCells, faceI)
+        {
+            const label i = bfaceCells[faceI];
+            D[i] += 0.5*omega*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
+        }
+    }
 }
 
 void Foam::solver::precondition
@@ -79,9 +96,9 @@ void Foam::solver::precondition
     const labelUList& neighbour = mesh_.neighbour();
     const surfaceVectorField& Sf = mesh_.Sf();
     // Forward Sweep
-    scalarField dRhoStar(resRho*localDtDv_);
-    vectorField dRhoUStar(resRhoU*localDtDv_);
-    scalarField dRhoEStar(resRhoE*localDtDv_);
+    scalarField dRho(resRho*localDtDv_);
+    vectorField dRhoU(resRhoU*localDtDv_);
+    scalarField dRhoE(resRhoE*localDtDv_);
     forAll(mesh_.cells(), cellI)
     {
         const labelList& cellFaces = mesh_.cells()[cellI];
@@ -96,26 +113,23 @@ void Foam::solver::precondition
                 const label i = owner[faceI];
                 if (i != cellI) /* L(cellI) < cellI */
                 {
-                    const scalar rho1  = rho_[i]+dRhoStar[i];
-                    const vector rhoU1 = rhoU_[i]+dRhoUStar[i];
-                    const scalar rhoE1 = rhoE_[i]+dRhoEStar[i];
+                    const scalar rho1  = rho_[i]+dRho[i];
+                    const vector rhoU1 = rhoU_[i]+dRhoU[i];
+                    const scalar rhoE1 = rhoE_[i]+dRhoE[i];
                     const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(fluidProps_.gamma-1.0);
                     const scalar phi0 = U_[i]&Sf[faceI];
                     const scalar phi1 = (rhoU1/rho1)&Sf[faceI];
-                    rRho  += L[faceI]*dRhoStar[i]  + 0.5*(rho1*phi1       - rho_[i]*phi0);
-                    rRhoU += L[faceI]*dRhoUStar[i] + 0.5*(rhoU1*phi1      - rhoU_[i]*phi0 + (p1-p_[i])*Sf[faceI]);
-                    rRhoE += L[faceI]*dRhoEStar[i] + 0.5*((rhoE1+p1)*phi1 - (rhoE_[i]+p_[i])*phi0);
+                    rRho  += L[faceI]*dRho[i]  + 0.5*(rho1*phi1       - rho_[i]*phi0);
+                    rRhoU += L[faceI]*dRhoU[i] + 0.5*(rhoU1*phi1      - rhoU_[i]*phi0 + (p1-p_[i])*Sf[faceI]);
+                    rRhoE += L[faceI]*dRhoE[i] + 0.5*((rhoE1+p1)*phi1 - (rhoE_[i]+p_[i])*phi0);
                 }
             }
         }
-        dRhoStar[cellI]  = rRho  / D[cellI];
-        dRhoUStar[cellI] = rRhoU / D[cellI];
-        dRhoEStar[cellI] = rRhoE / D[cellI];
+        dRho[cellI]  = rRho  / D[cellI];
+        dRhoU[cellI] = rRhoU / D[cellI];
+        dRhoE[cellI] = rRhoE / D[cellI];
     }
     // Backward Sweep
-    scalarField& dRho  = resRho;
-    vectorField& dRhoU = resRhoU;
-    scalarField& dRhoE = resRhoE;
     forAllReverse(mesh_.cells(), cellI)
     {
         const labelList& cellFaces = mesh_.cells()[cellI];
@@ -130,20 +144,20 @@ void Foam::solver::precondition
                 const label j = neighbour[faceI];
                 if (j != cellI) /* U(cellI) > cellI */
                 {
-                    const scalar rho1  = rho_[j]+dRho[j];
-                    const vector rhoU1 = rhoU_[j]+dRhoU[j];
-                    const scalar rhoE1 = rhoE_[j]+dRhoE[j];
+                    const scalar rho1  = rho_[j]+resRho[j];
+                    const vector rhoU1 = rhoU_[j]+resRhoU[j];
+                    const scalar rhoE1 = rhoE_[j]+resRhoE[j];
                     const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(fluidProps_.gamma-1.0);
                     const scalar phi0 = U_[j]&Sf[faceI];
                     const scalar phi1 = (rhoU1/rho1)&Sf[faceI];
-                    rRho  += U[faceI]*dRho[j]  - 0.5*(rho1*phi1       - rho_[j]*phi0);
-                    rRhoU += U[faceI]*dRhoU[j] - 0.5*(rhoU1*phi1      - rhoU_[j]*phi0 + (p1-p_[j])*Sf[faceI]);
-                    rRhoE += U[faceI]*dRhoE[j] - 0.5*((rhoE1+p1)*phi1 - (rhoE_[j]+p_[j])*phi0);
+                    rRho  += U[faceI]*resRho[j]  - 0.5*(rho1*phi1       - rho_[j]*phi0);
+                    rRhoU += U[faceI]*resRhoU[j] - 0.5*(rhoU1*phi1      - rhoU_[j]*phi0 + (p1-p_[j])*Sf[faceI]);
+                    rRhoE += U[faceI]*resRhoE[j] - 0.5*((rhoE1+p1)*phi1 - (rhoE_[j]+p_[j])*phi0);
                 }
             }
         }
-        dRho[cellI]  = dRhoStar[cellI]  + rRho  / D[cellI];
-        dRhoU[cellI] = dRhoUStar[cellI] + rRhoU / D[cellI];
-        dRhoE[cellI] = dRhoEStar[cellI] + rRhoE / D[cellI];
+        resRho[cellI]  = dRho[cellI]  + rRho  / D[cellI];
+        resRhoU[cellI] = dRhoU[cellI] + rRhoU / D[cellI];
+        resRhoE[cellI] = dRhoE[cellI] + rRhoE / D[cellI];
     }
 }
