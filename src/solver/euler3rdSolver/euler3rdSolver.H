@@ -68,18 +68,18 @@ protected:
     //- Velocity grad
     volTensorField UGradLimited_;
     //- pressure grad
-    volVectorField pGradLimited_;
+    volVectorField TGradLimited_;
     //- Quadratic polynomial coefficients
     volSymmTensorField d2Rho_;
     volSymmTensorField d2Ux_;
     volSymmTensorField d2Uy_;
     volSymmTensorField d2Uz_;
-    volSymmTensorField d2P_;
+    volSymmTensorField d2T_;
     volSymmTensorField d2RhoLimited_;
     volSymmTensorField d2UxLimited_;
     volSymmTensorField d2UyLimited_;
     volSymmTensorField d2UzLimited_;
-    volSymmTensorField d2PLimited_;
+    volSymmTensorField d2TLimited_;
     volVectorField rLengthScale_;
     volSymmTensorField basisConst_;
     scalarField N_h_;

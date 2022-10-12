@@ -59,11 +59,11 @@ Foam::euler3rdSolver::euler3rdSolver
         mesh_,
         dimensionedTensor(dimless/dimLength, tensor::zero)
     ),
-    pGradLimited_
+    TGradLimited_
     (
         IOobject
         (
-            "pGradLimited",
+            "TGradLimited",
             mesh_.time().timeName(),
             mesh_
         ),
@@ -114,11 +114,11 @@ Foam::euler3rdSolver::euler3rdSolver
         mesh_,
         dimensionedSymmTensor(dimless, symmTensor::zero)
     ),
-    d2P_
+    d2T_
     (
         IOobject
         (
-            "d2P",
+            "d2T",
             mesh_.time().timeName(),
             mesh_
         ),
@@ -169,11 +169,11 @@ Foam::euler3rdSolver::euler3rdSolver
         mesh_,
         dimensionedSymmTensor(dimless, symmTensor::zero)
     ),
-    d2PLimited_
+    d2TLimited_
     (
         IOobject
         (
-            "d2PLimited",
+            "d2TLimited",
             mesh_.time().timeName(),
             mesh_
         ),
