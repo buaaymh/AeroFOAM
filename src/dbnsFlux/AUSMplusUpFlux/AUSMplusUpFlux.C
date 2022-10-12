@@ -37,26 +37,27 @@ void Foam::AUSMplusUpFlux::evaluateFlux
     const scalar& rho_R,
     const vector& U_L,
     const vector& U_R,
-    const scalar& p_L,
-    const scalar& p_R,
+    const scalar& T_L,
+    const scalar& T_R,
     const vector& normal,
     const scalar& gamma
 ) const
 {   
-    scalar temp  = 1.0/(gamma-1);
     // left & right state
+    const scalar p_L = rho_L*T_L/gamma;
     const vector rhoU_L = rho_L*U_L;
-    const scalar rhoE_L = p_L*temp + 0.5*rho_L*magSqr(U_L);
+    const scalar rhoE_L = p_L/(gamma-1) + 0.5*rho_L*magSqr(U_L);
     const scalar H_L = (rhoE_L + p_L)/rho_L;
     
+    const scalar p_R = rho_R*T_R/gamma;
     const vector rhoU_R = rho_R*U_R;
-    const scalar rhoE_R = p_R*temp + 0.5*rho_R*magSqr(U_R);
+    const scalar rhoE_R = p_R/(gamma-1) + 0.5*rho_R*magSqr(U_R);
     const scalar H_R = (rhoE_R + p_R)/rho_R;
 
     const scalar qLeft  = (U_L & normal);
     const scalar qRight = (U_R & normal);
 
-    temp = 2.0*(gamma-1)/(gamma+1)*0.5*(H_L+H_R);
+    scalar temp = 2.0*(gamma-1)/(gamma+1)*0.5*(H_L+H_R);
     const scalar aStar = sqrt(temp);
     const scalar aHatLeft  = temp / max(aStar, qLeft);
     const scalar aHatRight = temp / max(aStar,-qRight);

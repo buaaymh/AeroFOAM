@@ -37,24 +37,24 @@ void Foam::hllcFlux::evaluateFlux
     const scalar& rho_R,
     const vector& U_L,
     const vector& U_R,
-    const scalar& p_L,
-    const scalar& p_R,
+    const scalar& T_L,
+    const scalar& T_R,
     const vector& normal,
     const scalar& gamma
 ) const
 {   
-    const scalar temp  = 1.0/(gamma-1);
     // left & right state
-    scalar rRho = 1.0/rho_L;
+    const scalar p_L = rho_L*T_L/gamma;
     const vector rhoU_L = rho_L*U_L;
-    const scalar rhoE_L = p_L*temp + 0.5*rho_L*magSqr(U_L);
-    const scalar H_L = (rhoE_L + p_L)*rRho;
-    const scalar a_L = Foam::sqrt(max(0.0, p_L*gamma*rRho));
-    rRho = 1.0/rho_R;
+    const scalar rhoE_L = p_L/(gamma-1) + 0.5*rho_L*magSqr(U_L);
+    const scalar H_L = (rhoE_L + p_L)/rho_L;
+    const scalar a_L = Foam::sqrt(T_L);
+    
+    const scalar p_R = rho_R*T_R/gamma;
     const vector rhoU_R = rho_R*U_R;
-    const scalar rhoE_R = p_R*temp + 0.5*rho_R*magSqr(U_R);
-    const scalar H_R = (rhoE_R + p_R)*rRho;
-    const scalar a_R = Foam::sqrt(max(0.0, p_R*gamma*rRho));
+    const scalar rhoE_R = p_R/(gamma-1) + 0.5*rho_R*magSqr(U_R);
+    const scalar H_R = (rhoE_R + p_R)/rho_R;
+    const scalar a_R = Foam::sqrt(T_R);
 
     // Compute qLeft and qRight (q_{l,r} = U_{l,r} \bullet n)
     const scalar qLeft  = (U_L & normal);
@@ -62,13 +62,13 @@ void Foam::hllcFlux::evaluateFlux
 
     // Step 2:
     // Compute Roe weights
-    const scalar rho_A = sqrt(max(rho_L*rho_R, SMALL));
-    const scalar dd    = rho_A/max(rho_L, SMALL);
+    const scalar rho_A = sqrt(rho_L*rho_R);
+    const scalar dd    = rho_A/rho_L;
     const scalar dd1   = 1.0/(1.0+dd);
     const vector UTilde = (U_L+dd*U_R)*dd1;
     const scalar HTilde = (H_L+dd*H_R)*dd1;
     const scalar contrUTilde  = UTilde & normal;
-    const scalar aTilde = Foam::sqrt(max(0.0, (gamma-1)*(HTilde-0.5*sqr(contrUTilde))));
+    const scalar aTilde = Foam::sqrt(max(0.0, (gamma-1)*(HTilde-0.5*magSqr(UTilde))));
 
     // Step 3: compute signal speeds for face:
     const scalar SLeft  = min(qLeft - a_L, contrUTilde - aTilde);

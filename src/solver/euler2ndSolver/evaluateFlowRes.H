@@ -7,8 +7,8 @@ void Foam::euler2ndSolver::evaluateFlowRes
 {   
     rhoGrad_ = fvc::grad(rho_);
     UGrad_   = fvc::grad(U_);
-    pGrad_   = fvc::grad(p_);
-    evaluateFlowRes(rho_, U_, p_, rhoGrad_, UGrad_, pGrad_, resRho, resRhoU, resRhoE);
+    TGrad_   = fvc::grad(T_);
+    evaluateFlowRes(rho_, U_, p_, T_, rhoGrad_, UGrad_, TGrad_, resRho, resRhoU, resRhoE);
 }
 
 void Foam::euler2ndSolver::evaluateFlowRes
@@ -16,9 +16,10 @@ void Foam::euler2ndSolver::evaluateFlowRes
     const volScalarField& rho,
     const volVectorField& U,
     const volScalarField& p,
+    const volScalarField& T,
     const volVectorField& rhoGrad,
     const volTensorField& UGrad,
-    const volVectorField& pGrad,
+    const volVectorField& TGrad,
     scalarField& resRho,
     vectorField& resRhoU,
     scalarField& resRhoE
@@ -46,18 +47,18 @@ void Foam::euler2ndSolver::evaluateFlowRes
         mesh_,
         dimensionedVector(dimless, vector::one)
     );
-    volScalarField pLimit
+    volScalarField TLimit
     (
         IOobject
         (
-            "pLimit",
+            "TLimit",
             mesh_.time().timeName(),
             mesh_
         ),
         mesh_,
         dimensionedScalar(dimless, 1)
     );
-    limitGrad(rho, U, p, rhoGrad, UGrad, pGrad, rhoLimit, ULimit, pLimit);
+    limitGrad(rho, U, T, rhoGrad, UGrad, TGrad, rhoLimit, ULimit, TLimit);
     resRho  = scalarField(mesh_.nCells(), 0.0);
     resRhoU = vectorField(mesh_.nCells(), vector::zero);
     resRhoE = scalarField(mesh_.nCells(), 0.0);
@@ -74,10 +75,10 @@ void Foam::euler2ndSolver::evaluateFlowRes
         const scalar rho_j = rho[j] + (rhoGrad[j]&delta_j)*rhoLimit[j];
         const vector U_i = U[i] + cmptMultiply(UGrad[i]&delta_i, ULimit[i]);
         const vector U_j = U[j] + cmptMultiply(UGrad[j]&delta_j, ULimit[j]);
-        const scalar p_i = p[i] + (pGrad_[i]&delta_i)*pLimit[i];
-        const scalar p_j = p[j] + (pGrad_[j]&delta_j)*pLimit[j];
+        const scalar T_i = T[i] + (TGrad[i]&delta_i)*TLimit[i];
+        const scalar T_j = T[j] + (TGrad[j]&delta_j)*TLimit[j];
         riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                               rho_i, rho_j, U_i, U_j, p_i, p_j,
+                               rho_i, rho_j, U_i, U_j, T_i, T_j,
                                normal_[faceI], fluidProps_.gamma);
         resRho[i]  -= rhoFlux  * mesh_.magSf()[faceI];
         resRhoU[i] -= rhoUFlux * mesh_.magSf()[faceI];
@@ -101,13 +102,13 @@ void Foam::euler2ndSolver::evaluateFlowRes
             const vectorField delta_j = neighPatch.Cf() - neighPatch.Cn();
             const scalarField rho_neigh = rho.boundaryField()[patchI].patchNeighbourField();
             const vectorField U_neigh   = U.boundaryField()[patchI].patchNeighbourField();
-            const scalarField p_neigh   = p.boundaryField()[patchI].patchNeighbourField();
+            const scalarField T_neigh   = T.boundaryField()[patchI].patchNeighbourField();
             const vectorField rhoGrad_neigh = rhoGrad.boundaryField()[patchI].patchNeighbourField();
             const tensorField UGrad_neigh   = UGrad.boundaryField()[patchI].patchNeighbourField();
-            const vectorField pGrad_neigh   = pGrad.boundaryField()[patchI].patchNeighbourField();
+            const vectorField TGrad_neigh   = TGrad.boundaryField()[patchI].patchNeighbourField();
             const scalarField rhoLimit_neigh = rhoLimit.boundaryField()[patchI].patchNeighbourField();
             const vectorField ULimit_neigh   = ULimit.boundaryField()[patchI].patchNeighbourField();
-            const scalarField pLimit_neigh   = pLimit.boundaryField()[patchI].patchNeighbourField();
+            const scalarField TLimit_neigh   = TLimit.boundaryField()[patchI].patchNeighbourField();
             forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux;
@@ -118,10 +119,10 @@ void Foam::euler2ndSolver::evaluateFlowRes
                 const scalar rho_j = rho_neigh[faceI] + (rhoGrad_neigh[faceI]&delta_j[faceI])*rhoLimit_neigh[faceI];
                 const vector U_i = U[i] + cmptMultiply(UGrad[i]&delta_i[faceI], ULimit[i]);
                 const vector U_j = U_neigh[faceI] + cmptMultiply(UGrad_neigh[faceI]&delta_j[faceI], ULimit_neigh[faceI]);
-                const scalar p_i = p[i] + (pGrad[i]&delta_i[faceI])*pLimit[i];
-                const scalar p_j = p_neigh[faceI] + (pGrad_neigh[faceI]&delta_j[faceI])*pLimit_neigh[faceI];
+                const scalar T_i = T[i] + (TGrad[i]&delta_i[faceI])*TLimit[i];
+                const scalar T_j = T_neigh[faceI] + (TGrad_neigh[faceI]&delta_j[faceI])*TLimit_neigh[faceI];
                 riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                       rho_i, rho_j, U_i, U_j, p_i, p_j,
+                                       rho_i, rho_j, U_i, U_j, T_i, T_j,
                                        normal[faceI], fluidProps_.gamma);
                 resRho[i]  -= rhoFlux * magSf[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
@@ -132,13 +133,13 @@ void Foam::euler2ndSolver::evaluateFlowRes
         {
             const scalarField rho_neigh = rho.boundaryField()[patchI].patchNeighbourField();
             const vectorField U_neigh   = U.boundaryField()[patchI].patchNeighbourField();
-            const scalarField p_neigh   = p.boundaryField()[patchI].patchNeighbourField();
+            const scalarField T_neigh   = T.boundaryField()[patchI].patchNeighbourField();
             const vectorField rhoGrad_neigh = rhoGrad.boundaryField()[patchI].patchNeighbourField();
             const tensorField UGrad_neigh   = UGrad.boundaryField()[patchI].patchNeighbourField();
-            const vectorField pGrad_neigh   = pGrad.boundaryField()[patchI].patchNeighbourField();
+            const vectorField TGrad_neigh   = TGrad.boundaryField()[patchI].patchNeighbourField();
             const scalarField rhoLimit_neigh = rhoLimit.boundaryField()[patchI].patchNeighbourField();
             const vectorField ULimit_neigh   = ULimit.boundaryField()[patchI].patchNeighbourField();
-            const scalarField pLimit_neigh   = pLimit.boundaryField()[patchI].patchNeighbourField();
+            const scalarField TLimit_neigh   = TLimit.boundaryField()[patchI].patchNeighbourField();
             const vectorField delta_i = mesh_.boundary()[patchI].Cf() - mesh_.boundary()[patchI].Cn();
             const vectorField delta_j = mesh_.boundary()[patchI].Cf() - mesh_.C().boundaryField()[patchI].patchNeighbourField();
             forAll(bfaceCells, faceI)
@@ -151,10 +152,10 @@ void Foam::euler2ndSolver::evaluateFlowRes
                 const scalar rho_j = rho_neigh[faceI] + (rhoGrad_neigh[faceI]&delta_j[faceI])*rhoLimit_neigh[faceI];
                 const vector U_i = U[i] + cmptMultiply((UGrad[i]&delta_i[faceI]), ULimit[i]);
                 const vector U_j = U_neigh[faceI] + cmptMultiply(UGrad_neigh[faceI]&delta_j[faceI], ULimit_neigh[faceI]);
-                const scalar p_i = p[i] + (pGrad[i]&delta_i[faceI])*pLimit[i];
-                const scalar p_j = p_neigh[faceI] + (pGrad_neigh[faceI]&delta_j[faceI])*pLimit_neigh[faceI];
+                const scalar T_i = T[i] + (TGrad[i]&delta_i[faceI])*TLimit[i];
+                const scalar T_j = T_neigh[faceI] + (TGrad_neigh[faceI]&delta_j[faceI])*TLimit_neigh[faceI];
                 riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                       rho_i, rho_j, U_i, U_j, p_i, p_j,
+                                       rho_i, rho_j, U_i, U_j, T_i, T_j,
                                        normal[faceI], fluidProps_.gamma);
                 resRho[i]  -= rhoFlux * magSf[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];

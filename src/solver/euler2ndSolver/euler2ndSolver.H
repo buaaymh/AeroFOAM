@@ -99,9 +99,10 @@ protected:
         const volScalarField& rho,
         const volVectorField& U,
         const volScalarField& p,
+        const volScalarField& T,
         const volVectorField& rhoGrad,
         const volTensorField& UGrad,
-        const volVectorField& pGrad,
+        const volVectorField& TGrad,
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
@@ -113,13 +114,13 @@ private:
     (
         const volScalarField& rho,
         const volVectorField& U,
-        const volScalarField& p,
+        const volScalarField& T,
         const volVectorField& rhoGrad,
         const volTensorField& UGrad,
-        const volVectorField& pGrad,
+        const volVectorField& TGrad,
         volScalarField& rhoLimit,
         volVectorField& ULimit,
-        volScalarField& pLimit
+        volScalarField& TLimit
     );
 
     scalar Venkat

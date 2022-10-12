@@ -18,11 +18,12 @@ void Foam::euler2ndSolver::matrixVectorProduct
     rho.primitiveFieldRef() += v_Rho*eps;
     U.primitiveFieldRef() = (rhoU_.primitiveField()+v_RhoU*eps)/rho.primitiveField();
     p.primitiveFieldRef() = (rhoE_.primitiveField()+v_RhoE*eps-0.5*rho.primitiveField()*magSqr(U.primitiveField()))*(fluidProps_.gamma-1.0);
-    correctPrimitiveBoundary(rho, U, p);
+    volScalarField T = fluidProps_.gamma*p/rho;
+    correctPrimitiveBoundary(rho, U, p, T);
     volVectorField rhoGrad = fvc::grad(rho);
     volTensorField UGrad   = fvc::grad(U);
-    volVectorField pGrad   = fvc::grad(p);
-    evaluateFlowRes(rho, U, p, rhoGrad, UGrad, pGrad, y_Rho, y_RhoU, y_RhoE);
+    volVectorField TGrad   = fvc::grad(T);
+    evaluateFlowRes(rho, U, p, T, rhoGrad, UGrad, TGrad, y_Rho, y_RhoU, y_RhoE);
     y_Rho  = v_Rho /localDtDv_ - (y_Rho  - resRho) /eps;
     y_RhoU = v_RhoU/localDtDv_ - (y_RhoU - resRhoU)/eps;
     y_RhoE = v_RhoE/localDtDv_ - (y_RhoE - resRhoE)/eps;

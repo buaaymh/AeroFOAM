@@ -37,21 +37,21 @@ void Foam::roeFlux::evaluateFlux
     const scalar& rho_R,
     const vector& U_L,
     const vector& U_R,
-    const scalar& p_L,
-    const scalar& p_R,
+    const scalar& T_L,
+    const scalar& T_R,
     const vector& normal,
     const scalar& gamma
 ) const
 {   
-    const scalar ggm1  = gamma/(gamma-1);
     // left & right state
-    const scalar H_L = ggm1*p_L/rho_L + 0.5*magSqr(U_L);
-    const scalar H_R = ggm1*p_R/rho_R + 0.5*magSqr(U_R);
+    const scalar p_L = rho_L*T_L/gamma;
+    const scalar p_R = rho_R*T_R/gamma;
+    const scalar H_L = T_L/(gamma-1) + 0.5*magSqr(U_L);
+    const scalar H_R = T_R/(gamma-1) + 0.5*magSqr(U_R);
     const scalar qsRho_L = rho_L*(U_L&normal);
     const scalar qsRho_R = rho_R*(U_R&normal);
-    const scalar p_A = 0.5 * (p_L + p_R);
     rhoFlux  = 0.5 * (qsRho_L     + qsRho_R    );
-    rhoUFlux = 0.5 * (qsRho_L*U_L + qsRho_R*U_R) + p_A*normal;
+    rhoUFlux = 0.5 * (qsRho_L*U_L + qsRho_R*U_R + (p_L+p_R)*normal);
     rhoEFlux = 0.5 * (qsRho_L*H_L + qsRho_R*H_R);
 
     // Roe's average
@@ -78,10 +78,10 @@ void Foam::roeFlux::evaluateFlux
 
     // upwind fluxes
     const scalar temp = 1.0/c2_A;
-    h1              = rho_A*c_A*dU;
-    h2              = eabs1*(p_R-p_L     - h1)*0.5*temp;
+                 h1 = rho_A*c_A*dU;
+                 h2 = eabs1*(p_R-p_L     - h1)*0.5*temp;
     const scalar h3 = eabs2*(rho_R-rho_L - (p_R-p_L)*temp);
-    h4              = eabs2*rho_A;
+                 h4 = eabs2*rho_A;
     const scalar h5 = eabs4*(p_R-p_L     + h1)*0.5*temp;
 
     rhoFlux  -= 0.5*(h2                  + h3                                     + h5);

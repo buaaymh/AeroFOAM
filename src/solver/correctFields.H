@@ -14,19 +14,17 @@ void Foam::solver::correctFields()
     c_ = sqrt(T_.primitiveField());
     Ma_.primitiveFieldRef() = mag(U_.primitiveFieldRef())/c_;
     // Boundary conditions
-    T_.correctBoundaryConditions();
-    correctPrimitiveBoundary(rho_, U_, p_);
+    correctPrimitiveBoundary(rho_, U_, p_, T_);
     // Update other BCs
     const volScalarField::Boundary& rhoBf = rho_.boundaryFieldRef();
     const volVectorField::Boundary& UBf = U_.boundaryFieldRef();
     const volScalarField::Boundary& pBf = p_.boundaryFieldRef();
+    const volScalarField::Boundary& TBf = T_.boundaryFieldRef();
     volVectorField::Boundary& rhoUBf = rhoU_.boundaryFieldRef();
     volScalarField::Boundary& rhoEBf = rhoE_.boundaryFieldRef();
-    volScalarField::Boundary& TBf = T_.boundaryFieldRef();
     volScalarField::Boundary& MaBf = Ma_.boundaryFieldRef();
     rhoUBf = rhoBf * UBf;
     rhoEBf = pBf/(fluidProps_.gamma-1.0) + 0.5*rhoBf*magSqr(UBf);
-    TBf = pBf*fluidProps_.gamma/rhoBf;
     MaBf = mag(UBf)/sqrt(TBf);
 }
 
@@ -34,7 +32,8 @@ void Foam::solver::correctPrimitiveBoundary
 (
     volScalarField& rho,
     volVectorField& U,
-    volScalarField& p
+    volScalarField& p,
+    volScalarField& T
 )
 {
     rho.correctBoundaryConditions();
@@ -126,4 +125,5 @@ void Foam::solver::correctPrimitiveBoundary
             }
         }
     }
+    T.boundaryFieldRef() = p.boundaryFieldRef()*fluidProps_.gamma/rho.boundaryFieldRef();
 }
