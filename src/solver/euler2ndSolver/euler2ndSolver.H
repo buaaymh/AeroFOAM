@@ -71,7 +71,6 @@ public:
     virtual ~euler2ndSolver() {};
 
     // Member Functions
-
     void evaluateFlowRes
     (
         scalarField& resRho,
@@ -80,19 +79,6 @@ public:
     );
 
 protected:
-
-    void matrixVectorProduct
-    (
-        const scalarField& resRho,
-        const vectorField& resRhoU,
-        const scalarField& resRhoE,
-        const scalarField& v_Rho,
-        const vectorField& v_RhoU,
-        const scalarField& v_RhoE,
-        scalarField& y_Rho,
-        vectorField& y_RhoU,
-        scalarField& y_RhoE
-    );
 
     void evaluateFlowRes
     (
@@ -106,7 +92,7 @@ protected:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
-    );
+    ) const;
 
 private:
 
@@ -121,7 +107,7 @@ private:
         volScalarField& rhoLimit,
         volVectorField& ULimit,
         volScalarField& TLimit
-    );
+    ) const;
 
     scalar Venkat
     (
@@ -129,7 +115,7 @@ private:
         const scalar& deltaMin,
         const scalar& deltaMax,
         const scalar& cellVolume
-    );
+    ) const;
 
 };
 

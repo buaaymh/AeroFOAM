@@ -45,7 +45,7 @@ void Foam::euler3rdSolver::updateCoefficients()
         const scalar dRho0 = rho_[j] - rho_[i];
         const vector dU0   = U_[j] - U_[i];
         const scalar dT0   = T_[j] - T_[i];
-        scalar temp = 0.25*mesh_.magSf()[faceI]*vrWeight[0]/delta[faceI];
+        scalar temp = 0.25*mesh_.magSf()[faceI]*sqr(vrWeight[0])/delta[faceI];
         for (label gaussI = 0; gaussI != 4; ++gaussI)
         {
             const vector delta_i = quad_[faceI][gaussI] - mesh_.C()[i];
@@ -82,7 +82,7 @@ void Foam::euler3rdSolver::updateCoefficients()
         
         const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
         const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-        temp = delta[faceI] * mesh_.magSf()[faceI] * vrWeight[1];
+        temp = delta[faceI]*mesh_.magSf()[faceI]*sqr(vrWeight[1]);
         const scalar dRho1 = (rhoGrad_[j]-rhoGrad_[i])&normal_[faceI] *temp;
         const vector dU1   = (UGrad_[j]-UGrad_[i])&normal_[faceI]     *temp;
         const scalar dT1   = (TGrad_[j]-TGrad_[i])&normal_[faceI]     *temp;
@@ -101,52 +101,135 @@ void Foam::euler3rdSolver::updateCoefficients()
         bUz[j]  -= Dn1 * dU1.z();
         bT[j]   -= Dn1 * dT1;
     }
-    forAll(mesh_.boundary(), patchI)
-    {
-        if (mesh_.boundary()[patchI].coupled()) continue;
-        const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-        const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
-        const scalarField  delta = mag(mesh_.boundary()[patchI].delta());
-        const label start = mesh_.boundary()[patchI].start();
-        const fvPatchScalarField& rhoB = rho_.boundaryField()[patchI];
-        const fvPatchVectorField& UB = U_.boundaryField()[patchI];
-        const fvPatchScalarField& pT = T_.boundaryField()[patchI];
-        std::vector<vector> quadToints(4, vector::zero);
-        forAll(bfaceCells, faceI)
-        {
-            const label i = bfaceCells[faceI];
-            gaussQuad4(start+faceI, quadToints);
-            Column bRho_i = Column::Zero();
-            Column bUx_i = Column::Zero();
-            Column bUy_i = Column::Zero();
-            Column bUz_i = Column::Zero();
-            Column bT_i = Column::Zero();
-            const scalar dRho0 = rhoB[faceI] - rho_[i];
-            const vector dU0   = UB[faceI]   - U_[i];
-            const scalar dT0   = pT[faceI]   - T_[i];
-            scalar temp = 0.25*magSf[faceI]*vrWeight[0]/delta[faceI];
-            for (label gaussI = 0; gaussI != 4; ++gaussI)
-            {
-                const vector delta_i = quadToints[gaussI] - mesh_.C()[i];
-                const scalar wTemp = Quad4::w[gaussI] * temp;
-                const scalar dRho = (dRho0 - (rhoGrad_[i]&delta_i))*wTemp;
-                const vector dU   = (dU0   - (UGrad_[i]&delta_i))  *wTemp;
-                const scalar dT   = (dT0   - (TGrad_[i]&delta_i))  *wTemp;
-                //cell i
-                Column Dn0 = Foam::basisPolyEigen(delta_i, rLengthScale_[i], basisConst_[i]);
-                bRho_i += Dn0 * dRho;
-                bUx_i  += Dn0 * dU.x();
-                bUy_i  += Dn0 * dU.y();
-                bUx_i  += Dn0 * dU.x();
-                bT_i   += Dn0 * dT;
-            }
-            bRho[i] += bRho_i;
-            bUx[i]  += bUx_i;
-            bUy[i]  += bUy_i;
-            bUz[i]  += bUz_i;
-            bT[i]   += bT_i;
-        }
-    }
+    // forAll(mesh_.boundary(), patchI)
+    // {
+    //     if (mesh_.boundary()[patchI].coupled()) continue;
+    //     const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+    //     const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
+    //     const scalarField  delta = mag(mesh_.boundary()[patchI].delta());
+    //     const vectorField& normal = normal_.boundaryField()[patchI];
+    //     const vectorField& Cf = mesh_.boundary()[patchI].Cf();
+    //     const label start = mesh_.boundary()[patchI].start();
+    //     const word name = mesh_.boundary()[patchI].name();
+    //     const word type = mesh_.boundary()[patchI].type();
+    //     const fvPatchScalarField& rhoB = rho_.boundaryField()[patchI];
+    //     const fvPatchVectorField& UB = U_.boundaryField()[patchI];
+    //     const fvPatchScalarField& TB = T_.boundaryField()[patchI];
+    //     std::vector<vector> quadToints(4, vector::zero);
+    //     forAll(bfaceCells, faceI)
+    //     {
+    //         const label i = bfaceCells[faceI];
+    //         gaussQuad4(start+faceI, quadToints);
+    //         Column bRho_i = Column::Zero();
+    //         Column bUx_i = Column::Zero();
+    //         Column bUy_i = Column::Zero();
+    //         Column bUz_i = Column::Zero();
+    //         Column bT_i = Column::Zero();
+    //         const scalar dRho0 = rhoB[faceI] - rho_[i];
+    //         const vector dU0   = UB[faceI]   - U_[i];
+    //         const scalar dT0   = TB[faceI]   - T_[i];
+    //         scalar temp = 0.25*magSf[faceI]*sqr(vrWeight[0])/delta[faceI];
+    //         if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
+    //         {
+    //             for (label gaussI = 0; gaussI != 4; ++gaussI)
+    //             {
+    //                 const vector delta_i = quadToints[gaussI] - mesh_.C()[i];
+    //                 const scalar wTemp = Quad4::w[gaussI] * temp;
+    //                 const scalar dRho = (dRho0 - (rhoGrad_[i]&delta_i))*wTemp;
+    //                 const vector dU   = (dU0   - (UGrad_[i]&delta_i))  *wTemp;
+    //                 const scalar dT   = (dT0   - (TGrad_[i]&delta_i))  *wTemp;
+    //                 //cell i
+    //                 Column Dn0 = Foam::basisPolyEigen(delta_i, rLengthScale_[i], basisConst_[i]);
+    //                 bRho_i += Dn0 * dRho;
+    //                 bUx_i  += Dn0 * dU.x();
+    //                 bUy_i  += Dn0 * dU.y();
+    //                 bUx_i  += Dn0 * dU.x();
+    //                 bT_i   += Dn0 * dT;
+    //             }
+    //             const vector delta_i = Cf[faceI] - mesh_.C()[i];
+    //             temp = delta[faceI]*magSf[faceI]*sqr(vrWeight[1]);
+    //             const scalar dRho1 = -(rhoGrad_[i]&normal[faceI])*temp;
+    //             const vector dU1   = -(UGrad_[i]&normal[faceI])  *temp;
+    //             const scalar dT1   = -(TGrad_[i]&normal[faceI])  *temp;
+    //             //cell i
+    //             Column Dn1 = basisPolyDn1Eigen(delta_i, rLengthScale_[i], normal[faceI]);
+    //             bRho_i += Dn1 * dRho1;
+    //             bUx_i  += Dn1 * dU1.x();
+    //             bUy_i  += Dn1 * dU1.y();
+    //             bUz_i  += Dn1 * dU1.z();
+    //             bT_i   += Dn1 * dT1;
+    //         }
+    //         if (name == "inlet" || name == "outlet" || name == "farField")
+    //         {
+    //             for (label gaussI = 0; gaussI != 4; ++gaussI)
+    //             {
+    //                 const vector delta_i = quadToints[gaussI] - mesh_.C()[i];
+    //                 const scalar wTemp = Quad4::w[gaussI] * temp;
+    //                 const scalar dRho = (dRho0 - (rhoGrad_[i]&delta_i))*wTemp;
+    //                 const vector dU   = (dU0   - (UGrad_[i]&delta_i))  *wTemp;
+    //                 const scalar dT   = (dT0   - (TGrad_[i]&delta_i))  *wTemp;
+    //                 //cell i
+    //                 Column Dn0 = Foam::basisPolyEigen(delta_i, rLengthScale_[i], basisConst_[i]);
+    //                 bRho_i += Dn0 * dRho;
+    //                 bUx_i  += Dn0 * dU.x();
+    //                 bUy_i  += Dn0 * dU.y();
+    //                 bUx_i  += Dn0 * dU.x();
+    //                 bT_i   += Dn0 * dT;
+    //             }
+    //         }
+    //         bRho[i] += bRho_i;
+    //         bUx[i]  += bUx_i;
+    //         bUy[i]  += bUy_i;
+    //         bUz[i]  += bUz_i;
+    //         bT[i]   += bT_i;
+    //     }
+    // }
+    // forAll(mesh_.boundary(), patchI)
+    // {
+    //     if (mesh_.boundary()[patchI].coupled()) continue;
+    //     const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+    //     const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
+    //     const scalarField  delta = mag(mesh_.boundary()[patchI].delta());
+    //     const label start = mesh_.boundary()[patchI].start();
+    //     const fvPatchScalarField& rhoB = rho_.boundaryField()[patchI];
+    //     const fvPatchVectorField& UB = U_.boundaryField()[patchI];
+    //     const fvPatchScalarField& TB = T_.boundaryField()[patchI];
+    //     std::vector<vector> quadToints(4, vector::zero);
+    //     forAll(bfaceCells, faceI)
+    //     {
+    //         const label i = bfaceCells[faceI];
+    //         gaussQuad4(start+faceI, quadToints);
+    //         Column bRho_i = Column::Zero();
+    //         Column bUx_i = Column::Zero();
+    //         Column bUy_i = Column::Zero();
+    //         Column bUz_i = Column::Zero();
+    //         Column bT_i = Column::Zero();
+    //         const scalar dRho0 = rhoB[faceI] - rho_[i];
+    //         const vector dU0   = UB[faceI]   - U_[i];
+    //         const scalar dT0   = TB[faceI]   - T_[i];
+    //         scalar temp = 0.25*magSf[faceI]*vrWeight[0]/delta[faceI];
+    //         for (label gaussI = 0; gaussI != 4; ++gaussI)
+    //         {
+    //             const vector delta_i = quadToints[gaussI] - mesh_.C()[i];
+    //             const scalar wTemp = Quad4::w[gaussI] * temp;
+    //             const scalar dRho = (dRho0 - (rhoGrad_[i]&delta_i))*wTemp;
+    //             const vector dU   = (dU0   - (UGrad_[i]&delta_i))  *wTemp;
+    //             const scalar dT   = (dT0   - (TGrad_[i]&delta_i))  *wTemp;
+    //             //cell i
+    //             Column Dn0 = Foam::basisPolyEigen(delta_i, rLengthScale_[i], basisConst_[i]);
+    //             bRho_i += Dn0 * dRho;
+    //             bUx_i  += Dn0 * dU.x();
+    //             bUy_i  += Dn0 * dU.y();
+    //             bUx_i  += Dn0 * dU.x();
+    //             bT_i   += Dn0 * dT;
+    //         }
+    //         bRho[i] += bRho_i;
+    //         bUx[i]  += bUx_i;
+    //         bUy[i]  += bUy_i;
+    //         bUz[i]  += bUz_i;
+    //         bT[i]   += bT_i;
+    //     }
+    // }
     forAll(mesh_.cells(), cellI)
     {
         if (p0_[cellI])

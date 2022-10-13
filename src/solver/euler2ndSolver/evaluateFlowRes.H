@@ -5,10 +5,10 @@ void Foam::euler2ndSolver::evaluateFlowRes
     scalarField& resRhoE
 )
 {   
-    rhoGrad_ = fvc::grad(rho_);
-    UGrad_   = fvc::grad(U_);
-    TGrad_   = fvc::grad(T_);
-    evaluateFlowRes(rho_, U_, p_, T_, rhoGrad_, UGrad_, TGrad_, resRho, resRhoU, resRhoE);
+    volVectorField rhoGrad = fvc::grad(rho_);
+    volTensorField UGrad   = fvc::grad(U_);
+    volVectorField TGrad   = fvc::grad(T_);
+    evaluateFlowRes(rho_, U_, p_, T_, rhoGrad, UGrad, TGrad, resRho, resRhoU, resRhoE);
 }
 
 void Foam::euler2ndSolver::evaluateFlowRes
@@ -23,7 +23,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
     scalarField& resRho,
     vectorField& resRhoU,
     scalarField& resRhoE
-)
+) const
 {
     volScalarField rhoLimit
     (

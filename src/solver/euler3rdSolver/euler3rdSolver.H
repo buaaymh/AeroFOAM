@@ -64,10 +64,13 @@ private:
 
 protected:
     //- Density grad
+    volVectorField rhoGrad_;
     volVectorField rhoGradLimited_;
     //- Velocity grad
+    volTensorField UGrad_;
     volTensorField UGradLimited_;
     //- pressure grad
+    volVectorField TGrad_;
     volVectorField TGradLimited_;
     //- Quadratic polynomial coefficients
     volSymmTensorField d2Rho_;
@@ -112,7 +115,6 @@ public:
     virtual ~euler3rdSolver() {};
 
     // Member Functions
-
     void evaluateFlowRes
     (
         scalarField& resRho,

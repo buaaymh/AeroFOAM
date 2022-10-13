@@ -9,7 +9,7 @@ void Foam::euler2ndSolver::limitGrad
     volScalarField& rhoLimit,
     volVectorField& ULimit,
     volScalarField& TLimit
-)
+) const
 {
     scalarField rhoMin = rho.field();
     scalarField rhoMax = rho.field();
@@ -121,7 +121,7 @@ scalar Foam::euler2ndSolver::Venkat
     const scalar& deltaMin,
     const scalar& deltaMax,
     const scalar& eps2
-)
+) const
 {
     if (project > SMALL)
     {

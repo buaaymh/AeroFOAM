@@ -37,6 +37,17 @@ Foam::euler3rdSolver::euler3rdSolver
 )
 :
     euler2ndSolver(fluidProps, rho, U, p),
+    rhoGrad_
+    (
+        IOobject
+        (
+            "rhoGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless/dimLength, vector::zero)
+    ),
     rhoGradLimited_
     (
         IOobject
@@ -48,6 +59,17 @@ Foam::euler3rdSolver::euler3rdSolver
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
     ),
+    UGrad_
+    (
+        IOobject
+        (
+            "UGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedTensor(dimless/dimLength, tensor::zero)
+    ),
     UGradLimited_
     (
         IOobject
@@ -58,6 +80,17 @@ Foam::euler3rdSolver::euler3rdSolver
         ),
         mesh_,
         dimensionedTensor(dimless/dimLength, tensor::zero)
+    ),
+    TGrad_
+    (
+        IOobject
+        (
+            "TGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless/dimLength, vector::zero)
     ),
     TGradLimited_
     (

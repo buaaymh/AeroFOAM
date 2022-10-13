@@ -88,39 +88,6 @@ Foam::solver::solver
         ),
         mag(U_)/Foam::sqrt(T_)
     ),
-    rhoGrad_
-    (
-        IOobject
-        (
-            "rhoGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-    UGrad_
-    (
-        IOobject
-        (
-            "UGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedTensor(dimless/dimLength, tensor::zero)
-    ),
-    TGrad_
-    (
-        IOobject
-        (
-            "TGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
     volProjections_(vectorField(mesh_.nCells())),
     localDtDv_(scalarField(mesh_.nCells()))
 {
@@ -175,6 +142,8 @@ void Foam::solver::volProjectionsInit()
 #include "correctFields.H"
 
 #include "GMRES.H"
+
+#include "matrixVectorProduct.H"
 
 #include "solveFlowLinearSystem.H"
 
