@@ -22,7 +22,7 @@ void Foam::solver::solveFlowLinearSystem
     List<scalarField> v_Rho(nDirs+1, scalarField(mesh_.nCells()));
     List<vectorField> v_RhoU(nDirs+1, vectorField(mesh_.nCells()));
     List<scalarField> v_RhoE(nDirs+1, scalarField(mesh_.nCells()));
-    matrixVectorProduct(resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE, v_Rho[0], v_RhoU[0], v_RhoE[0]);
+    matrixVectorProduct(L, U, D, dRho, dRhoU, dRhoE, v_Rho[0], v_RhoU[0], v_RhoE[0]);
     v_Rho[0]  = resRho  - v_Rho[0];
     v_RhoU[0] = resRhoU - v_RhoU[0];
     v_RhoE[0] = resRhoE - v_RhoE[0];
@@ -51,7 +51,7 @@ void Foam::solver::solveFlowLinearSystem
             v_Rho[i]  /= beta;
             v_RhoU[i] /= beta;
             v_RhoE[i] /= beta;
-            matrixVectorProduct(resRho, resRhoU, resRhoE, v_Rho[i], v_RhoU[i], v_RhoE[i], v_Rho[i+1], v_RhoU[i+1], v_RhoE[i+1]);
+            matrixVectorProduct(L, U, D, v_Rho[i], v_RhoU[i], v_RhoE[i], v_Rho[i+1], v_RhoU[i+1], v_RhoE[i+1]);
             precondition(L, U, D, v_Rho[i+1], v_RhoU[i+1], v_RhoE[i+1]);
             for (label j = 0; j <= i; j++)
             {
@@ -94,7 +94,7 @@ void Foam::solver::solveFlowLinearSystem
             dRhoE += yh[i] * v_RhoE[i];
         }
         // Re-calculate the residual
-        matrixVectorProduct(resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE, v_Rho[0], v_RhoU[0], v_RhoE[0]);
+        matrixVectorProduct(L, U, D, dRho, dRhoU, dRhoE, v_Rho[0], v_RhoU[0], v_RhoE[0]);
         v_Rho[0]  = resRho  - v_Rho[0];
         v_RhoU[0] = resRhoU - v_RhoU[0];
         v_RhoE[0] = resRhoE - v_RhoE[0];

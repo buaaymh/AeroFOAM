@@ -33,6 +33,7 @@ void Foam::solver::matrixVectorProduct
 (
     const scalarField& L,
     const scalarField& U,
+    const scalarField& D,
     const scalarField& v_Rho,
     const vectorField& v_RhoU,
     const scalarField& v_RhoE,
@@ -44,10 +45,9 @@ void Foam::solver::matrixVectorProduct
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
     const surfaceVectorField& Sf = mesh_.Sf();
-    y_Rho  = v_Rho/localDtDv_;
-    y_RhoU = v_RhoU/localDtDv_;
-    y_RhoE = v_RhoE/localDtDv_;
-
+    y_Rho  = D*v_Rho;
+    y_RhoU = D*v_RhoU;
+    y_RhoE = D*v_RhoE;
     forAll(owner, faceI)
     {
         const label i = owner[faceI];
@@ -62,9 +62,9 @@ void Foam::solver::matrixVectorProduct
         scalar dRhoFlux  = L[faceI]*v_Rho[i]  + 0.5*(rho1*phi1       - rho_[i]*phi0);
         vector dRhoUFlux = L[faceI]*v_RhoU[i] + 0.5*(rhoU1*phi1      - rhoU_[i]*phi0 + (p1-p_[i])*Sf[faceI]);
         scalar dRhoEFlux = L[faceI]*v_RhoE[i] + 0.5*((rhoE1+p1)*phi1 - (rhoE_[i]+p_[i])*phi0);
-        y_Rho[i]  += dRhoFlux;
-        y_RhoU[i] += dRhoUFlux;
-        y_RhoE[i] += dRhoEFlux;
+        // y_Rho[i]  += dRhoFlux;
+        // y_RhoU[i] += dRhoUFlux;
+        // y_RhoE[i] += dRhoEFlux;
         y_Rho[j]  -= dRhoFlux;
         y_RhoU[j] -= dRhoUFlux;
         y_RhoE[j] -= dRhoEFlux;
@@ -81,8 +81,8 @@ void Foam::solver::matrixVectorProduct
         y_Rho[i]  -= dRhoFlux;
         y_RhoU[i] -= dRhoUFlux;
         y_RhoE[i] -= dRhoEFlux;
-        y_Rho[j]  += dRhoFlux;
-        y_RhoU[j] += dRhoUFlux;
-        y_RhoE[j] += dRhoEFlux;
+        // y_Rho[j]  += dRhoFlux;
+        // y_RhoU[j] += dRhoUFlux;
+        // y_RhoE[j] += dRhoEFlux;
     }
 }
