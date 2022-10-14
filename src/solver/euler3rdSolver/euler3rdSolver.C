@@ -36,7 +36,7 @@ Foam::euler3rdSolver::euler3rdSolver
     volScalarField& p
 )
 :
-    euler2ndSolver(fluidProps, rho, U, p),
+    solver(fluidProps, rho, U, p),
     rhoGrad_
     (
         IOobject

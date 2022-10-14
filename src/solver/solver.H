@@ -165,20 +165,6 @@ public:
 
 protected:
 
-    virtual void evaluateFlowRes
-    (
-        const volScalarField& rho,
-        const volVectorField& U,
-        const volScalarField& p,
-        const volScalarField& T,
-        const volVectorField& rhoGrad,
-        const volTensorField& UGrad,
-        const volVectorField& TGrad,
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE
-    ) const = 0;
-
     virtual void evaluateMatrixLDU
     (
         scalarField& L,
@@ -197,20 +183,7 @@ protected:
         scalarField& y_Rho,
         vectorField& y_RhoU,
         scalarField& y_RhoE
-    );
-
-    void matrixVectorProduct
-    (
-        const scalarField& resRho,
-        const vectorField& resRhoU,
-        const scalarField& resRhoE,
-        const scalarField& v_Rho,
-        const vectorField& v_RhoU,
-        const scalarField& v_RhoE,
-        scalarField& y_Rho,
-        vectorField& y_RhoU,
-        scalarField& y_RhoE
-    );
+    ) const;
 
     virtual void correctPrimitiveBoundary
     (

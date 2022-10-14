@@ -48,7 +48,7 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-class euler3rdSolver: public euler2ndSolver
+class euler3rdSolver: public solver
 {
 
 public:

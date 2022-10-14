@@ -36,7 +36,73 @@ Foam::euler2ndSolver::euler2ndSolver
     volScalarField& p
 )
 :
-    solver(fluidProps, rho, U, p)
+    solver(fluidProps, rho, U, p),
+    rhoGrad_
+    (
+        IOobject
+        (
+            "rhoGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless/dimLength, vector::zero)
+    ),
+    UGrad_
+    (
+        IOobject
+        (
+            "UGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedTensor(dimless/dimLength, tensor::zero)
+    ),
+    TGrad_
+    (
+        IOobject
+        (
+            "TGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless/dimLength, vector::zero)
+    ),
+    rhoLimit_
+    (
+        IOobject
+        (
+            "rhoLimit",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 1)
+    ),
+    ULimit_
+    (
+        IOobject
+        (
+            "ULimit",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless, vector::one)
+    ),
+    TLimit_
+    (
+        IOobject
+        (
+            "TLimit",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 1)
+    )
 {
     Info << "Ths solver is 2nd order for Euler flow." << nl
          << "Ths limiter is Venkatakrishnan." << nl

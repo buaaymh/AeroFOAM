@@ -68,6 +68,9 @@ void Foam::euler2ndSolver::limitGrad
     rhoMax -= rho.field();
     UMax -= U.field();
     TMax -= T.field();
+    rhoLimit.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
+    ULimit.primitiveFieldRef() = vectorField(mesh_.nCells(), vector::one);
+    TLimit.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
     forAll(owner, faceI)
     {
         const label i = owner[faceI];

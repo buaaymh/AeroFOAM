@@ -50,6 +50,19 @@ namespace Foam
 
 class euler2ndSolver: public solver
 {
+    // Private Data
+    volVectorField rhoGrad_;
+    //- Velocity grad
+    volTensorField UGrad_;
+    //- temperature grad
+    volVectorField TGrad_;
+    //- Density limit
+    volScalarField rhoLimit_;
+    //- Velocity limit
+    volVectorField ULimit_;
+    //- pressure limit
+    volScalarField TLimit_;
+
     // Private Member Functions
     //- Disallow default bitwise copy construct
     euler2ndSolver(const euler2ndSolver&);
@@ -77,22 +90,6 @@ public:
         vectorField& resRhoU,
         scalarField& resRhoE
     );
-
-protected:
-
-    void evaluateFlowRes
-    (
-        const volScalarField& rho,
-        const volVectorField& U,
-        const volScalarField& p,
-        const volScalarField& T,
-        const volVectorField& rhoGrad,
-        const volTensorField& UGrad,
-        const volVectorField& TGrad,
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE
-    ) const;
 
 private:
 
