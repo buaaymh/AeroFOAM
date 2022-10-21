@@ -198,6 +198,19 @@ protected:
         const scalarField& L,
         const scalarField& U,
         const scalarField& D,
+        const scalarField& resRho,
+        const vectorField& resRhoU,
+        const scalarField& resRhoE,
+        scalarField& dRho,
+        vectorField& dRhoU,
+        scalarField& dRhoE
+    ) const;
+
+    void precondition
+    (
+        const scalarField& L,
+        const scalarField& U,
+        const scalarField& D,
         scalarField& dRho,
         vectorField& dRhoU,
         scalarField& dRhoE
@@ -230,6 +243,24 @@ private:
 /*---------------------------------------------------------------------------*\
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
+
+void ApplyGivens
+(
+    const scalar s,
+    const scalar c,
+    scalar& h1,
+    scalar& h2
+);
+
+scalar Sign(scalar x, scalar y);
+
+void GenerateGivens
+(
+    scalar& dx,
+    scalar& dy,
+    scalar& s,
+    scalar& c
+);
 
 void givensRotation
 (
