@@ -15,7 +15,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
     forAll(mesh_.owner(), faceI)
     {
         scalar rhoFlux;
-        vector rhoUFlux = vector::zero;
+        vector rhoUFlux;
         scalar rhoEFlux;
         const label i = mesh_.owner()[faceI];
         const label j = mesh_.neighbour()[faceI];
@@ -27,15 +27,15 @@ void Foam::euler2ndSolver::evaluateFlowRes
         const vector U_j = U_[j] + cmptMultiply(UGrad_[j]&delta_j, ULimit_[j]);
         const scalar T_i = T_[i] + (TGrad_[i]&delta_i)*TLimit_[i];
         const scalar T_j = T_[j] + (TGrad_[j]&delta_j)*TLimit_[j];
-        riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                               rho_i, rho_j, U_i, U_j, T_i, T_j,
-                               normal_[faceI], fluidProps_.gamma);
-        resRho[i]  -= rhoFlux  * mesh_.magSf()[faceI];
-        resRhoU[i] -= rhoUFlux * mesh_.magSf()[faceI];
-        resRhoE[i] -= rhoEFlux * mesh_.magSf()[faceI];
-        resRho[j]  += rhoFlux  * mesh_.magSf()[faceI];
-        resRhoU[j] += rhoUFlux * mesh_.magSf()[faceI];
-        resRhoE[j] += rhoEFlux * mesh_.magSf()[faceI];
+        evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                     rho_i, rho_j, U_i, U_j, T_i, T_j,
+                     normal_[faceI], mesh_.magSf()[faceI]);
+        resRho[i]  -= rhoFlux;
+        resRhoU[i] -= rhoUFlux;
+        resRhoE[i] -= rhoEFlux;
+        resRho[j]  += rhoFlux;
+        resRhoU[j] += rhoUFlux;
+        resRhoE[j] += rhoEFlux;
     }
     forAll(mesh_.boundary(), patchI)
     {
@@ -70,7 +70,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
             forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux;
-                vector rhoUFlux = vector::zero;
+                vector rhoUFlux;
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
                 const scalar rho_i = rho_[i] + (rhoGrad_[i]&delta_i[faceI])*rhoLimit_[i];
@@ -82,9 +82,12 @@ void Foam::euler2ndSolver::evaluateFlowRes
                 riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                                        rho_i, rho_j, U_i, U_j, T_i, T_j,
                                        normal[faceI], fluidProps_.gamma);
-                resRho[i]  -= rhoFlux * magSf[faceI];
-                resRhoU[i] -= rhoUFlux * magSf[faceI];
-                resRhoE[i] -= rhoEFlux * magSf[faceI];
+                evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                             rho_i, rho_j, U_i, U_j, T_i, T_j,
+                             normal[faceI], magSf[faceI]);
+                resRho[i]  -= rhoFlux;
+                resRhoU[i] -= rhoUFlux;
+                resRhoE[i] -= rhoEFlux;
             }
         }
         if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
@@ -117,4 +120,29 @@ void Foam::euler2ndSolver::evaluateFlowRes
             }
         }
     }
+}
+
+void Foam::euler2ndSolver::evaluateFlux
+(
+    scalar& rhoFlux,
+    vector& rhoUFlux,
+    scalar& rhoEFlux,
+    const scalar& rho_L,
+    const scalar& rho_R,
+    const vector& U_L,
+    const vector& U_R,
+    const scalar& T_L,
+    const scalar& T_R,
+    const vector& normal,
+    const scalar& magSf
+) const
+{
+    const scalar p_L = T_L*rho_L/fluidProps_.gamma;
+    const scalar p_R = T_R*rho_R/fluidProps_.gamma;
+    riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                           rho_L, rho_R, U_L, U_R, p_L, p_R,
+                           normal, fluidProps_.gamma);
+    rhoFlux *= magSf;
+    rhoUFlux *= magSf;
+    rhoEFlux *= magSf;
 }

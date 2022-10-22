@@ -52,9 +52,9 @@ void Foam::euler3rdSolver::evaluateFlowRes
                 const vector U_j = U_[j] + vectorPoly(delta_j, UGradLimited_[j], d2UxLimited_[j], d2UyLimited_[j], d2UzLimited_[j], rLengthScale_[j], basisConst_[j]);
                 const scalar T_i = T_[i] + scalarPoly(delta_i, TGradLimited_[i], d2TLimited_[i], rLengthScale_[i], basisConst_[i]);
                 const scalar T_j = T_[j] + scalarPoly(delta_j, TGradLimited_[j], d2TLimited_[j], rLengthScale_[j], basisConst_[j]);
-                riemann_->evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
-                                        rho_i, rho_j, U_i, U_j, T_i, T_j,
-                                        normal_[faceI], fluidProps_.gamma);
+                evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
+                             rho_i, rho_j, U_i, U_j, T_i, T_j,
+                             normal_[faceI]);
                 rhoFlux  += rhoFluxTemp  * Quad4::w[gaussI];
                 rhoUFlux += rhoUFluxTemp * Quad4::w[gaussI];
                 rhoEFlux += rhoEFluxTemp * Quad4::w[gaussI];
@@ -127,9 +127,9 @@ void Foam::euler3rdSolver::evaluateFlowRes
                     const vector U_j = U_neigh[j] + vectorPoly(delta_j, UGrad_neigh[j], d2Ux_neigh[j], d2Uy_neigh[j], d2Uz_neigh[j], rLengthScale_neigh[j], basisConst_neigh[j]);
                     const scalar T_i = T_[i]      + scalarPoly(delta_i, TGradLimited_[i], d2TLimited_[i], rLengthScale_[i], basisConst_[i]);
                     const scalar T_j = T_neigh[j] + scalarPoly(delta_j, TGrad_neigh[j], d2T_neigh[j], rLengthScale_neigh[j], basisConst_neigh[j]);
-                    riemann_->evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
-                                           rho_i, rho_j, U_i, U_j, T_i, T_j,
-                                           normal[j], fluidProps_.gamma);
+                    evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
+                                 rho_i, rho_j, U_i, U_j, T_i, T_j,
+                                 normal[j]);
                     rhoFlux  += rhoFluxTemp  * Quad4::w[gaussI];
                     rhoUFlux += rhoUFluxTemp * Quad4::w[gaussI];
                     rhoEFlux += rhoEFluxTemp * Quad4::w[gaussI];
@@ -182,9 +182,9 @@ void Foam::euler3rdSolver::evaluateFlowRes
                     const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rLengthScale_[i], basisConst_[i]);
                     const vector U_i = U_[i] + vectorPoly(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rLengthScale_[i], basisConst_[i]);
                     const scalar T_i = T_[i] + scalarPoly(delta_i, TGradLimited_[i], d2TLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    riemann_->evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
-                                           rho_i, rhoBound[faceI], U_i, UBound[faceI], T_i, TBound[faceI],
-                                           normal[faceI], fluidProps_.gamma);
+                    evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
+                                 rho_i, rhoBound[faceI], U_i, UBound[faceI], T_i, TBound[faceI],
+                                 normal[faceI]);
                     rhoFlux  += rhoFluxTemp  * Quad4::w[gaussI];
                     rhoUFlux += rhoUFluxTemp * Quad4::w[gaussI];
                     rhoEFlux += rhoEFluxTemp * Quad4::w[gaussI];
@@ -196,4 +196,25 @@ void Foam::euler3rdSolver::evaluateFlowRes
             }
         }
     }
+}
+
+void Foam::euler3rdSolver::evaluateFlux
+(
+    scalar& rhoFlux,
+    vector& rhoUFlux,
+    scalar& rhoEFlux,
+    const scalar& rho_L,
+    const scalar& rho_R,
+    const vector& U_L,
+    const vector& U_R,
+    const scalar& T_L,
+    const scalar& T_R,
+    const vector& normal
+) const
+{
+    const scalar p_L = T_L*rho_L/fluidProps_.gamma;
+    const scalar p_R = T_R*rho_R/fluidProps_.gamma;
+    riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                           rho_L, rho_R, U_L, U_R, p_L, p_R,
+                           normal, fluidProps_.gamma);
 }

@@ -93,6 +93,21 @@ public:
 
 private:
 
+    void evaluateFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& rho_L,
+        const scalar& rho_R,
+        const vector& U_L,
+        const vector& U_R,
+        const scalar& T_L,
+        const scalar& T_R,
+        const vector& normal,
+        const scalar& magSf
+    ) const;
+
     void limitGrad
     (
         const volScalarField& rho,
