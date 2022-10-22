@@ -1,24 +1,24 @@
-// void Foam::solver::solveFlowLinearSystem
-// (
-//     const scalarField& resRho,
-//     const vectorField& resRhoU,
-//     const scalarField& resRhoE
-// )
-// {
-//     updateLTS();
-//     scalarField L(mesh_.nInternalFaces());
-//     scalarField U(mesh_.nInternalFaces());
-//     scalarField D(1.0/localDtDv_);
-//     evaluateMatrixLDU(L, U, D);
-//     // Preconditioning step
-//     scalarField dRho(mesh_.nCells());
-//     vectorField dRhoU(mesh_.nCells());
-//     scalarField dRhoE(mesh_.nCells());
-//     precondition(L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
-//     rho_.primitiveFieldRef()  += dRho;
-//     rhoU_.primitiveFieldRef() += dRhoU;
-//     rhoE_.primitiveFieldRef() += dRhoE;
-// }
+void Foam::solver::solveFlowLinearSystem
+(
+    const scalarField& resRho,
+    const vectorField& resRhoU,
+    const scalarField& resRhoE
+)
+{
+    updateLTS();
+    scalarField L(mesh_.nInternalFaces());
+    scalarField U(mesh_.nInternalFaces());
+    scalarField D(1.0/localDtDv_);
+    evaluateMatrixLDU(L, U, D);
+    // Preconditioning step
+    scalarField dRho(mesh_.nCells());
+    vectorField dRhoU(mesh_.nCells());
+    scalarField dRhoE(mesh_.nCells());
+    precondition(L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
+    rho_.primitiveFieldRef()  += dRho;
+    rhoU_.primitiveFieldRef() += dRhoU;
+    rhoE_.primitiveFieldRef() += dRhoE;
+}
 
 void Foam::solver::solveFlowPseudoTimeSystem
 (
