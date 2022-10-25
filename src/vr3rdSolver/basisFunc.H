@@ -1,28 +1,28 @@
 symmTensor Foam::basisPoly
 (
     const vector& delta,
-    const vector& rLengthScale,
-    const symmTensor& basisConst
+    const vector& rDeltaXYZ,
+    const symmTensor& basisMean
 )
 {
-    const vector B = cmptMultiply(delta, rLengthScale);
+    const vector B = cmptMultiply(delta, rDeltaXYZ);
     return symmTensor
     (
-        0.5*(sqr(B.x())-basisConst.xx()), B.x()*B.y()-basisConst.xy(), B.x()*B.z()-basisConst.xz(),
-                                     0.5*(sqr(B.y())-basisConst.yy()), B.y()*B.z()-basisConst.yz(),
-                                                                   0.5*(sqr(B.z())-basisConst.zz())
+        0.5*(sqr(B.x())-basisMean.xx()), B.x()*B.y()-basisMean.xy(),  B.x()*B.z()-basisMean.xz(),
+                                     0.5*(sqr(B.y())-basisMean.yy()), B.y()*B.z()-basisMean.yz(),
+                                                                  0.5*(sqr(B.z())-basisMean.zz())
     );
 }
 
 symmTensor Foam::basisPolyDn1
 (
     const vector& delta,
-    const vector& rLengthScale,
+    const vector& rDeltaXYZ,
     const vector& normal
 )
 {
-    const vector B = cmptMultiply(delta, rLengthScale);
-    const vector rLn = cmptMultiply(rLengthScale, normal);
+    const vector B = cmptMultiply(delta, rDeltaXYZ);
+    const vector rLn = cmptMultiply(rDeltaXYZ, normal);
     return symmTensor
     (
         B.x()*rLn.x(), B.y()*rLn.x()+B.x()*rLn.y(), B.z()*rLn.x()+B.x()*rLn.z(),
@@ -33,11 +33,11 @@ symmTensor Foam::basisPolyDn1
 
 symmTensor Foam::basisPolyDn2
 (
-    const vector& rLengthScale,
+    const vector& rDeltaXYZ,
     const vector& normal
 )
 {
-    const vector Bn2 = cmptMultiply(rLengthScale, normal);
+    const vector Bn2 = cmptMultiply(rDeltaXYZ, normal);
     return symmTensor
     (
         sqr(Bn2.x()), 2*Bn2.x()*Bn2.y(), 2*Bn2.x()*Bn2.z(),
@@ -46,32 +46,32 @@ symmTensor Foam::basisPolyDn2
     );
 }
 
-Foam::euler3rdSolver::Column Foam::basisPolyEigen
+Foam::vr3rdSolver::Col6X1 Foam::basisPolyEigen
 (
     const vector& delta,
-    const vector& rLengthScale,
-    const symmTensor& basisConst
+    const vector& rDeltaXYZ,
+    const symmTensor& basisMean
 )
 {
-    const vector B = cmptMultiply(delta, rLengthScale);
-    return Foam::euler3rdSolver::Column
+    const vector B = cmptMultiply(delta, rDeltaXYZ);
+    return Foam::vr3rdSolver::Col6X1
     (
-        0.5*(sqr(B.x())-basisConst.xx()), B.x()*B.y()-basisConst.xy(), B.x()*B.z()-basisConst.xz(),
-                                     0.5*(sqr(B.y())-basisConst.yy()), B.y()*B.z()-basisConst.yz(),
-                                                                   0.5*(sqr(B.z())-basisConst.zz())
+        0.5*(sqr(B.x())-basisMean.xx()), B.x()*B.y()-basisMean.xy(),  B.x()*B.z()-basisMean.xz(),
+                                     0.5*(sqr(B.y())-basisMean.yy()), B.y()*B.z()-basisMean.yz(),
+                                                                  0.5*(sqr(B.z())-basisMean.zz())
     );
 }
 
-Foam::euler3rdSolver::Column Foam::basisPolyDn1Eigen
+Foam::vr3rdSolver::Col6X1 Foam::basisPolyDn1Eigen
 (
     const vector& delta,
-    const vector& rLengthScale,
+    const vector& rDeltaXYZ,
     const vector& normal
 )
 {
-    const vector B = cmptMultiply(delta, rLengthScale);
-    const vector rLn = cmptMultiply(rLengthScale, normal);
-    return Foam::euler3rdSolver::Column
+    const vector B = cmptMultiply(delta, rDeltaXYZ);
+    const vector rLn = cmptMultiply(rDeltaXYZ, normal);
+    return Foam::vr3rdSolver::Col6X1
     (
         B.x()*rLn.x(), B.y()*rLn.x()+B.x()*rLn.y(), B.z()*rLn.x()+B.x()*rLn.z(),
                        B.y()*rLn.y(),               B.z()*rLn.y()+B.y()*rLn.z(),
@@ -84,11 +84,11 @@ scalar Foam::scalarPoly
     const vector& delta,
     const vector& grad,
     const symmTensor& d2Val,
-    const vector& rLengthScale,
-    const symmTensor& basisConst
+    const vector& rDeltaXYZ,
+    const symmTensor& basisMean
 )
 {
-    symmTensor basisPoly = Foam::basisPoly(delta, rLengthScale, basisConst);
+    symmTensor basisPoly = Foam::basisPoly(delta, rDeltaXYZ, basisMean);
     return (grad&delta) + d2Val.xx()*basisPoly.xx() + d2Val.xy()*basisPoly.xy() + d2Val.xz()*basisPoly.xz()
                                                     + d2Val.yy()*basisPoly.yy() + d2Val.yz()*basisPoly.yz()
                                                                                 + d2Val.zz()*basisPoly.zz();
@@ -101,11 +101,11 @@ vector Foam::vectorPoly
     const symmTensor& d2Ux,
     const symmTensor& d2Uy,
     const symmTensor& d2Uz,
-    const vector& rLengthScale,
-    const symmTensor& basisConst
+    const vector& rDeltaXYZ,
+    const symmTensor& basisMean
 )
 {
-    symmTensor basisPoly = Foam::basisPoly(delta, rLengthScale, basisConst);
+    symmTensor basisPoly = Foam::basisPoly(delta, rDeltaXYZ, basisMean);
     return (grad&delta) + vector
     (
         d2Ux.xx()*basisPoly.xx() + d2Ux.xy()*basisPoly.xy() + d2Ux.xz()*basisPoly.xz() +
@@ -122,10 +122,10 @@ vector Foam::scalarPolyGrad
     const vector& delta,
     const vector& grad,
     const symmTensor& d2Val,
-    const vector& rLengthScale
+    const vector& rDeltaXYZ
 )
 {
-    const tensor gradTensor = rLengthScale * vector(cmptMultiply(delta, rLengthScale));
+    const tensor gradTensor = rDeltaXYZ * vector(cmptMultiply(delta, rDeltaXYZ));
     return grad + vector(gradTensor.x()&vector(d2Val.xx(), d2Val.xy(), d2Val.xz()),
                          gradTensor.y()&vector(d2Val.xy(), d2Val.yy(), d2Val.yz()),
                          gradTensor.z()&vector(d2Val.xz(), d2Val.yz(), d2Val.zz()));
@@ -138,10 +138,10 @@ tensor Foam::vectorPolyGrad
     const symmTensor& d2Ux,
     const symmTensor& d2Uy,
     const symmTensor& d2Uz,
-    const vector& rLengthScale
+    const vector& rDeltaXYZ
 )
 {
-    const tensor gradTensor = rLengthScale * vector(cmptMultiply(delta, rLengthScale));
+    const tensor gradTensor = rDeltaXYZ * vector(cmptMultiply(delta, rDeltaXYZ));
     return grad + tensor
     (
         gradTensor.x()&vector(d2Ux.xx(), d2Ux.xy(), d2Ux.xz()),

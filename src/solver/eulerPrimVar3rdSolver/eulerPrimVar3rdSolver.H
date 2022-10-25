@@ -22,20 +22,20 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    dbnsFlux
+    eulerPrimVar3rdSolver
 
 Description
-    Riemann solver for Euler fluxes.
+    3rd order solver for Euler flow.
 
 Author
     Minghao Yang
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef dbnsFlux_H
-#define dbnsFlux_H
+#ifndef eulerPrimVar3rdSolver_H
+#define eulerPrimVar3rdSolver_H
 
-#include "fvCFD.H"
+#include "vr3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -43,29 +43,26 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class dbnsFlux Declaration
+                           Class eulerPrimVar3rdSolver Declaration
 \*---------------------------------------------------------------------------*/
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-class dbnsFlux
+class eulerPrimVar3rdSolver: public vr3rdSolver
 {
+
+private:
     // Private Member Functions
     //- Disallow default bitwise copy construct
-    dbnsFlux(const dbnsFlux&);
+    eulerPrimVar3rdSolver(const eulerPrimVar3rdSolver&);
     //- Disallow default bitwise assignment
-    void operator=(const dbnsFlux&);
+    void operator=(const eulerPrimVar3rdSolver&);
 
-public:
+    void reconstructionIter();
 
-    // Constructors - default
-    dbnsFlux() {};
+    void limitCoefficients();
 
-    // Destructor - default
-    virtual ~dbnsFlux() {};
-
-    // Member Functions
-    virtual void evaluateFlux
+    void evaluateFlux
     (
         scalar& rhoFlux,
         vector& rhoUFlux,
@@ -74,45 +71,56 @@ public:
         const scalar& rho_R,
         const vector& U_L,
         const vector& U_R,
-        const scalar& p_L,
-        const scalar& p_R,
-        const vector& normal,
-        const scalar& gamma
-    ) const = 0;
+        const scalar& T_L,
+        const scalar& T_R,
+        const vector& normal
+    ) const;
+
+protected:
+    //- Density grad
+    volVectorField rhoGrad_;
+    volVectorField rhoGradLimited_;
+    //- Velocity grad
+    volTensorField UGrad_;
+    volTensorField UGradLimited_;
+    //- pressure grad
+    volVectorField TGrad_;
+    volVectorField TGradLimited_;
+    //- Quadratic polynomial coefficients
+    volSymmTensorField d2Rho_;
+    volSymmTensorField d2Ux_;
+    volSymmTensorField d2Uy_;
+    volSymmTensorField d2Uz_;
+    volSymmTensorField d2T_;
+    volSymmTensorField d2RhoLimited_;
+    volSymmTensorField d2UxLimited_;
+    volSymmTensorField d2UyLimited_;
+    volSymmTensorField d2UzLimited_;
+    volSymmTensorField d2TLimited_;
+
+public:
+
+    // Constructors - default
+    eulerPrimVar3rdSolver
+    (
+        const fluidProperties& fluidProps,
+        volScalarField& rho,
+        volVectorField& U,
+        volScalarField& p
+    );
+
+    // Destructor - default
+    virtual ~eulerPrimVar3rdSolver() {};
+
+    // Member Functions
+    void evaluateFlowRes
+    (
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE
+    );
+
 };
-
-/*---------------------------------------------------------------------------*\
-                           Methods Declaration
-\*---------------------------------------------------------------------------*/
-
-void consToPrim
-(
-    const scalar& rho,
-    const vector& rhoU,
-    const scalar& rhoE,
-    const scalar& gamma,
-    vector& U,
-    scalar& p,
-    scalar& T
-);
-
-void evaluateFlux
-(
-    scalar& rhoFlux,
-    vector& rhoUFlux,
-    scalar& rhoEFlux,
-    const scalar& rho,
-    const vector& U,
-    const scalar& p,
-    const vector& normal,
-    const scalar& gamma
-);
-
-scalar entropyCorr
-(
-    const scalar& z,
-    const scalar& d
-);
 
 } // End namespace Foam
 

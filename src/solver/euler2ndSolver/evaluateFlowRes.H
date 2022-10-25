@@ -47,17 +47,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
         if (mesh_.boundary()[patchI].coupled())
         {
             const vectorField delta_i = mesh_.boundary()[patchI].Cf() - mesh_.boundary()[patchI].Cn();
-            vectorField delta_j(bfaceCells.size());
-            if (isA<processorFvPatch>(mesh_.boundary()[patchI]))
-            {
-                delta_j = mesh_.boundary()[patchI].Cf() - mesh_.C().boundaryField()[patchI].patchNeighbourField();
-            }
-            else if (isA<cyclicFvPatch>(mesh_.boundary()[patchI]))
-            {
-                const cyclicFvPatch& ownerPatch = refCast<const cyclicFvPatch>(mesh_.boundary()[patchI]);
-                const cyclicFvPatch& neighPatch = ownerPatch.neighbFvPatch();
-                delta_j = neighPatch.Cf() - neighPatch.Cn();
-            }
+            const vectorField delta_j = delta_i - mesh_.boundary()[patchI].delta();
             const scalarField rho_neigh = rho_.boundaryField()[patchI].patchNeighbourField();
             const vectorField U_neigh   = U_.boundaryField()[patchI].patchNeighbourField();
             const scalarField T_neigh   = T_.boundaryField()[patchI].patchNeighbourField();

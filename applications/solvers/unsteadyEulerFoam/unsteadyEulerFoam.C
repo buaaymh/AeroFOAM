@@ -32,7 +32,7 @@ Description
 #include "fvCFD.H"
 #include "solver.H"
 #include "euler2ndSolver.H"
-#include "euler3rdSolver.H"
+#include "eulerPrimVar3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -216,24 +216,6 @@ protected:
         scalarField& dRhoE
     ) const;
 
-    void gaussQuad4
-    (
-        label faceI,
-        std::vector<vector>& quadPoints
-    );
-    
-    void gaussQuad9
-    (
-        label faceI,
-        std::vector<vector>& quadPoints
-    );
-
-    void gaussHex8
-    (
-        label cellI,
-        std::vector<vector>& quadPoints
-    );
-    
 private:
 
     void volProjectionsInit();
@@ -244,24 +226,6 @@ private:
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
 
-void ApplyGivens
-(
-    const scalar s,
-    const scalar c,
-    scalar& h1,
-    scalar& h2
-);
-
-scalar Sign(scalar x, scalar y);
-
-void GenerateGivens
-(
-    scalar& dx,
-    scalar& dy,
-    scalar& s,
-    scalar& c
-);
-
 void givensRotation
 (
     const scalar& h,
@@ -269,43 +233,6 @@ void givensRotation
     scalar& c,
     scalar& s
 );
-
-/*---------------------------------------------------------------------------*\
-                           Gauss Namespace  Declaration
-\*---------------------------------------------------------------------------*/
-
-namespace Quad4
-{
-    static constexpr std::array<scalar, 4> x{-0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, +0.577350269189626};
-    static constexpr std::array<scalar, 4> y{+0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 4> w{1.0, 1.0, 1.0, 1.0};
-}
-
-namespace Quad9
-{
-    static constexpr std::array<scalar, 9> x{-0.774596669241483,                0.0, +0.774596669241483,
-                                             -0.774596669241483,                0.0, +0.774596669241483,
-                                             -0.774596669241483,                0.0, +0.774596669241483};
-    static constexpr std::array<scalar, 9> y{+0.774596669241483, +0.774596669241483, +0.774596669241483,
-                                                            0.0,                0.0,                0.0,
-                                             -0.774596669241483, -0.774596669241483, -0.774596669241483};
-    static constexpr std::array<scalar, 9> w{0.30864197530864197531, 0.49382716049382716049, 0.30864197530864197531,
-                                             0.49382716049382716049, 0.79012345679012345679, 0.49382716049382716049,
-                                             0.30864197530864197531, 0.49382716049382716049, 0.30864197530864197531};
-}
-
-namespace Hex8
-{
-    static constexpr std::array<scalar, 8> x{-0.577350269189626, +0.577350269189626, -0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, +0.577350269189626, -0.577350269189626, +0.577350269189626};
-    static constexpr std::array<scalar, 8> y{+0.577350269189626, +0.577350269189626, -0.577350269189626, -0.577350269189626,
-                                             +0.577350269189626, +0.577350269189626, -0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 8> z{+0.577350269189626, +0.577350269189626, +0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, -0.577350269189626, -0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 8> w{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-}
 
 } // End namespace Foam
 

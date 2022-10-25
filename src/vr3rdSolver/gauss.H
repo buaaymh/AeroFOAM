@@ -1,4 +1,4 @@
-void Foam::solver::gaussQuad4
+void Foam::vr3rdSolver::gaussQuad4
 (
     label faceI,
     std::vector<vector>& quadPoints
@@ -15,7 +15,7 @@ void Foam::solver::gaussQuad4
     }
 }
 
-void Foam::solver::gaussQuad9
+void Foam::vr3rdSolver::gaussQuad9
 (
     label faceI,
     std::vector<vector>& quadPoints
@@ -32,7 +32,7 @@ void Foam::solver::gaussQuad9
     }
 }
 
-void Foam::solver::gaussHex8
+void Foam::vr3rdSolver::gaussHex8
 (
     label cellI,
     std::vector<vector>& quadPoints
