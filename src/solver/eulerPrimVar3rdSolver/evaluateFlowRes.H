@@ -38,6 +38,12 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
         }
         else
         {
+            // evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+            //              rho_[i], rho_[j], rhoGrad_[i], rhoGrad_[j], d2Rho_[i], d2Rho_[j],
+            //              U_[i], U_[j], UGrad_[i], UGrad_[j], d2Ux_[i], d2Ux_[j], d2Uy_[i], d2Uy_[j], d2Uz_[i], d2Uz_[j],
+            //              T_[i], T_[j], TGrad_[i], TGrad_[j], d2T_[i], d2T_[j],
+            //              rDeltaXYZ_[i], rDeltaXYZ_[j], basisMean_[i], basisMean_[j],
+            //              mesh_.C()[i], mesh_.C()[j], quad_[faceI], mesh_.Sf()[faceI]);
             for (label gaussI = 0; gaussI != 4; ++gaussI)
             {
                 scalar rhoFluxTemp;
@@ -185,6 +191,46 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
             }
         }
     }
+}
+
+void Foam::eulerPrimVar3rdSolver::evaluateFlux
+(
+    scalar& rhoFlux,
+    vector& rhoUFlux,
+    scalar& rhoEFlux,
+    const scalar& rho_i,
+    const scalar& rho_j,
+    const vector& U_i,
+    const vector& U_j,
+    const scalar& T_i,
+    const scalar& T_j,
+    const vector& rhoGrad_i,
+    const vector& rhoGrad_j,
+    const tensor& UGrad_i,
+    const tensor& UGrad_j,
+    const vector& TGrad_i,
+    const vector& TGrad_j,
+    const symmTensor& d2Rho_i,
+    const symmTensor& d2Rho_j,
+    const symmTensor& d2Ux_i,
+    const symmTensor& d2Ux_j,
+    const symmTensor& d2Uy_i,
+    const symmTensor& d2Uy_j,
+    const symmTensor& d2Uz_i,
+    const symmTensor& d2Uz_j,
+    const symmTensor& d2T_i,
+    const symmTensor& d2T_j,
+    const vector& rDeltaXYZ_i,
+    const vector& rDeltaXYZ_j,
+    const symmTensor& basisMean_i,
+    const symmTensor& basisMean_j,
+    const vector& C_i,
+    const vector& C_j,
+    const std::vector<vector>& quad,
+    const vector& Sf
+) const
+{
+
 }
 
 void Foam::eulerPrimVar3rdSolver::evaluateFlux

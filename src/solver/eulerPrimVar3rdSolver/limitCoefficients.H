@@ -38,8 +38,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
 
     /* Limiting d2 coefficients of polynomials */
     const scalar np = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("np", 10);
-    std::vector<Mat5X3> d1VarLimited(count, Mat5X3::Zero());
-    std::vector<Mat5X6> d2VarLimited(count, Mat5X6::Zero());
+    std::vector<Mat5X6> d2VarLimited(count);
     count = 0;
     forAll(mesh_.cells(), cellI)
     {
@@ -70,16 +69,16 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
             d2Var_[cellI] = d2VarLimited[count];
             count++;
         }
-        d2Rho_[cellI] = symmTensor(d2Var_[cellI](0,0), d2Var_[cellI](0,1), d2Var_[cellI](0,2),
-                                   d2Var_[cellI](0,3), d2Var_[cellI](0,4), d2Var_[cellI](0,5));
-        d2Ux_[cellI]  = symmTensor(d2Var_[cellI](1,0), d2Var_[cellI](1,1), d2Var_[cellI](1,2),
-                                   d2Var_[cellI](1,3), d2Var_[cellI](1,4), d2Var_[cellI](1,5));
-        d2Uy_[cellI]  = symmTensor(d2Var_[cellI](2,0), d2Var_[cellI](2,1), d2Var_[cellI](2,2),
-                                   d2Var_[cellI](2,3), d2Var_[cellI](2,4), d2Var_[cellI](2,5));
-        d2Uz_[cellI]  = symmTensor(d2Var_[cellI](3,0), d2Var_[cellI](3,1), d2Var_[cellI](3,2),
-                                   d2Var_[cellI](3,3), d2Var_[cellI](3,4), d2Var_[cellI](3,5));
-        d2T_[cellI]   = symmTensor(d2Var_[cellI](4,0), d2Var_[cellI](4,1), d2Var_[cellI](4,2),
-                                   d2Var_[cellI](4,3), d2Var_[cellI](4,4), d2Var_[cellI](4,5));
+    }
+
+    /* Update d1Var */
+    forAll(mesh_.C(), cellI)
+    {
+        d1Var_[cellI] << rhoGrad_[cellI][0], rhoGrad_[cellI][1], rhoGrad_[cellI][2],
+                         UGrad_[cellI][0],   UGrad_[cellI][1],   UGrad_[cellI][2],
+                         UGrad_[cellI][3],   UGrad_[cellI][4],   UGrad_[cellI][5],
+                         UGrad_[cellI][6],   UGrad_[cellI][7],   UGrad_[cellI][8],
+                         TGrad_[cellI][0],   TGrad_[cellI][1],   TGrad_[cellI][2];
     }
 
     /* Limiting d1 coefficients of polynomials */
@@ -102,23 +101,27 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
                 d1VarList.push_back(evaluateGrad(delta_ij, d1Var_[j], d2Var_[j], rDeltaXYZ_[j]));
             }
         }
-        d1VarLimited[count++] = WBAP_L2_Limiter<5, 3>(d1VarList, np);
+        Mat5X3 d1VarLimited = WBAP_L2_Limiter<5, 3>(d1VarList, np);
+        rhoGrad_[cellI] = vector(d1VarLimited(0,0), d1VarLimited(0,1), d1VarLimited(0,2));
+        UGrad_[cellI]   = tensor(d1VarLimited(1,0), d1VarLimited(1,1), d1VarLimited(1,2),
+                                 d1VarLimited(2,0), d1VarLimited(2,1), d1VarLimited(2,2),
+                                 d1VarLimited(3,0), d1VarLimited(3,1), d1VarLimited(3,2));
+        TGrad_[cellI]   = vector(d1VarLimited(4,0), d1VarLimited(4,1), d1VarLimited(4,2));
     }
 
-    /* Update d1 coefficients of polynomials */
-    count = 0;
-    forAll(mesh_.cells(), cellI)
+    /* Update d2 coefficients of polynomials */
+    forAll(mesh_.C(), cellI)
     {
-        if (isTrouble[cellI])
-        {
-            d1Var_[cellI] = d1VarLimited[count];
-            rhoGrad_[cellI] = vector(d1VarLimited[count](0,0), d1VarLimited[count](0,1), d1VarLimited[count](0,2));
-            UGrad_[cellI]   = tensor(d1VarLimited[count](1,0), d1VarLimited[count](1,1), d1VarLimited[count](1,2),
-                                     d1VarLimited[count](2,0), d1VarLimited[count](2,1), d1VarLimited[count](2,2),
-                                     d1VarLimited[count](3,0), d1VarLimited[count](3,1), d1VarLimited[count](3,2));
-            TGrad_[cellI]   = vector(d1VarLimited[count](4,0), d1VarLimited[count](4,1), d1VarLimited[count](4,2));
-            count++;
-        }
+        d2Rho_[cellI] = symmTensor(d2Var_[cellI](0,0), d2Var_[cellI](0,1), d2Var_[cellI](0,2),
+                                   d2Var_[cellI](0,3), d2Var_[cellI](0,4), d2Var_[cellI](0,5));
+        d2Ux_[cellI]  = symmTensor(d2Var_[cellI](1,0), d2Var_[cellI](1,1), d2Var_[cellI](1,2),
+                                   d2Var_[cellI](1,3), d2Var_[cellI](1,4), d2Var_[cellI](1,5));
+        d2Uy_[cellI]  = symmTensor(d2Var_[cellI](2,0), d2Var_[cellI](2,1), d2Var_[cellI](2,2),
+                                   d2Var_[cellI](2,3), d2Var_[cellI](2,4), d2Var_[cellI](2,5));
+        d2Uz_[cellI]  = symmTensor(d2Var_[cellI](3,0), d2Var_[cellI](3,1), d2Var_[cellI](3,2),
+                                   d2Var_[cellI](3,3), d2Var_[cellI](3,4), d2Var_[cellI](3,5));
+        d2T_[cellI]   = symmTensor(d2Var_[cellI](4,0), d2Var_[cellI](4,1), d2Var_[cellI](4,2),
+                                   d2Var_[cellI](4,3), d2Var_[cellI](4,4), d2Var_[cellI](4,5));
     }
 
     /* Preserve positive coefficients of polynomials */
@@ -150,8 +153,6 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
                 d2Uy_[cellI] *= temp;
                 d2Uz_[cellI] *= temp;
                 d2T_[cellI] *= temp;
-                d1Var_[cellI] *= temp;
-                d2Var_[cellI] *= temp;
             }
         }
     }

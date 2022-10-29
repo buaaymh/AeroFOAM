@@ -60,26 +60,42 @@ private:
 
     void limitCoefficients();
 
-    void evaluateVars
+    void evaluateFlux
     (
-        const vector& delta,
-        const scalar& rho_A,
-        const vector& U_A,
-        const scalar& T_A,
-        const vector& rhoGrad,
-        const tensor& UGrad,
-        const vector& TGrad,
-        const symmTensor& d2Rho,
-        const symmTensor& d2Ux,
-        const symmTensor& d2Uy,
-        const symmTensor& d2Uz,
-        const symmTensor& d2T,
-        const vector& rDeltaXYZ,
-        const symmTensor& basisMean,
-        scalar& rho,
-        vector& U,
-        scalar& T
-    );
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& rho_i,
+        const scalar& rho_j,
+        const vector& U_i,
+        const vector& U_j,
+        const scalar& T_i,
+        const scalar& T_j,
+        const vector& rhoGrad_i,
+        const vector& rhoGrad_j,
+        const tensor& UGrad_i,
+        const tensor& UGrad_j,
+        const vector& TGrad_i,
+        const vector& TGrad_j,
+        const symmTensor& d2Rho_i,
+        const symmTensor& d2Rho_j,
+        const symmTensor& d2Ux_i,
+        const symmTensor& d2Ux_j,
+        const symmTensor& d2Uy_i,
+        const symmTensor& d2Uy_j,
+        const symmTensor& d2Uz_i,
+        const symmTensor& d2Uz_j,
+        const symmTensor& d2T_i,
+        const symmTensor& d2T_j,
+        const vector& rDeltaXYZ_i,
+        const vector& rDeltaXYZ_j,
+        const symmTensor& basisMean_i,
+        const symmTensor& basisMean_j,
+        const vector& C_i,
+        const vector& C_j,
+        const std::vector<vector>& quad,
+        const vector& Sf
+    ) const;
 
     void evaluateFlux
     (
@@ -108,8 +124,6 @@ protected:
     volSymmTensorField d2Uy_;
     volSymmTensorField d2Uz_;
     volSymmTensorField d2T_;
-    std::vector<Mat5X3> d1Var_;
-    std::vector<Mat5X6> d2Var_;
     
     void reconstructionIter();
 

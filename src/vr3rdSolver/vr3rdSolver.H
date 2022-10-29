@@ -92,6 +92,8 @@ public:
 
 protected:
     // Private Data
+    std::vector<Mat5X3> d1Var_;
+    std::vector<Mat5X6> d2Var_;
     //- Mesh data
     volVectorField rDeltaXYZ_;
     volSymmTensorField basisMean_;

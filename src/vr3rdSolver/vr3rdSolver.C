@@ -37,6 +37,8 @@ Foam::vr3rdSolver::vr3rdSolver
 )
 :
     solver(fluidProps, rho, U, p),
+    d1Var_(mesh_.nCells(), Mat5X3::Zero()),
+    d2Var_(mesh_.nCells(), Mat5X6::Zero()),
     rDeltaXYZ_
     (
         IOobject
