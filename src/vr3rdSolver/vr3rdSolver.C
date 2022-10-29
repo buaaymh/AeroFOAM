@@ -61,7 +61,6 @@ Foam::vr3rdSolver::vr3rdSolver
     ),
     N_h_(mesh_.nCells(), 0.0),
     isP0Cell_(mesh_.nCells(), false),
-    isTrouble_(mesh_.nCells(), false),
     rA_(mesh_.nCells(), Mat6X6::Zero()),
     B_(mesh_.nInternalFaces(), Mat6X6::Zero()),
     quad_(mesh_.nInternalFaces(), std::vector<vector>(4, vector::zero))
@@ -71,9 +70,7 @@ Foam::vr3rdSolver::vr3rdSolver
 
 #include "gauss.H"
 
-#include "basisFunc.H"
-
-#include "WBAPFunc.H"
+#include "functions.H"
 
 #include "initVrLinearSystem.H"
 

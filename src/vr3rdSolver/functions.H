@@ -46,7 +46,7 @@ symmTensor Foam::basisPolyDn2
     );
 }
 
-Foam::vr3rdSolver::Col6X1 Foam::basisPolyEigen
+Foam::Col6X1 Foam::basisPolyEigen
 (
     const vector& delta,
     const vector& rDeltaXYZ,
@@ -54,7 +54,7 @@ Foam::vr3rdSolver::Col6X1 Foam::basisPolyEigen
 )
 {
     const vector B = cmptMultiply(delta, rDeltaXYZ);
-    return Foam::vr3rdSolver::Col6X1
+    return Col6X1
     (
         0.5*(sqr(B.x())-basisMean.xx()), B.x()*B.y()-basisMean.xy(),  B.x()*B.z()-basisMean.xz(),
                                      0.5*(sqr(B.y())-basisMean.yy()), B.y()*B.z()-basisMean.yz(),
@@ -62,7 +62,7 @@ Foam::vr3rdSolver::Col6X1 Foam::basisPolyEigen
     );
 }
 
-Foam::vr3rdSolver::Col6X1 Foam::basisPolyDn1Eigen
+Foam::Col6X1 Foam::basisPolyDn1Eigen
 (
     const vector& delta,
     const vector& rDeltaXYZ,
@@ -71,7 +71,7 @@ Foam::vr3rdSolver::Col6X1 Foam::basisPolyDn1Eigen
 {
     const vector B = cmptMultiply(delta, rDeltaXYZ);
     const vector rLn = cmptMultiply(rDeltaXYZ, normal);
-    return Foam::vr3rdSolver::Col6X1
+    return Col6X1
     (
         B.x()*rLn.x(), B.y()*rLn.x()+B.x()*rLn.y(), B.z()*rLn.x()+B.x()*rLn.z(),
                        B.y()*rLn.y(),               B.z()*rLn.y()+B.y()*rLn.z(),
@@ -89,9 +89,7 @@ scalar Foam::scalarPoly
 )
 {
     symmTensor basisPoly = Foam::basisPoly(delta, rDeltaXYZ, basisMean);
-    return (grad&delta) + d2Val.xx()*basisPoly.xx() + d2Val.xy()*basisPoly.xy() + d2Val.xz()*basisPoly.xz()
-                                                    + d2Val.yy()*basisPoly.yy() + d2Val.yz()*basisPoly.yz()
-                                                                                + d2Val.zz()*basisPoly.zz();
+    return (grad&delta) + cmptSum(cmptMultiply(d2Val, basisPoly));
 }
 
 vector Foam::vectorPoly
@@ -108,12 +106,9 @@ vector Foam::vectorPoly
     symmTensor basisPoly = Foam::basisPoly(delta, rDeltaXYZ, basisMean);
     return (grad&delta) + vector
     (
-        d2Ux.xx()*basisPoly.xx() + d2Ux.xy()*basisPoly.xy() + d2Ux.xz()*basisPoly.xz() +
-        d2Ux.yy()*basisPoly.yy() + d2Ux.yz()*basisPoly.yz() + d2Ux.zz()*basisPoly.zz(),
-        d2Uy.xx()*basisPoly.xx() + d2Uy.xy()*basisPoly.xy() + d2Uy.xz()*basisPoly.xz() +
-        d2Uy.yy()*basisPoly.yy() + d2Uy.yz()*basisPoly.yz() + d2Uy.zz()*basisPoly.zz(),
-        d2Uz.xx()*basisPoly.xx() + d2Uz.xy()*basisPoly.xy() + d2Uz.xz()*basisPoly.xz() +
-        d2Uz.yy()*basisPoly.yy() + d2Uz.yz()*basisPoly.yz() + d2Uz.zz()*basisPoly.zz()
+        cmptSum(cmptMultiply(d2Ux, basisPoly)),
+        cmptSum(cmptMultiply(d2Uy, basisPoly)),
+        cmptSum(cmptMultiply(d2Uz, basisPoly))
     );
 }
 
@@ -154,4 +149,36 @@ tensor Foam::vectorPolyGrad
         gradTensor.y()&vector(d2Uz.xy(), d2Uz.yy(), d2Uz.yz()),
         gradTensor.z()&vector(d2Uz.xz(), d2Uz.yz(), d2Uz.zz())
     );
+}
+
+Foam::Mat5X3 Foam::evaluateGrad
+(
+    const vector& delta,
+    const Mat5X3& d1Var,
+    const Mat5X6& d2Var,
+    const vector& rDeltaXYZ
+)
+{
+    const tensor gradTensor = rDeltaXYZ * vector(cmptMultiply(delta, rDeltaXYZ));
+    Mat5X3 d2VarGrad;
+    d2VarGrad << (gradTensor.x()&vector(d2Var(0,0), d2Var(0,1), d2Var(0,2))),
+                 (gradTensor.y()&vector(d2Var(0,1), d2Var(0,3), d2Var(0,4))),
+                 (gradTensor.z()&vector(d2Var(0,2), d2Var(0,4), d2Var(0,5))),
+
+                 (gradTensor.x()&vector(d2Var(1,0), d2Var(1,1), d2Var(1,2))),
+                 (gradTensor.y()&vector(d2Var(1,1), d2Var(1,3), d2Var(1,4))),
+                 (gradTensor.z()&vector(d2Var(1,2), d2Var(1,4), d2Var(1,5))),
+
+                 (gradTensor.x()&vector(d2Var(2,0), d2Var(2,1), d2Var(2,2))),
+                 (gradTensor.y()&vector(d2Var(2,1), d2Var(2,3), d2Var(2,4))),
+                 (gradTensor.z()&vector(d2Var(2,2), d2Var(2,4), d2Var(2,5))),
+
+                 (gradTensor.x()&vector(d2Var(3,0), d2Var(3,1), d2Var(3,2))),
+                 (gradTensor.y()&vector(d2Var(3,1), d2Var(3,3), d2Var(3,4))),
+                 (gradTensor.z()&vector(d2Var(3,2), d2Var(3,4), d2Var(3,5))),
+                 
+                 (gradTensor.x()&vector(d2Var(4,0), d2Var(4,1), d2Var(4,2))),
+                 (gradTensor.y()&vector(d2Var(4,1), d2Var(4,3), d2Var(4,4))),
+                 (gradTensor.z()&vector(d2Var(4,2), d2Var(4,4), d2Var(4,5)));
+    return d2VarGrad + d1Var;
 }

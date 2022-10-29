@@ -48,17 +48,6 @@ Foam::eulerPrimVar3rdSolver::eulerPrimVar3rdSolver
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
     ),
-    rhoGradLimited_
-    (
-        IOobject
-        (
-            "rhoGradLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
     UGrad_
     (
         IOobject
@@ -70,33 +59,11 @@ Foam::eulerPrimVar3rdSolver::eulerPrimVar3rdSolver
         mesh_,
         dimensionedTensor(dimless/dimLength, tensor::zero)
     ),
-    UGradLimited_
-    (
-        IOobject
-        (
-            "UGradLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedTensor(dimless/dimLength, tensor::zero)
-    ),
     TGrad_
     (
         IOobject
         (
             "TGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-    TGradLimited_
-    (
-        IOobject
-        (
-            "TGradLimited",
             mesh_.time().timeName(),
             mesh_
         ),
@@ -158,61 +125,8 @@ Foam::eulerPrimVar3rdSolver::eulerPrimVar3rdSolver
         mesh_,
         dimensionedSymmTensor(dimless, symmTensor::zero)
     ),
-    d2RhoLimited_
-    (
-        IOobject
-        (
-            "d2RhoLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2UxLimited_
-    (
-        IOobject
-        (
-            "d2UxLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2UyLimited_
-    (
-        IOobject
-        (
-            "d2UyLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2UzLimited_
-    (
-        IOobject
-        (
-            "d2UzLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2TLimited_
-    (
-        IOobject
-        (
-            "d2TLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    )
+    d1Var_(mesh_.nCells(), Mat5X3::Zero()),
+    d2Var_(mesh_.nCells(), Mat5X6::Zero())
 {
     Info << "Ths solver is 3rd order for Euler flow." << nl
          << "Ths scheme is VR with AV." << nl
@@ -226,5 +140,34 @@ Foam::eulerPrimVar3rdSolver::eulerPrimVar3rdSolver
 #include "limitCoefficients.H"
 
 #include "evaluateFlowRes.H"
+
+void Foam::eulerPrimVar3rdSolver::evaluateVars
+(
+    const vector& delta,
+    const scalar& rho_A,
+    const vector& U_A,
+    const scalar& T_A,
+    const vector& rhoGrad,
+    const tensor& UGrad,
+    const vector& TGrad,
+    const symmTensor& d2Rho,
+    const symmTensor& d2Ux,
+    const symmTensor& d2Uy,
+    const symmTensor& d2Uz,
+    const symmTensor& d2T,
+    const vector& rDeltaXYZ,
+    const symmTensor& basisMean,
+    scalar& rho,
+    vector& U,
+    scalar& T
+)
+{
+    symmTensor basisPoly = Foam::basisPoly(delta, rDeltaXYZ, basisMean);
+    rho = rho_A + (rhoGrad&delta) + cmptSum(cmptMultiply(d2Rho, basisPoly));
+    U   = U_A   + (UGrad&delta)   + vector(cmptSum(cmptMultiply(d2Ux, basisPoly)),
+                                         cmptSum(cmptMultiply(d2Uy, basisPoly)),
+                                         cmptSum(cmptMultiply(d2Uz, basisPoly)));
+    T = T_A + (TGrad&delta) + cmptSum(cmptMultiply(d2T, basisPoly));
+}
 
 // ************************************************************************* //

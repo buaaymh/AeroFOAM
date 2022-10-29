@@ -46,6 +46,14 @@ Author
 namespace Foam
 {
 
+using Col3X1 = Eigen::Matrix<scalar, 3, 1>;
+using Col6X1 = Eigen::Matrix<scalar, 6, 1>;
+using Col5X1 = Eigen::Matrix<scalar, 5, 1>;
+using Mat5X3 = Eigen::Matrix<scalar, 5, 3>;
+using Mat5X6 = Eigen::Matrix<scalar, 5, 6>;
+using Mat6X5 = Eigen::Matrix<scalar, 6, 5>;
+using Mat6X6 = Eigen::Matrix<scalar, 6, 6>;
+
 /*---------------------------------------------------------------------------*\
                            Class vr3rdSolver Declaration
 \*---------------------------------------------------------------------------*/
@@ -61,12 +69,6 @@ class vr3rdSolver : public solver
     void operator=(const vr3rdSolver&);
 
 public:
-
-    using Col6X1 = Eigen::Matrix<scalar, 6, 1>;
-    using Col5X1 = Eigen::Matrix<scalar, 5, 1>;
-    using Mat6X5 = Eigen::Matrix<scalar, 6, 5>;
-    using Mat5X6 = Eigen::Matrix<scalar, 5, 6>;
-    using Mat6X6 = Eigen::Matrix<scalar, 6, 6>;
 
     // Constructors
     vr3rdSolver
@@ -95,7 +97,6 @@ protected:
     volSymmTensorField basisMean_;
     scalarField N_h_;
     std::vector<bool> isP0Cell_;
-    std::vector<bool> isTrouble_;
     //- Linear system
     std::vector<Mat6X6> rA_;
     std::vector<Mat6X6> B_;
@@ -105,6 +106,8 @@ protected:
 
     // Member Functions
     void initVrLinearSystem();
+
+    // * * * * * * * * * * * * Gauss Points * * * * * * * ** * * * * * //
 
     void gaussQuad4
     (
@@ -130,7 +133,7 @@ protected:
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
 
-// * * * * * * * * * * * *Taylor Basis Functions * * * * * * * * * * * * * * //
+// * * * * * * ** * * * Taylor Basis Functions * * * * * ** * * * * //
 
 symmTensor basisPoly
 (
@@ -152,14 +155,14 @@ symmTensor basisPolyDn2
     const vector& normal
 );
 
-vr3rdSolver::Col6X1 basisPolyEigen
+Col6X1 basisPolyEigen
 (
     const vector& delta,
     const vector& rDeltaXYZ,
     const symmTensor& basisMean
 );
 
-vr3rdSolver::Col6X1 basisPolyDn1Eigen
+Col6X1 basisPolyDn1Eigen
 (
     const vector& delta,
     const vector& rDeltaXYZ,
@@ -204,25 +207,56 @@ tensor vectorPolyGrad
     const vector& rDeltaXYZ
 );
 
-// * * * * * * * * * * * * * * * WBAP Functions * * * * * * * * * * * * * * //
-
-vector vectorWBAP
+Col5X1 evaluateVars
 (
-    const std::vector<vector>& list,
-    scalar value
+    const vector& delta,
+    const Mat5X3& d1Var,
+    const Mat5X6& d2Var,
+    const vector& rDeltaXYZ,
+    const symmTensor& basisMean
 );
 
-symmTensor symmTensorWBAP
+Mat5X3 evaluateGrad
 (
-    const std::vector<symmTensor>& list,
-    scalar value
+    const vector& delta,
+    const Mat5X3& d1Var,
+    const Mat5X6& d2Var,
+    const vector& rDeltaXYZ
 );
 
-tensor tensorWBAP
+// * * * * * * * * * * * * WBAP Functions * * * * * * * * * * * * //
+template<int rows, int cols>
+Eigen::Matrix<scalar, rows, cols> WBAP_L2_Limiter
 (
-    const std::vector<tensor>& list,
+    const std::vector<Eigen::Matrix<scalar, rows, cols>>& list,
     scalar value
-);
+)
+{
+    const label n = list.size();
+    Eigen::Matrix<scalar, rows, cols> result = list[0];
+    for (label i = 0; i != rows; i++)
+    {
+        for (label j = 0; j != cols; j++)
+        {
+            if (mag(list[0](i, j)) < 1e-10) continue;
+            scalar temp3 = value;
+            scalar temp4 = value;
+            for (label k = 1; k != n; k++)
+            {
+                const scalar theta = list[k](i, j)/list[0](i, j);
+                if (theta <= 1e-6)
+                {
+                    temp3 = 0;
+                    break;
+                }
+                temp3 += 1.0 / Foam::pow3(theta);
+                temp4 += 1.0 / Foam::pow4(theta);
+            }
+            result(i, j) *= temp3 / temp4;
+        }
+    }
+    return result;
+}
 
 /*---------------------------------------------------------------------------*\
                            Gauss Namespace  Declaration

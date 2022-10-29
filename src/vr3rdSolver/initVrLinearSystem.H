@@ -139,17 +139,4 @@ void Foam::vr3rdSolver::initVrLinearSystem()
         N_h_[mesh_.owner()[faceI]] += h_k;
         N_h_[mesh_.neighbour()[faceI]] += h_k;
     }
-    forAll(mesh_.boundary(), patchI)
-    {
-        if (mesh_.boundary()[patchI].coupled())
-        {
-            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-            const scalarField delta = mag(mesh_.boundary()[patchI].delta());
-            forAll(bfaceCells, faceI)
-            {
-                const scalar h_k = pow(delta[faceI], 1.5);
-                N_h_[bfaceCells[faceI]] += h_k;
-            }
-        }
-    }
 }

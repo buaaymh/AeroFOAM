@@ -12,7 +12,6 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
     UGrad_   = fvc::grad(U_);
     TGrad_   = fvc::grad(T_);
     reconstructionIter();
-    limitCoefficients();
     forAll(mesh_.owner(), faceI)
     {
         scalar rhoFlux = 0.0;
@@ -24,12 +23,12 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
         {
             const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
             const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-            const scalar rho_i = rho_[i] + (rhoGradLimited_[i]&delta_i);
-            const scalar rho_j = rho_[j] + (rhoGradLimited_[j]&delta_j);
-            const vector U_i = U_[i] + (UGradLimited_[i]&delta_i);
-            const vector U_j = U_[j] + (UGradLimited_[j]&delta_j);
-            const scalar T_i = T_[i] + (TGradLimited_[i]&delta_i);
-            const scalar T_j = T_[j] + (TGradLimited_[j]&delta_j);
+            const scalar rho_i = rho_[i] + (rhoGrad_[i]&delta_i);
+            const scalar rho_j = rho_[j] + (rhoGrad_[j]&delta_j);
+            const vector U_i = U_[i] + (UGrad_[i]&delta_i);
+            const vector U_j = U_[j] + (UGrad_[j]&delta_j);
+            const scalar T_i = T_[i] + (TGrad_[i]&delta_i);
+            const scalar T_j = T_[j] + (TGrad_[j]&delta_j);
             evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                          rho_i, rho_j, U_i, U_j, T_i, T_j,
                          normal_[faceI]);
@@ -46,12 +45,12 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
                 scalar rhoEFluxTemp;
                 const vector delta_i = quad_[faceI][gaussI] - mesh_.C()[i];
                 const vector delta_j = quad_[faceI][gaussI] - mesh_.C()[j];
-                const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
-                const scalar rho_j = rho_[j] + scalarPoly(delta_j, rhoGradLimited_[j], d2RhoLimited_[j], rDeltaXYZ_[j], basisMean_[j]);
-                const vector U_i = U_[i] + vectorPoly(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
-                const vector U_j = U_[j] + vectorPoly(delta_j, UGradLimited_[j], d2UxLimited_[j], d2UyLimited_[j], d2UzLimited_[j], rDeltaXYZ_[j], basisMean_[j]);
-                const scalar T_i = T_[i] + scalarPoly(delta_i, TGradLimited_[i], d2TLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
-                const scalar T_j = T_[j] + scalarPoly(delta_j, TGradLimited_[j], d2TLimited_[j], rDeltaXYZ_[j], basisMean_[j]);
+                const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGrad_[i], d2Rho_[i], rDeltaXYZ_[i], basisMean_[i]);
+                const scalar rho_j = rho_[j] + scalarPoly(delta_j, rhoGrad_[j], d2Rho_[j], rDeltaXYZ_[j], basisMean_[j]);
+                const vector U_i = U_[i] + vectorPoly(delta_i, UGrad_[i], d2Ux_[i], d2Uy_[i], d2Uz_[i], rDeltaXYZ_[i], basisMean_[i]);
+                const vector U_j = U_[j] + vectorPoly(delta_j, UGrad_[j], d2Ux_[j], d2Uy_[j], d2Uz_[j], rDeltaXYZ_[j], basisMean_[j]);
+                const scalar T_i = T_[i] + scalarPoly(delta_i, TGrad_[i], d2T_[i], rDeltaXYZ_[i], basisMean_[i]);
+                const scalar T_j = T_[j] + scalarPoly(delta_j, TGrad_[j], d2T_[j], rDeltaXYZ_[j], basisMean_[j]);
                 evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
                              rho_i, rho_j, U_i, U_j, T_i, T_j,
                              normal_[faceI]);
@@ -88,14 +87,14 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
             const scalarField rho_neigh = rho_.boundaryField()[patchI].patchNeighbourField();
             const vectorField U_neigh   = U_.boundaryField()[patchI].patchNeighbourField();
             const scalarField T_neigh   = T_.boundaryField()[patchI].patchNeighbourField();
-            const vectorField rhoGrad_neigh = rhoGradLimited_.boundaryField()[patchI].patchNeighbourField();
-            const tensorField UGrad_neigh   = UGradLimited_.boundaryField()[patchI].patchNeighbourField();
-            const vectorField TGrad_neigh   = TGradLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2Rho_neigh = d2RhoLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2Ux_neigh = d2UxLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2Uy_neigh = d2UyLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2Uz_neigh = d2UzLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2T_neigh = d2TLimited_.boundaryField()[patchI].patchNeighbourField();
+            const vectorField rhoGrad_neigh = rhoGrad_.boundaryField()[patchI].patchNeighbourField();
+            const tensorField UGrad_neigh   = UGrad_.boundaryField()[patchI].patchNeighbourField();
+            const vectorField TGrad_neigh   = TGrad_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2Rho_neigh = d2Rho_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2Ux_neigh = d2Ux_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2Uy_neigh = d2Uy_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2Uz_neigh = d2Uz_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2T_neigh = d2T_.boundaryField()[patchI].patchNeighbourField();
             std::vector<vector> quadPoints(4, vector::zero);
             forAll(bfaceCells, j)
             {
@@ -111,11 +110,11 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
                     scalar rhoEFluxTemp;
                     const vector delta_i = quadPoints[gaussI] - ownerCn[j];
                     const vector delta_j = quadPoints[gaussI] - neighCn[j];
-                    const scalar rho_i = rho_[i]      + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
+                    const scalar rho_i = rho_[i]      + scalarPoly(delta_i, rhoGrad_[i], d2Rho_[i], rDeltaXYZ_[i], basisMean_[i]);
                     const scalar rho_j = rho_neigh[j] + scalarPoly(delta_j, rhoGrad_neigh[j], d2Rho_neigh[j], rDeltaXYZ_neigh[j], basisMean_neigh[j]);
-                    const vector U_i = U_[i]      + vectorPoly(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
+                    const vector U_i = U_[i]      + vectorPoly(delta_i, UGrad_[i], d2Ux_[i], d2Uy_[i], d2Uz_[i], rDeltaXYZ_[i], basisMean_[i]);
                     const vector U_j = U_neigh[j] + vectorPoly(delta_j, UGrad_neigh[j], d2Ux_neigh[j], d2Uy_neigh[j], d2Uz_neigh[j], rDeltaXYZ_neigh[j], basisMean_neigh[j]);
-                    const scalar T_i = T_[i]      + scalarPoly(delta_i, TGradLimited_[i], d2TLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
+                    const scalar T_i = T_[i]      + scalarPoly(delta_i, TGrad_[i], d2T_[i], rDeltaXYZ_[i], basisMean_[i]);
                     const scalar T_j = T_neigh[j] + scalarPoly(delta_j, TGrad_neigh[j], d2T_neigh[j], rDeltaXYZ_neigh[j], basisMean_neigh[j]);
                     evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
                                  rho_i, rho_j, U_i, U_j, T_i, T_j,
@@ -142,8 +141,8 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - Cn[faceI];
-                    const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
-                    const scalar T_i = T_[i] + scalarPoly(delta_i, TGradLimited_[i], d2TLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
+                    const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGrad_[i], d2Rho_[i], rDeltaXYZ_[i], basisMean_[i]);
+                    const scalar T_i = T_[i] + scalarPoly(delta_i, TGrad_[i], d2T_[i], rDeltaXYZ_[i], basisMean_[i]);
                     rhoUFlux += (T_i*rho_i/fluidProps_.gamma) * normal[faceI] * Quad4::w[gaussI];
                 }
                 resRhoU[i] -= 0.25 * rhoUFlux * magSf[faceI];
@@ -169,9 +168,9 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
                     vector rhoUFluxTemp = vector::zero;
                     scalar rhoEFluxTemp;
                     const vector delta_i = quadPoints[gaussI] - Cn[faceI];
-                    const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
-                    const vector U_i = U_[i] + vectorPoly(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
-                    const scalar T_i = T_[i] + scalarPoly(delta_i, TGradLimited_[i], d2TLimited_[i], rDeltaXYZ_[i], basisMean_[i]);
+                    const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGrad_[i], d2Rho_[i], rDeltaXYZ_[i], basisMean_[i]);
+                    const vector U_i = U_[i] + vectorPoly(delta_i, UGrad_[i], d2Ux_[i], d2Uy_[i], d2Uz_[i], rDeltaXYZ_[i], basisMean_[i]);
+                    const scalar T_i = T_[i] + scalarPoly(delta_i, TGrad_[i], d2T_[i], rDeltaXYZ_[i], basisMean_[i]);
                     evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
                                  rho_i, rhoBound[faceI], U_i, UBound[faceI], T_i, TBound[faceI],
                                  normal[faceI]);

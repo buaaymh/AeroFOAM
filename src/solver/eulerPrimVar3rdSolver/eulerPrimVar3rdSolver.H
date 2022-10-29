@@ -58,9 +58,28 @@ private:
     //- Disallow default bitwise assignment
     void operator=(const eulerPrimVar3rdSolver&);
 
-    void reconstructionIter();
-
     void limitCoefficients();
+
+    void evaluateVars
+    (
+        const vector& delta,
+        const scalar& rho_A,
+        const vector& U_A,
+        const scalar& T_A,
+        const vector& rhoGrad,
+        const tensor& UGrad,
+        const vector& TGrad,
+        const symmTensor& d2Rho,
+        const symmTensor& d2Ux,
+        const symmTensor& d2Uy,
+        const symmTensor& d2Uz,
+        const symmTensor& d2T,
+        const vector& rDeltaXYZ,
+        const symmTensor& basisMean,
+        scalar& rho,
+        vector& U,
+        scalar& T
+    );
 
     void evaluateFlux
     (
@@ -79,24 +98,20 @@ private:
 protected:
     //- Density grad
     volVectorField rhoGrad_;
-    volVectorField rhoGradLimited_;
     //- Velocity grad
     volTensorField UGrad_;
-    volTensorField UGradLimited_;
     //- pressure grad
     volVectorField TGrad_;
-    volVectorField TGradLimited_;
     //- Quadratic polynomial coefficients
     volSymmTensorField d2Rho_;
     volSymmTensorField d2Ux_;
     volSymmTensorField d2Uy_;
     volSymmTensorField d2Uz_;
     volSymmTensorField d2T_;
-    volSymmTensorField d2RhoLimited_;
-    volSymmTensorField d2UxLimited_;
-    volSymmTensorField d2UyLimited_;
-    volSymmTensorField d2UzLimited_;
-    volSymmTensorField d2TLimited_;
+    std::vector<Mat5X3> d1Var_;
+    std::vector<Mat5X6> d2Var_;
+    
+    void reconstructionIter();
 
 public:
 
