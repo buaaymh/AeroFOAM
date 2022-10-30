@@ -101,3 +101,32 @@ Foam::Mat5X3 Foam::evaluateGrad
                  (gradTensor.z()&vector(d2Var(4,2), d2Var(4,4), d2Var(4,5)));
     return d2VarGrad + d1Var;
 }
+
+void Foam::vr3rdSolver::evaluateVars
+(
+    scalar& rho,
+    vector& U,
+    scalar& T,
+    const scalar& rho_0,
+    const vector& U_0,
+    const scalar& T_0,
+    const vector& rhoGrad,
+    const tensor& UGrad,
+    const vector& TGrad,
+    const symmTensor& d2Rho,
+    const symmTensor& d2Ux,
+    const symmTensor& d2Uy,
+    const symmTensor& d2Uz,
+    const symmTensor& d2T,
+    const symmTensor& basisMean,
+    const vector& rDeltaXYZ,
+    const vector& delta
+) const
+{
+    symmTensor basis = basisPoly<symmTensor>(delta, rDeltaXYZ, basisMean);
+    rho = rho_0 + (rhoGrad&delta) + cmptSum(cmptMultiply(d2Rho, basis));
+    U   = U_0   + (UGrad  &delta) + vector(cmptSum(cmptMultiply(d2Ux, basis)),
+                                           cmptSum(cmptMultiply(d2Uy, basis)),
+                                           cmptSum(cmptMultiply(d2Uz, basis)));
+    T   = T_0   + (TGrad  &delta) + cmptSum(cmptMultiply(d2T, basis));
+}

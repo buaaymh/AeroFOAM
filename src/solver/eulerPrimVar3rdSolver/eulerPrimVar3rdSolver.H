@@ -108,7 +108,8 @@ private:
         const vector& U_R,
         const scalar& T_L,
         const scalar& T_R,
-        const vector& normal
+        const vector& normal,
+        const scalar& magSf
     ) const;
 
 protected:

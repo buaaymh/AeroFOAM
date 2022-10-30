@@ -109,6 +109,27 @@ protected:
     // Member Functions
     void initVrLinearSystem();
 
+    void evaluateVars
+    (
+        scalar& rho,
+        vector& U,
+        scalar& T,
+        const scalar& rho_0,
+        const vector& U_0,
+        const scalar& T_0,
+        const vector& rhoGrad,
+        const tensor& UGrad,
+        const vector& TGrad,
+        const symmTensor& d2Rho,
+        const symmTensor& d2Ux,
+        const symmTensor& d2Uy,
+        const symmTensor& d2Uz,
+        const symmTensor& d2T,
+        const symmTensor& basisMean,
+        const vector& rDeltaXYZ,
+        const vector& delta
+    ) const;
+
     // * * * * * * * * * * * * Gauss Points * * * * * * * ** * * * * * //
 
     void gaussQuad4
@@ -278,7 +299,7 @@ namespace Quad4
                                              -0.577350269189626, +0.577350269189626};
     static constexpr std::array<scalar, 4> y{+0.577350269189626, +0.577350269189626,
                                              -0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 4> w{1.0, 1.0, 1.0, 1.0};
+    static constexpr std::array<scalar, 4> w{0.25, 0.25, 0.25, 0.25};
 }
 
 namespace Quad9

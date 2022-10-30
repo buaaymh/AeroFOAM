@@ -38,13 +38,12 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
             const vector delta_i = quad_[faceI][gaussI] - mesh_.C()[i];
             const vector delta_j = quad_[faceI][gaussI] - mesh_.C()[j];
             const scalar wTemp = Quad4::w[gaussI] * temp;
-            const scalar dRho = (dRho0 + (rhoGrad_[j]&delta_j) - (rhoGrad_[i]&delta_i))*wTemp;
-            const vector dU   = (dU0   + (UGrad_[j]&delta_j)   - (UGrad_[i]&delta_i))  *wTemp;
-            const scalar dT   = (dT0   + (TGrad_[j]&delta_j)   - (TGrad_[i]&delta_i))  *wTemp;
+            const scalar dRho = wTemp*(dRho0 + (rhoGrad_[j]&delta_j) - (rhoGrad_[i]&delta_i));
+            const vector dU   = wTemp*(dU0   + (UGrad_[j]&delta_j)   - (UGrad_[i]&delta_i));
+            const scalar dT   = wTemp*(dT0   + (TGrad_[j]&delta_j)   - (TGrad_[i]&delta_i));
             Col5X1 dVars(dRho, dU[0], dU[1], dU[2], dT);
             //cell i
             bW[i] += basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i])*dVars.transpose();
-            // bW[i] += basisPolyEigen(delta_i, rDeltaXYZ_[i], basisMean_[i])*dVars.transpose();
             //cell j
             bW[j] -= basisPoly<Col6X1>(delta_j, rDeltaXYZ_[j], basisMean_[j])*dVars.transpose();
         }
@@ -90,7 +89,7 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                 const scalar dRho0 = rho_neigh[j] - rho_[i];
                 const vector dU0   = U_neigh[j]   - U_[i];
                 const scalar dT0   = T_neigh[j]   - T_[i];
-                scalar temp = 0.25*magSf[j]*sqr(vrWeight[0])/delta[j];
+                scalar temp = magSf[j]*sqr(vrWeight[0])/delta[j];
                 gaussQuad4(start+j, quadPoints);
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
                 {
@@ -133,15 +132,15 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                 const scalar dRho0 = rhoBound[faceI] - rho_[i];
                 const vector dU0   = UBound[faceI]   - U_[i];
                 const scalar dT0   = TBound[faceI]   - T_[i];
-                scalar temp = 0.25*magSf[faceI]*sqr(vrWeight[0])/delta[faceI];
+                scalar temp = magSf[faceI]*sqr(vrWeight[0])/delta[faceI];
                 gaussQuad4(start+faceI, quadPoints);
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - ownerCn[faceI];
                     const scalar wTemp = Quad4::w[gaussI] * temp;
-                    const scalar dRho = (dRho0 - (rhoGrad_[i]&delta_i))*wTemp;
-                    const vector dU   = (dU0   - (UGrad_[i]&delta_i))  *wTemp;
-                    const scalar dT   = (dT0   - (TGrad_[i]&delta_i))  *wTemp;
+                    const scalar dRho = wTemp*(dRho0 - (rhoGrad_[i]&delta_i));
+                    const vector dU   = wTemp*(dU0   - (UGrad_[i]&delta_i));
+                    const scalar dT   = wTemp*(dT0   - (TGrad_[i]&delta_i));
                     //cell i
                     bW[i] += basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i]) *
                              Col5X1(dRho, dU.x(), dU.y(), dU.z(), dT).transpose();
