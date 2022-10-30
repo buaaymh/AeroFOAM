@@ -54,12 +54,12 @@ void Foam::vr3rdSolver::initVrLinearSystem()
             const vector delta_i = quadPoints[gaussI] - mesh_.C()[i];
             const vector delta_j = quadPoints[gaussI] - mesh_.C()[j];
             const vector dpwTemp = Quad9::w[gaussI] * dp;
-            symmTensor Dn0_i = Foam::basisPoly(delta_i, rDeltaXYZ_[i], basisMean_[i]);
-            symmTensor Dn0_j = Foam::basisPoly(delta_j, rDeltaXYZ_[j], basisMean_[j]);
-            symmTensor Dn1_i = Foam::basisPolyDn1(delta_i, rDeltaXYZ_[i], normal_[faceI]);
-            symmTensor Dn1_j = Foam::basisPolyDn1(delta_j, rDeltaXYZ_[j], normal_[faceI]);
-            symmTensor Dn2_i = Foam::basisPolyDn2(rDeltaXYZ_[i], normal_[faceI]);
-            symmTensor Dn2_j = Foam::basisPolyDn2(rDeltaXYZ_[j], normal_[faceI]);
+            symmTensor Dn0_i = basisPoly<symmTensor>(delta_i, rDeltaXYZ_[i], basisMean_[i]);
+            symmTensor Dn0_j = basisPoly<symmTensor>(delta_j, rDeltaXYZ_[j], basisMean_[j]);
+            symmTensor Dn1_i = basisPolyDn1<symmTensor>(delta_i, rDeltaXYZ_[i], normal_[faceI]);
+            symmTensor Dn1_j = basisPolyDn1<symmTensor>(delta_j, rDeltaXYZ_[j], normal_[faceI]);
+            symmTensor Dn2_i = basisPolyDn2<symmTensor>(rDeltaXYZ_[i], normal_[faceI]);
+            symmTensor Dn2_j = basisPolyDn2<symmTensor>(rDeltaXYZ_[j], normal_[faceI]);
             for (label m = 0; m != 6; ++m) {
                 for (label n = 0; n != 6; ++n)
                 {
@@ -105,12 +105,12 @@ void Foam::vr3rdSolver::initVrLinearSystem()
                     const vector delta_i = quadPoints[gaussI] - ownerCn[j];
                     const vector delta_j = quadPoints[gaussI] - neighCn[j];
                     const vector dpwTemp = Quad9::w[gaussI] * dp;
-                    symmTensor Dn0_i = Foam::basisPoly(delta_i, rDeltaXYZ_[i], basisMean_[i]);
-                    symmTensor Dn0_j = Foam::basisPoly(delta_j, rDeltaXYZ_neigh[j], basisMean_neigh[j]);
-                    symmTensor Dn1_i = Foam::basisPolyDn1(delta_i, rDeltaXYZ_[i], normal[j]);
-                    symmTensor Dn1_j = Foam::basisPolyDn1(delta_j, rDeltaXYZ_neigh[j], normal[j]);
-                    symmTensor Dn2_i = Foam::basisPolyDn2(rDeltaXYZ_[i], normal[j]);
-                    symmTensor Dn2_j = Foam::basisPolyDn2(rDeltaXYZ_neigh[j], normal[j]);
+                    symmTensor Dn0_i = basisPoly<symmTensor>(delta_i, rDeltaXYZ_[i], basisMean_[i]);
+                    symmTensor Dn0_j = basisPoly<symmTensor>(delta_j, rDeltaXYZ_neigh[j], basisMean_neigh[j]);
+                    symmTensor Dn1_i = basisPolyDn1<symmTensor>(delta_i, rDeltaXYZ_[i], normal[j]);
+                    symmTensor Dn1_j = basisPolyDn1<symmTensor>(delta_j, rDeltaXYZ_neigh[j], normal[j]);
+                    symmTensor Dn2_i = basisPolyDn2<symmTensor>(rDeltaXYZ_[i], normal[j]);
+                    symmTensor Dn2_j = basisPolyDn2<symmTensor>(rDeltaXYZ_neigh[j], normal[j]);
                     for (label m = 0; m != 6; ++m) {
                         for (label n = 0; n != 6; ++n)
                         {

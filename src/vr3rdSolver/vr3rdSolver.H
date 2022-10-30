@@ -137,39 +137,56 @@ protected:
 
 // * * * * * * ** * * * Taylor Basis Functions * * * * * ** * * * * //
 
-symmTensor basisPoly
+template<typename T>
+T basisPoly
 (
     const vector& delta,
     const vector& rDeltaXYZ,
     const symmTensor& basisMean
-);
+)
+{
+    const vector B = cmptMultiply(delta, rDeltaXYZ);
+    return T
+    (
+        0.5*(sqr(B.x())-basisMean.xx()), B.x()*B.y()-basisMean.xy(),  B.x()*B.z()-basisMean.xz(),
+                                     0.5*(sqr(B.y())-basisMean.yy()), B.y()*B.z()-basisMean.yz(),
+                                                                  0.5*(sqr(B.z())-basisMean.zz())
+    );
+}
 
-symmTensor basisPolyDn1
+template<typename T>
+T basisPolyDn1
 (
     const vector& delta,
     const vector& rDeltaXYZ,
     const vector& normal
-);
+)
+{
+    const vector B = cmptMultiply(delta, rDeltaXYZ);
+    const vector rLn = cmptMultiply(rDeltaXYZ, normal);
+    return T
+    (
+        B.x()*rLn.x(), B.y()*rLn.x()+B.x()*rLn.y(), B.z()*rLn.x()+B.x()*rLn.z(),
+                       B.y()*rLn.y(),               B.z()*rLn.y()+B.y()*rLn.z(),
+                                                    B.z()*rLn.z()
+    );
+}
 
-symmTensor basisPolyDn2
+template<typename T>
+T basisPolyDn2
 (
     const vector& rDeltaXYZ,
     const vector& normal
-);
-
-Col6X1 basisPolyEigen
-(
-    const vector& delta,
-    const vector& rDeltaXYZ,
-    const symmTensor& basisMean
-);
-
-Col6X1 basisPolyDn1Eigen
-(
-    const vector& delta,
-    const vector& rDeltaXYZ,
-    const vector& normal
-);
+)
+{
+    const vector Bn2 = cmptMultiply(rDeltaXYZ, normal);
+    return T
+    (
+        sqr(Bn2.x()), 2*Bn2.x()*Bn2.y(), 2*Bn2.x()*Bn2.z(),
+                           sqr(Bn2.y()), 2*Bn2.y()*Bn2.z(),
+                                               sqr(Bn2.z())
+    );
+}
 
 scalar scalarPoly
 (
@@ -207,15 +224,6 @@ tensor vectorPolyGrad
     const symmTensor& d2Uy,
     const symmTensor& d2Uz,
     const vector& rDeltaXYZ
-);
-
-Col5X1 evaluateVars
-(
-    const vector& delta,
-    const Mat5X3& d1Var,
-    const Mat5X6& d2Var,
-    const vector& rDeltaXYZ,
-    const symmTensor& basisMean
 );
 
 Mat5X3 evaluateGrad

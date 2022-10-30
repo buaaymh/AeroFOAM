@@ -1,84 +1,3 @@
-symmTensor Foam::basisPoly
-(
-    const vector& delta,
-    const vector& rDeltaXYZ,
-    const symmTensor& basisMean
-)
-{
-    const vector B = cmptMultiply(delta, rDeltaXYZ);
-    return symmTensor
-    (
-        0.5*(sqr(B.x())-basisMean.xx()), B.x()*B.y()-basisMean.xy(),  B.x()*B.z()-basisMean.xz(),
-                                     0.5*(sqr(B.y())-basisMean.yy()), B.y()*B.z()-basisMean.yz(),
-                                                                  0.5*(sqr(B.z())-basisMean.zz())
-    );
-}
-
-symmTensor Foam::basisPolyDn1
-(
-    const vector& delta,
-    const vector& rDeltaXYZ,
-    const vector& normal
-)
-{
-    const vector B = cmptMultiply(delta, rDeltaXYZ);
-    const vector rLn = cmptMultiply(rDeltaXYZ, normal);
-    return symmTensor
-    (
-        B.x()*rLn.x(), B.y()*rLn.x()+B.x()*rLn.y(), B.z()*rLn.x()+B.x()*rLn.z(),
-                       B.y()*rLn.y(),               B.z()*rLn.y()+B.y()*rLn.z(),
-                                                    B.z()*rLn.z()
-    );
-}
-
-symmTensor Foam::basisPolyDn2
-(
-    const vector& rDeltaXYZ,
-    const vector& normal
-)
-{
-    const vector Bn2 = cmptMultiply(rDeltaXYZ, normal);
-    return symmTensor
-    (
-        sqr(Bn2.x()), 2*Bn2.x()*Bn2.y(), 2*Bn2.x()*Bn2.z(),
-                           sqr(Bn2.y()), 2*Bn2.y()*Bn2.z(),
-                                               sqr(Bn2.z())
-    );
-}
-
-Foam::Col6X1 Foam::basisPolyEigen
-(
-    const vector& delta,
-    const vector& rDeltaXYZ,
-    const symmTensor& basisMean
-)
-{
-    const vector B = cmptMultiply(delta, rDeltaXYZ);
-    return Col6X1
-    (
-        0.5*(sqr(B.x())-basisMean.xx()), B.x()*B.y()-basisMean.xy(),  B.x()*B.z()-basisMean.xz(),
-                                     0.5*(sqr(B.y())-basisMean.yy()), B.y()*B.z()-basisMean.yz(),
-                                                                  0.5*(sqr(B.z())-basisMean.zz())
-    );
-}
-
-Foam::Col6X1 Foam::basisPolyDn1Eigen
-(
-    const vector& delta,
-    const vector& rDeltaXYZ,
-    const vector& normal
-)
-{
-    const vector B = cmptMultiply(delta, rDeltaXYZ);
-    const vector rLn = cmptMultiply(rDeltaXYZ, normal);
-    return Col6X1
-    (
-        B.x()*rLn.x(), B.y()*rLn.x()+B.x()*rLn.y(), B.z()*rLn.x()+B.x()*rLn.z(),
-                       B.y()*rLn.y(),               B.z()*rLn.y()+B.y()*rLn.z(),
-                                                    B.z()*rLn.z()
-    );
-}
-
 scalar Foam::scalarPoly
 (
     const vector& delta,
@@ -88,8 +7,8 @@ scalar Foam::scalarPoly
     const symmTensor& basisMean
 )
 {
-    symmTensor basisPoly = Foam::basisPoly(delta, rDeltaXYZ, basisMean);
-    return (grad&delta) + cmptSum(cmptMultiply(d2Val, basisPoly));
+    symmTensor basis = basisPoly<symmTensor>(delta, rDeltaXYZ, basisMean);
+    return (grad&delta) + cmptSum(cmptMultiply(d2Val, basis));
 }
 
 vector Foam::vectorPoly
@@ -103,12 +22,12 @@ vector Foam::vectorPoly
     const symmTensor& basisMean
 )
 {
-    symmTensor basisPoly = Foam::basisPoly(delta, rDeltaXYZ, basisMean);
+    symmTensor basis = basisPoly<symmTensor>(delta, rDeltaXYZ, basisMean);
     return (grad&delta) + vector
     (
-        cmptSum(cmptMultiply(d2Ux, basisPoly)),
-        cmptSum(cmptMultiply(d2Uy, basisPoly)),
-        cmptSum(cmptMultiply(d2Uz, basisPoly))
+        cmptSum(cmptMultiply(d2Ux, basis)),
+        cmptSum(cmptMultiply(d2Uy, basis)),
+        cmptSum(cmptMultiply(d2Uz, basis))
     );
 }
 

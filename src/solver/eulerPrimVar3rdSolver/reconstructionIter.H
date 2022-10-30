@@ -43,9 +43,10 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
             const scalar dT   = (dT0   + (TGrad_[j]&delta_j)   - (TGrad_[i]&delta_i))  *wTemp;
             Col5X1 dVars(dRho, dU[0], dU[1], dU[2], dT);
             //cell i
-            bW[i] += basisPolyEigen(delta_i, rDeltaXYZ_[i], basisMean_[i])*dVars.transpose();
+            bW[i] += basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i])*dVars.transpose();
+            // bW[i] += basisPolyEigen(delta_i, rDeltaXYZ_[i], basisMean_[i])*dVars.transpose();
             //cell j
-            bW[j] -= basisPolyEigen(delta_j, rDeltaXYZ_[j], basisMean_[j])*dVars.transpose();
+            bW[j] -= basisPoly<Col6X1>(delta_j, rDeltaXYZ_[j], basisMean_[j])*dVars.transpose();
         }
         const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
         const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
@@ -55,9 +56,9 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
         const scalar dT1   = temp*(normal_[faceI]&(TGrad_[j]  -TGrad_[i]));
         Col5X1 dGrad(dRho1, dU1.x(), dU1.y(), dU1.z(), dT1);
         //cell i
-        bW[i] += basisPolyDn1Eigen(delta_i, rDeltaXYZ_[i], normal_[faceI])*dGrad.transpose();
+        bW[i] += basisPolyDn1<Col6X1>(delta_i, rDeltaXYZ_[i], normal_[faceI])*dGrad.transpose();
         //cell j
-        bW[j] -= basisPolyDn1Eigen(delta_j, rDeltaXYZ_[j], normal_[faceI])*dGrad.transpose();
+        bW[j] -= basisPolyDn1<Col6X1>(delta_j, rDeltaXYZ_[j], normal_[faceI])*dGrad.transpose();
     }
     forAll(mesh_.boundary(), patchI)
     {
@@ -100,7 +101,7 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                     const vector dU   = (dU0   + (UGrad_neigh[j]&delta_j)   - (UGrad_[i]&delta_i))  *wTemp;
                     const scalar dT   = (dT0   + (TGrad_neigh[j]&delta_j)   - (TGrad_[i]&delta_i))  *wTemp;
                     // cell i
-                    bW[i] += basisPolyEigen(delta_i, rDeltaXYZ_[i], basisMean_[i]) *
+                    bW[i] += basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i]) *
                              Col5X1(dRho, dU.x(), dU.y(), dU.z(), dT).transpose();
                 }
                 temp = delta[j]*magSf[j]*sqr(vrWeight[1]);
@@ -108,16 +109,16 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                 const vector dU1   = temp*(normal[j]&(UGrad_neigh[j]  -UGrad_[i]));
                 const scalar dT1   = temp*(normal[j]&(TGrad_neigh[j]  -TGrad_[i]));
                 //cell i
-                bW[i] += basisPolyDn1Eigen(delta_i[j], rDeltaXYZ_[i], normal[j]) *
+                bW[i] += basisPolyDn1<Col6X1>(delta_i[j], rDeltaXYZ_[i], normal[j]) *
                          Col5X1(dRho1, dU1.x(), dU1.y(), dU1.z(), dT1).transpose();
                 bW[i] += (Mat5X6
-                        {
+                         {
                             {d2Rho_neigh[j][0], d2Rho_neigh[j][1], d2Rho_neigh[j][2], d2Rho_neigh[j][3], d2Rho_neigh[j][4], d2Rho_neigh[j][5]},
                             {d2Ux_neigh[j][0],  d2Ux_neigh[j][1],  d2Ux_neigh[j][2],  d2Ux_neigh[j][3],  d2Ux_neigh[j][4],  d2Ux_neigh[j][5]},
                             {d2Uy_neigh[j][0],  d2Uy_neigh[j][1],  d2Uy_neigh[j][2],  d2Uy_neigh[j][3],  d2Uy_neigh[j][4],  d2Uy_neigh[j][5]},
                             {d2Uz_neigh[j][0],  d2Uz_neigh[j][1],  d2Uz_neigh[j][2],  d2Uz_neigh[j][3],  d2Uz_neigh[j][4],  d2Uz_neigh[j][5]},
                             {d2T_neigh[j][0],   d2T_neigh[j][1],   d2T_neigh[j][2],   d2T_neigh[j][3],   d2T_neigh[j][4],   d2T_neigh[j][5]}
-                        } * coupledB_[patchI][j]).transpose();
+                         } * coupledB_[patchI][j]).transpose();
             }
         }
         else
@@ -142,7 +143,7 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                     const vector dU   = (dU0   - (UGrad_[i]&delta_i))  *wTemp;
                     const scalar dT   = (dT0   - (TGrad_[i]&delta_i))  *wTemp;
                     //cell i
-                    bW[i] += basisPolyEigen(delta_i, rDeltaXYZ_[i], basisMean_[i]) *
+                    bW[i] += basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i]) *
                              Col5X1(dRho, dU.x(), dU.y(), dU.z(), dT).transpose();
                 }
             }
