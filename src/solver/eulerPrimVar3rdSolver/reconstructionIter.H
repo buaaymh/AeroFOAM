@@ -90,7 +90,7 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                 const vector dU0   = U_neigh[j]   - U_[i];
                 const scalar dT0   = T_neigh[j]   - T_[i];
                 scalar temp = magSf[j]*sqr(vrWeight[0])/delta[j];
-                gaussQuad4(start+j, quadPoints);
+                gaussQuad4(mesh_, start+j, quadPoints);
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - ownerCn[j];
@@ -133,7 +133,7 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                 const vector dU0   = UBound[faceI]   - U_[i];
                 const scalar dT0   = TBound[faceI]   - T_[i];
                 scalar temp = magSf[faceI]*sqr(vrWeight[0])/delta[faceI];
-                gaussQuad4(start+faceI, quadPoints);
+                gaussQuad4(mesh_, start+faceI, quadPoints);
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - ownerCn[faceI];

@@ -89,7 +89,7 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[j];
-                gaussQuad4(start+j, quadPoints);
+                gaussQuad4(mesh_, start+j, quadPoints);
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - ownerCn[j];
@@ -115,7 +115,7 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
             {
                 const label i = bfaceCells[faceI];
                 vector rhoUFlux = vector::zero;
-                gaussQuad4(start+faceI, quadPoints);
+                gaussQuad4(mesh_, start+faceI, quadPoints);
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - Cn[faceI];
@@ -139,7 +139,7 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[faceI]; 
-                gaussQuad4(start+faceI, quadPoints);
+                gaussQuad4(mesh_, start+faceI, quadPoints);
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - Cn[faceI];

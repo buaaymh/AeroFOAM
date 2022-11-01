@@ -1,3 +1,61 @@
+void Foam::evaluateBasisFunctionConst
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    vector& rDeltaXYZ,
+    symmTensor& basisMean
+)
+{
+    //rDeltaXYZ Initialize
+    vector pointMin = mesh.C()[cellI];
+    vector pointMax = mesh.C()[cellI];
+    const UList<label>& cellPointsId = mesh.cellPoints()[cellI];
+    forAll(cellPointsId, pointI)
+    {
+        pointMin = min(pointMin, mesh.points()[cellPointsId[pointI]]);
+        pointMax = max(pointMax, mesh.points()[cellPointsId[pointI]]);
+    }
+    rDeltaXYZ = cmptDivide(vector::one, 0.5*(pointMax-pointMin));
+    // basisMean Initialize
+    const label nNodes = mesh.cellShapes()[cellI].size();
+    if (nNodes == 8)
+    {
+        std::vector<vector> quadPoints(8, vector::zero);
+        gaussHexa8(mesh, cellI, quadPoints);
+        for (label i = 0; i != 8; ++i)
+        {
+            const vector B = cmptMultiply(quadPoints[i]-mesh.C()[cellI], rDeltaXYZ);
+            symmTensor temp
+            (
+                sqr(B.x()), B.x()*B.y(), B.x()*B.z(),
+                             sqr(B.y()), B.y()*B.z(),
+                                           sqr(B.z())
+            );
+            basisMean += Hexa8::w[i] * temp;
+        }
+    }
+    else if (nNodes == 6)
+    {
+        std::vector<vector> quadPoints(6, vector::zero);
+        gaussPrism6(mesh, cellI, quadPoints);
+        for (label i = 0; i != 6; ++i)
+        {
+            const vector B = cmptMultiply(quadPoints[i]-mesh.C()[cellI], rDeltaXYZ);
+            symmTensor temp
+            (
+                sqr(B.x()), B.x()*B.y(), B.x()*B.z(),
+                             sqr(B.y()), B.y()*B.z(),
+                                           sqr(B.z())
+            );
+            basisMean += Prism6::w[i] * temp;
+        }
+    }
+    else
+    {
+        Info << "Wrong element type!" << endl;
+    }
+}
+
 scalar Foam::scalarPoly
 (
     const vector& delta,

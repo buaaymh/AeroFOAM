@@ -1,38 +1,11 @@
 void Foam::vr3rdSolver::initVrLinearSystem()
 {
-    //rDeltaXYZ Initialize
+    //rDeltaXYZ and basisMean Initialize
     forAll(mesh_.C(), cellI)
     {
-        vector pointMin = mesh_.C()[cellI];
-        vector pointMax = mesh_.C()[cellI];
-        const UList<label>& cellPointsId = mesh_.cellPoints()[cellI];
-        forAll(cellPointsId, pointI)
-        {
-            pointMin = min(pointMin, mesh_.points()[cellPointsId[pointI]]);
-            pointMax = max(pointMax, mesh_.points()[cellPointsId[pointI]]);
-        }
-        rDeltaXYZ_[cellI] = cmptDivide(vector::one, 0.5*(pointMax-pointMin));
+        evaluateBasisFunctionConst(mesh_, cellI, rDeltaXYZ_[cellI], basisMean_[cellI]);
     }
     rDeltaXYZ_.correctBoundaryConditions();
-
-    // basisMean Initialize
-    forAll(mesh_.C(), cellI)
-    {
-        std::vector<vector> quadPoints(8, vector::zero);
-        gaussHex8(cellI, quadPoints);
-        for (label i = 0; i != 8; ++i)
-        {
-            const vector B = cmptMultiply(quadPoints[i]-mesh_.C()[cellI], rDeltaXYZ_[cellI]);
-            symmTensor temp
-            (
-                sqr(B.x()), B.x()*B.y(), B.x()*B.z(),
-                             sqr(B.y()), B.y()*B.z(),
-                                           sqr(B.z())
-            );
-            basisMean_[cellI] += Hex8::w[i] * temp;
-        }
-        basisMean_[cellI] *= 0.125;
-    }
     basisMean_.correctBoundaryConditions();
 
     // rA, B Initialize
@@ -41,13 +14,13 @@ void Foam::vr3rdSolver::initVrLinearSystem()
     forAll(mesh_.owner(), faceI)
     {
         std::vector<vector> quadPoints(9, vector::zero);
-        gaussQuad9(faceI, quadPoints);
+        gaussQuad9(mesh_, faceI, quadPoints);
         const label i = mesh_.owner()[faceI];
         const label j = mesh_.neighbour()[faceI];
         Mat6X6 A_i  = Mat6X6::Zero();
         Mat6X6 A_j  = Mat6X6::Zero();
         Mat6X6 B_ij = Mat6X6::Zero();
-        const vector dp = 0.25*mesh_.magSf()[faceI]*cmptMultiply(vector(1/delta[faceI], delta[faceI], pow3(delta[faceI])),
+        const vector dp = mesh_.magSf()[faceI]*cmptMultiply(vector(1/delta[faceI], delta[faceI], pow3(delta[faceI])),
                                                                  cmptMultiply(vrWeight, vrWeight));
         for (label gaussI = 0; gaussI != 9; ++gaussI)
         {
@@ -95,10 +68,10 @@ void Foam::vr3rdSolver::initVrLinearSystem()
             forAll(bfaceCells, j)
             {
                 const label i = bfaceCells[j];
-                gaussQuad9(start+j, quadPoints);
+                gaussQuad9(mesh_, start+j, quadPoints);
                 Mat6X6 A_i  = Mat6X6::Zero();
                 Mat6X6 B_ij = Mat6X6::Zero();
-                const vector dp = 0.25*magSf[j]*cmptMultiply(vector(1/delta[j], delta[j], pow3(delta[j])),
+                const vector dp = magSf[j]*cmptMultiply(vector(1/delta[j], delta[j], pow3(delta[j])),
                                                              cmptMultiply(vrWeight, vrWeight));
                 for (label gaussI = 0; gaussI != 9; ++gaussI)
                 {
@@ -130,7 +103,7 @@ void Foam::vr3rdSolver::initVrLinearSystem()
     forAll(mesh_.C(), cellI) rA_[cellI] = rA_[cellI].inverse();
 
     // Quadrature points Init
-    forAll(mesh_.owner(), faceI) { gaussQuad4(faceI, quad_[faceI]); }
+    forAll(mesh_.owner(), faceI) { gaussQuad4(mesh_, faceI, quad_[faceI]); }
 
     // Initialize N*h^((k+1)/2)
     forAll(mesh_.owner(), faceI)

@@ -46,7 +46,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
         const labelList& cellFaces = mesh_.cells()[cellI];
         std::vector<Mat5X6> d2VarList;
         d2VarList.reserve(mesh_.cellCells()[cellI].size()+1);
-        d2VarList.push_back(d2Var_[cellI]);
+        d2VarList.emplace_back(d2Var_[cellI]);
         forAll(cellFaces, f)
         {
             const label faceI = cellFaces[f];
@@ -54,7 +54,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
             {
                 label j = owner[faceI];
                 if (j == cellI) { j = neighbour[faceI]; }
-                d2VarList.push_back(d2Var_[j]);
+                d2VarList.emplace_back(d2Var_[j]);
             }
         }
         d2VarLimited[count++] = WBAP_L2_Limiter<5, 6>(d2VarList, np);
@@ -89,7 +89,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
         const labelList& cellFaces = mesh_.cells()[cellI];
         std::vector<Mat5X3> d1VarList;
         d1VarList.reserve(mesh_.cellCells()[cellI].size()+1);
-        d1VarList.push_back(d1Var_[cellI]);
+        d1VarList.emplace_back(d1Var_[cellI]);
         forAll(cellFaces, f)
         {
             const label faceI = cellFaces[f];
@@ -98,7 +98,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
                 label j = owner[faceI];
                 if (j == cellI) { j = neighbour[faceI]; }
                 const vector delta_ij = mesh_.C()[cellI] - mesh_.C()[j];
-                d1VarList.push_back(evaluateGrad(delta_ij, d1Var_[j], d2Var_[j], rDeltaXYZ_[j]));
+                d1VarList.emplace_back(evaluateGrad(delta_ij, d1Var_[j], d2Var_[j], rDeltaXYZ_[j]));
             }
         }
         Mat5X3 d1VarLimited = WBAP_L2_Limiter<5, 3>(d1VarList, np);

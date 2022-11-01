@@ -47,8 +47,8 @@ namespace Foam
 {
 
 using Col3X1 = Eigen::Matrix<scalar, 3, 1>;
-using Col6X1 = Eigen::Matrix<scalar, 6, 1>;
 using Col5X1 = Eigen::Matrix<scalar, 5, 1>;
+using Col6X1 = Eigen::Matrix<scalar, 6, 1>;
 using Mat5X3 = Eigen::Matrix<scalar, 5, 3>;
 using Mat5X6 = Eigen::Matrix<scalar, 5, 6>;
 using Mat6X5 = Eigen::Matrix<scalar, 6, 5>;
@@ -129,26 +129,6 @@ protected:
         const vector& rDeltaXYZ,
         const vector& delta
     ) const;
-
-    // * * * * * * * * * * * * Gauss Points * * * * * * * ** * * * * * //
-
-    void gaussQuad4
-    (
-        label faceI,
-        std::vector<vector>& quadPoints
-    );
-    
-    void gaussQuad9
-    (
-        label faceI,
-        std::vector<vector>& quadPoints
-    );
-
-    void gaussHex8
-    (
-        label cellI,
-        std::vector<vector>& quadPoints
-    );
     
 };
 
@@ -156,7 +136,47 @@ protected:
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
 
-// * * * * * * ** * * * Taylor Basis Functions * * * * * ** * * * * //
+// * * * * * * * * * * * * Gauss Points * * * * * * * * * * * * * * //
+
+void gaussQuad4
+(
+    const fvMesh& mesh,
+    const label& faceI,
+    std::vector<vector>& quadPoints
+);
+
+void gaussQuad9
+(
+    const fvMesh& mesh,
+    const label& faceI,
+    std::vector<vector>& quadPoints
+);
+
+void gaussHexa8
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    std::vector<vector>& quadPoints
+);
+
+void gaussPrism6
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    std::vector<vector>& quadPoints
+);
+
+// * * * * * * * * * * rDeltaXYZ and basisMean * * * * * * * * * * * * //
+
+void evaluateBasisFunctionConst
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    vector& rDeltaXYZ,
+    symmTensor& basisMean
+);
+
+// * * * * * * ** * * * Taylor Basis Functions * * * * * * * * * * * //
 
 template<typename T>
 T basisPoly
@@ -310,20 +330,31 @@ namespace Quad9
     static constexpr std::array<scalar, 9> y{+0.774596669241483, +0.774596669241483, +0.774596669241483,
                                                             0.0,                0.0,                0.0,
                                              -0.774596669241483, -0.774596669241483, -0.774596669241483};
-    static constexpr std::array<scalar, 9> w{0.30864197530864197531, 0.49382716049382716049, 0.30864197530864197531,
-                                             0.49382716049382716049, 0.79012345679012345679, 0.49382716049382716049,
-                                             0.30864197530864197531, 0.49382716049382716049, 0.30864197530864197531};
+    static constexpr std::array<scalar, 9> w{0.07716049382716049383, 0.12345679012345679012, 0.07716049382716049383,
+                                             0.12345679012345679012, 0.19753086419753086420, 0.12345679012345679012,
+                                             0.07716049382716049383, 0.12345679012345679012, 0.07716049382716049383};
 }
 
-namespace Hex8
+namespace Hexa8
 {
-    static constexpr std::array<scalar, 8> x{-0.577350269189626, +0.577350269189626, -0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, +0.577350269189626, -0.577350269189626, +0.577350269189626};
-    static constexpr std::array<scalar, 8> y{+0.577350269189626, +0.577350269189626, -0.577350269189626, -0.577350269189626,
-                                             +0.577350269189626, +0.577350269189626, -0.577350269189626, -0.577350269189626};
+    static constexpr std::array<scalar, 8> x{-0.577350269189626, +0.577350269189626, +0.577350269189626, -0.577350269189626,
+                                             -0.577350269189626, +0.577350269189626, +0.577350269189626, -0.577350269189626};
+    static constexpr std::array<scalar, 8> y{-0.577350269189626, -0.577350269189626, +0.577350269189626, +0.577350269189626,
+                                             -0.577350269189626, -0.577350269189626, +0.577350269189626, +0.577350269189626};
     static constexpr std::array<scalar, 8> z{+0.577350269189626, +0.577350269189626, +0.577350269189626, +0.577350269189626,
                                              -0.577350269189626, -0.577350269189626, -0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 8> w{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    static constexpr std::array<scalar, 8> w{0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125};
+}
+
+namespace Prism6
+{
+    static constexpr std::array<scalar, 6> x{+1.0/6.0, +2.0/3.0, +1.0/6.0,
+                                             +1.0/6.0, +2.0/3.0, +1.0/6.0};
+    static constexpr std::array<scalar, 6> y{+1.0/6.0, +1.0/6.0, +2.0/3.0,
+                                             +1.0/6.0, +1.0/6.0, +2.0/3.0};
+    static constexpr std::array<scalar, 6> z{-0.577350269189626, -0.577350269189626, -0.577350269189626,
+                                             +0.577350269189626, +0.577350269189626, +0.577350269189626};
+    static constexpr std::array<scalar, 6> w{1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0};
 }
 
 } // End namespace Foam
