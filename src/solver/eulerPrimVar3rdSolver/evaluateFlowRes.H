@@ -25,12 +25,12 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
         {
             const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
             const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-            const scalar rho_i = rho_[i] + (rhoGrad_[i]&delta_i);
-            const scalar rho_j = rho_[j] + (rhoGrad_[j]&delta_j);
-            const vector U_i = U_[i] + (UGrad_[i]&delta_i);
-            const vector U_j = U_[j] + (UGrad_[j]&delta_j);
-            const scalar T_i = T_[i] + (TGrad_[i]&delta_i);
-            const scalar T_j = T_[j] + (TGrad_[j]&delta_j);
+            rho_i = rho_[i] + (rhoGrad_[i]&delta_i);
+            rho_j = rho_[j] + (rhoGrad_[j]&delta_j);
+            U_i = U_[i] + (UGrad_[i]&delta_i);
+            U_j = U_[j] + (UGrad_[j]&delta_j);
+            T_i = T_[i] + (TGrad_[i]&delta_i);
+            T_j = T_[j] + (TGrad_[j]&delta_j);
             evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                          rho_i, rho_j, U_i, U_j, T_i, T_j,
                          normal_[faceI], mesh_.magSf()[faceI]);

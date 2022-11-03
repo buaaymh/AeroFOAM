@@ -29,43 +29,22 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-#include "fvCFD.H"
-#include <iostream>
-#include <time.h>
-#include <vector>
-#include <Eigen/Dense>
+#include "eulerConsVar3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])
 {
-    Eigen::Matrix<double, 2, 2> mat;
-    mat << 2, 0,
-           0, 2;
-    Eigen::Matrix<float, 2, 2> mat_1 = mat.inverse().cast<float>();
-    std::cout << mat_1 << std::endl;
-
-    // clock_t start, end;
-    // label n = 2000000;
-    // start = std::clock();
-    // std::vector<Eigen::Matrix<scalar, 6, 6>> eigenMatsD(n, Eigen::Matrix<scalar, 6, 6>::Ones());
-    // std::vector<Eigen::Matrix<float, 6, 6>> eigenMatsF(n, Eigen::Matrix<float, 6, 6>::Ones());
-    // std::vector<symmTensor> coefs(n, symmTensor::one);
-
-    // Eigen::Matrix<scalar, 6, 1> temp = Eigen::Matrix<scalar, 6, 1>::Zero();
-    // for (int j = 0; j != 500; j++)
-    // {
-    //     for (int i = 0; i != n; ++i)
-    //     {
-    //         Eigen::Matrix<scalar, 6, 1> col(coefs[i][0], coefs[i][1], coefs[i][2],
-    //                                         coefs[i][3], coefs[i][4], coefs[i][5]);
-    //         temp += eigenMatsD[i] * col;
-    //         temp += eigenMatsF[i].cast<scalar>() * col;
-    //     }
-    //     temp *= 0;
-    // }
-    // end = std::clock();
-    // Info <<"CPU Time = "<<scalar(end-start)/CLOCKS_PER_SEC<< "s" <<endl;
+    Foam::Mat5X5 L, R;
+    const scalar rho  = 1.0;
+    const vector rhoU = vector(1.0, 2.0, 3.0);
+    const scalar rhoE = 4.0;
+    const vector normal = vector(0.6, 0.8, 0.0);
+    const scalar gamma = 1.4;
+    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+    Foam::Mat5X5 I = Foam::Mat5X5::Identity();
+    Info << (L * R - I).cwiseAbs().maxCoeff() << endl;
+    Info << (R * L - I).cwiseAbs().maxCoeff() << endl;
 
     return 0;
 }

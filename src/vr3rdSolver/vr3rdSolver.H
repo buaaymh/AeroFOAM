@@ -50,6 +50,7 @@ using Col3X1 = Eigen::Matrix<scalar, 3, 1>;
 using Col5X1 = Eigen::Matrix<scalar, 5, 1>;
 using Col6X1 = Eigen::Matrix<scalar, 6, 1>;
 using Mat5X3 = Eigen::Matrix<scalar, 5, 3>;
+using Mat5X5 = Eigen::Matrix<scalar, 5, 5>;
 using Mat5X6 = Eigen::Matrix<scalar, 5, 6>;
 using Mat6X5 = Eigen::Matrix<scalar, 6, 5>;
 using Mat6X6 = Eigen::Matrix<scalar, 6, 6>;
@@ -276,16 +277,16 @@ Mat5X3 evaluateGrad
 );
 
 // * * * * * * * * * * * * WBAP Functions * * * * * * * * * * * * //
-template<int rows, int cols>
-Eigen::Matrix<scalar, rows, cols> WBAP_L2_Limiter
+template<int cols>
+Eigen::Matrix<scalar, 5, cols> WBAP_L2_Limiter
 (
-    const std::vector<Eigen::Matrix<scalar, rows, cols>>& list,
-    scalar value
+    const std::vector<Eigen::Matrix<scalar, 5, cols>>& list,
+    const scalar& value
 )
 {
     const label n = list.size();
-    Eigen::Matrix<scalar, rows, cols> result = list[0];
-    for (label i = 0; i != rows; i++)
+    Eigen::Matrix<scalar, 5, cols> result = list[0];
+    for (label i = 0; i != 5; i++)
     {
         for (label j = 0; j != cols; j++)
         {

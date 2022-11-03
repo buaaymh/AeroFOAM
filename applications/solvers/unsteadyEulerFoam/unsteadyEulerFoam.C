@@ -33,6 +33,7 @@ Description
 #include "solver.H"
 #include "euler2ndSolver.H"
 #include "eulerPrimVar3rdSolver.H"
+#include "eulerConsVar3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

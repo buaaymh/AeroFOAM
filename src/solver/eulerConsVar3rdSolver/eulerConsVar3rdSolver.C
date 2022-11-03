@@ -48,17 +48,6 @@ Foam::eulerConsVar3rdSolver::eulerConsVar3rdSolver
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
     ),
-    rhoGradLimited_
-    (
-        IOobject
-        (
-            "rhoGradLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
     rhoUGrad_
     (
         IOobject
@@ -70,33 +59,11 @@ Foam::eulerConsVar3rdSolver::eulerConsVar3rdSolver
         mesh_,
         dimensionedTensor(dimless/dimLength, tensor::zero)
     ),
-    rhoUGradLimited_
-    (
-        IOobject
-        (
-            "rhoUGradLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedTensor(dimless/dimLength, tensor::zero)
-    ),
     rhoEGrad_
     (
         IOobject
         (
             "rhoEGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-    rhoEGradLimited_
-    (
-        IOobject
-        (
-            "rhoEGradLimited",
             mesh_.time().timeName(),
             mesh_
         ),
@@ -152,61 +119,6 @@ Foam::eulerConsVar3rdSolver::eulerConsVar3rdSolver
         IOobject
         (
             "d2RhoE",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2RhoLimited_
-    (
-        IOobject
-        (
-            "d2RhoLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2RhoUxLimited_
-    (
-        IOobject
-        (
-            "d2RhoUxLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2RhoUyLimited_
-    (
-        IOobject
-        (
-            "d2RhoUyLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2RhoUzLimited_
-    (
-        IOobject
-        (
-            "d2RhoUzLimited",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2RhoELimited_
-    (
-        IOobject
-        (
-            "d2RhoELimited",
             mesh_.time().timeName(),
             mesh_
         ),

@@ -57,7 +57,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
                 d2VarList.emplace_back(d2Var_[j]);
             }
         }
-        d2VarLimited[count++] = WBAP_L2_Limiter<5, 6>(d2VarList, np);
+        d2VarLimited[count++] = WBAP_L2_Limiter<6>(d2VarList, np);
     }
 
     /* Update d2 coefficients of polynomials */
@@ -101,7 +101,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
                 d1VarList.emplace_back(evaluateGrad(delta_ij, d1Var_[j], d2Var_[j], rDeltaXYZ_[j]));
             }
         }
-        Mat5X3 d1VarLimited = WBAP_L2_Limiter<5, 3>(d1VarList, np);
+        Mat5X3 d1VarLimited = WBAP_L2_Limiter<3>(d1VarList, np);
         rhoGrad_[cellI] = vector(d1VarLimited(0,0), d1VarLimited(0,1), d1VarLimited(0,2));
         UGrad_[cellI]   = tensor(d1VarLimited(1,0), d1VarLimited(1,1), d1VarLimited(1,2),
                                  d1VarLimited(2,0), d1VarLimited(2,1), d1VarLimited(2,2),

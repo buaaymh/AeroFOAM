@@ -85,10 +85,15 @@ Info << "====================================================" << endl;
 
 std::unique_ptr<solver> solver;
 label order = mesh.schemesDict().lookup<label>("order");
+Switch consVar = mesh.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("consVar", false);
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
-    else if (order == 3) solver = std::make_unique<eulerPrimVar3rdSolver>(fluidProps, rho, U, p);
+    else if (order == 3)
+    {
+        if (consVar) solver = std::make_unique<eulerConsVar3rdSolver>(fluidProps, rho, U, p);
+        else solver = std::make_unique<eulerPrimVar3rdSolver>(fluidProps, rho, U, p);
+    }
 }
 else
 {

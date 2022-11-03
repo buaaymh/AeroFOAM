@@ -58,8 +58,6 @@ private:
     //- Disallow default bitwise assignment
     void operator=(const eulerConsVar3rdSolver&);
 
-    void reconstructionIter();
-
     void limitCoefficients();
 
     void evaluateFlux
@@ -73,30 +71,25 @@ private:
         const vector& rhoU_R,
         const scalar& rhoE_L,
         const scalar& rhoE_R,
-        const vector& normal
+        const vector& normal,
+        const scalar& magSf
     ) const;
 
 protected:
     //- Density grad
     volVectorField rhoGrad_;
-    volVectorField rhoGradLimited_;
-    //- Velocity grad
+    //- Momentum grad
     volTensorField rhoUGrad_;
-    volTensorField rhoUGradLimited_;
-    //- pressure grad
+    //- Energy grad
     volVectorField rhoEGrad_;
-    volVectorField rhoEGradLimited_;
     //- Quadratic polynomial coefficients
     volSymmTensorField d2Rho_;
     volSymmTensorField d2RhoUx_;
     volSymmTensorField d2RhoUy_;
     volSymmTensorField d2RhoUz_;
     volSymmTensorField d2RhoE_;
-    volSymmTensorField d2RhoLimited_;
-    volSymmTensorField d2RhoUxLimited_;
-    volSymmTensorField d2RhoUyLimited_;
-    volSymmTensorField d2RhoUzLimited_;
-    volSymmTensorField d2RhoELimited_;
+    
+    void reconstructionIter();
 
 public:
 
@@ -121,6 +114,33 @@ public:
     );
 
 };
+
+/*---------------------------------------------------------------------------*\
+                           Methods Declaration
+\*---------------------------------------------------------------------------*/
+
+void evaluateEigenMatrix
+(
+    Mat5X5& L,
+    Mat5X5& R,
+    const scalar& rho,
+    const vector& rhoU,
+    const scalar& rhoE,
+    const vector& normal,
+    const scalar& gamma
+);
+
+template<int cols>
+Eigen::Matrix<scalar, 5, cols> Eigen_WBAP_L2_Limiter
+(
+    const std::vector<vector>& normalList,
+    const std::vector<Eigen::Matrix<scalar, 5, cols>>& matList,
+    const scalar& rho,
+    const vector& rhoU,
+    const scalar& rhoE,
+    const scalar& gamma,
+    const scalar& value
+);
 
 } // End namespace Foam
 

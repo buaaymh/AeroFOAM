@@ -32,7 +32,7 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
         const scalar dRho0 = rho_[j] - rho_[i];
         const vector dU0   = U_[j]   - U_[i];
         const scalar dT0   = T_[j]   - T_[i];
-        scalar temp = 0.25*mesh_.magSf()[faceI]*sqr(vrWeight[0])/delta[faceI];
+        scalar temp = mesh_.magSf()[faceI]*sqr(vrWeight[0])/delta[faceI];
         for (label gaussI = 0; gaussI != 4; ++gaussI)
         {
             const vector delta_i = quad_[faceI][gaussI] - mesh_.C()[i];
