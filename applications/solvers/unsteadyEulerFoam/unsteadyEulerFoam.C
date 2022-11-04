@@ -48,7 +48,8 @@ int main(int argc, char *argv[])
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    const scalar k11_22 = (3.0 - Foam::sqrt(3.0)) / 6.0;
+    const scalar k11_22 = (3.0-Foam::sqrt(3.0))/6.0;
+    const scalar k21    = 1.0/Foam::sqrt(3.0);
     
     while (runTime.run())
     {
@@ -56,6 +57,10 @@ int main(int argc, char *argv[])
         const scalar relTol = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
         const scalar dt = runTime.deltaT().value();
         const scalarField dt_dv(dt/mesh.V().field());
+
+        runTime++;
+        Info<< "Time = " << runTime.value() << " s" << nl;
+        solver->correctFields();
 
         scalarField rho_0(solver->rho());
         vectorField rhoU_0(solver->rhoU());
@@ -74,7 +79,7 @@ int main(int argc, char *argv[])
         {
             count++;
             solver->evaluateFlowRes(resRho_1, resRhoU_1, resRhoE_1);
-            scalarField pseudoResRho((rho_0 - solver->rho())/dt_dv    + k11_22* resRho_1);
+            scalarField pseudoResRho((rho_0   - solver->rho()) /dt_dv + k11_22*resRho_1);
             vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_1);
             scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_1);
             if (i == 0)
@@ -97,9 +102,9 @@ int main(int argc, char *argv[])
         {
             count++;
             solver->evaluateFlowRes(resRho_2, resRhoU_2, resRhoE_2);
-            scalarField pseudoResRho((rho_0 - solver->rho())/dt_dv    + k11_22*(resRho_1+resRho_2));
-            vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*(resRhoU_1+resRhoU_2));
-            scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*(resRhoE_1+resRhoE_2));
+            scalarField pseudoResRho((rho_0   - solver->rho())/dt_dv  + k11_22*resRho_2  + k21*resRho_1);
+            vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_2 + k21*resRhoU_1);
+            scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_2 + k21*resRhoE_1);
             if (i == 0)
             {
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
@@ -118,8 +123,6 @@ int main(int argc, char *argv[])
         solver->rhoU() = rhoU_0 + 0.5 * dt_dv * (resRhoU_1 + resRhoU_2);
         solver->rhoE() = rhoE_0 + 0.5 * dt_dv * (resRhoE_1 + resRhoE_2);
         
-        runTime++;
-        Info<< "Time = " << runTime.value() << " s" << nl;
         solver->correctFields();
         runTime.write();
 	

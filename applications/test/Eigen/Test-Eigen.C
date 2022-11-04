@@ -29,6 +29,7 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
+#include <iostream>
 #include "eulerConsVar3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -36,12 +37,15 @@ Description
 int main(int argc, char *argv[])
 {
     Foam::Mat5X5 L, R;
-    const scalar rho  = 1.0;
-    const vector rhoU = vector(1.0, 2.0, 3.0);
-    const scalar rhoE = 4.0;
-    const vector normal = vector(0.6, 0.8, 0.0);
     const scalar gamma = 1.4;
+    const scalar rho  = 1.0;
+    const vector U = vector(1.0, 1.0, 1.0);
+    const scalar p = 2.0;
+    const vector rhoU = rho*U;
+    const scalar rhoE = p/(gamma-1.0) + 0.5*rho*magSqr(U);
+    const vector normal = vector(0.0, 0.0, 1.0);
     evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+    std::cout << L << nl << R << std::endl;
     Foam::Mat5X5 I = Foam::Mat5X5::Identity();
     Info << (L * R - I).cwiseAbs().maxCoeff() << endl;
     Info << (R * L - I).cwiseAbs().maxCoeff() << endl;

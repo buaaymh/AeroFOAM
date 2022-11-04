@@ -191,8 +191,50 @@ void Foam::evaluateEigenMatrix
     const scalar& gamma
 )
 {
-    L = Mat5X5::Identity();
-    R = Mat5X5::Identity();
+    scalar rRho = 1.0/rho;
+    vector U = rhoU*rRho;
+    scalar ek = 0.5*magSqr(U);
+    scalar p = (rhoE-rho*ek)*(gamma-1);
+    scalar a = sqrt(p*gamma*rRho);
+    scalar h = (rhoE+p)*rRho;
+    scalar Vn = U&normal;
+    // build Mat5x5 R
+    vector an = a*normal;
+    R.col(0) << 1, U.x()-an.x(), U.y()-an.y(), U.z()-an.z(), h-a*Vn;
+    R.col(1) << 1, U.x()       , U.y()       , U.z()       , ek;
+    R.col(2) << 1, U.x()+an.x(), U.y()+an.y(), U.z()+an.z(), h+a*Vn;
+    // build Mat5x5 L
+    scalar b1 = (gamma-1.0)/sqr(a), b2 = b1*ek, ra = 1.0/a;
+    vector n_a = normal*ra, b1xU = b1*U;
+    L.row(0) << (b2+Vn*ra), -(b1xU.x()+n_a.x()), -(b1xU.y()+n_a.y()), -(b1xU.z()+n_a.z()), b1;
+    L.row(1) << -b2+1     ,   b1xU.x()         ,   b1xU.y()         ,   b1xU.z()     ,    -b1;
+    L.row(2) << (b2-Vn*ra), -(b1xU.x()-n_a.x()), -(b1xU.y()-n_a.y()), -(b1xU.z()-n_a.z()), b1;
+    L.row(0) *= 0.5;
+    L.row(2) *= 0.5;
+    if (mag(normal.x()) > 1e-8)
+    {
+        R.col(3) << 0,  normal.y(), -normal.x(), 0, U.x()*normal.y()-U.y()*normal.x();
+        R.col(4) << 0, -normal.z(),  0, normal.x(), U.z()*normal.x()-U.x()*normal.z();
+        scalar rnx = 1.0/normal.x();
+        L.row(3) <<  (U.y()-Vn*normal.y())*rnx,  normal.y(),  (sqr(normal.y())-1.0)*rnx, normal.y()*normal.z()*rnx, 0;
+        L.row(4) << -(U.z()-Vn*normal.z())*rnx, -normal.z(), -normal.y()*normal.z()*rnx, (1.0-sqr(normal.z()))*rnx, 0;
+    }
+    else if (mag(normal.y()) > 1e-8)
+    {
+        R.col(3) << 0, normal.y(), -normal.x(), 0, U.x()*normal.y()-U.y()*normal.x();
+        R.col(4) << 0, 0, normal.z(), -normal.y(), U.y()*normal.z()-U.z()*normal.y();
+        scalar rny = 1.0/normal.y();
+        L.row(3) << -(U.x()-Vn*normal.x())*rny, (1.0-sqr(normal.x()))*rny, -normal.x(), normal.x()*normal.z()*rny, 0;
+        L.row(4) <<  (U.z()-Vn*normal.z())*rny, normal.x()*normal.z()*rny,  normal.z(), (sqr(normal.z())-1.0)*rny, 0;
+    }
+    else
+    {
+        R.col(3) << 0, -normal.z(), 0, normal.x(), U.z()*normal.x()-U.x()*normal.z();
+        R.col(4) << 0, 0, normal.z(), -normal.y(), U.y()*normal.z()-U.z()*normal.y();
+        scalar rnz = 1.0/normal.z();
+        L.row(3) <<  (U.x()-Vn*normal.x())*rnz,  (sqr(normal.x())-1.0)*rnz,  normal.x()*normal.y()*rnz,  normal.x(), 0;
+        L.row(4) << -(U.y()-Vn*normal.y())*rnz, -normal.x()*normal.y()*rnz,  (1.0-sqr(normal.y()))*rnz, -normal.y(), 0;
+    }
 }
 
 template<int cols>

@@ -167,6 +167,7 @@ protected:
 
     virtual void evaluateMatrixLDU
     (
+        const scalar& alpha,
         scalarField& L,
         scalarField& U,
         scalarField& D
@@ -195,6 +196,7 @@ protected:
 
     void precondition
     (
+        const scalar& alpha,
         const scalarField& L,
         const scalarField& U,
         const scalarField& D,
@@ -208,6 +210,7 @@ protected:
 
     void precondition
     (
+        const scalar& alpha,
         const scalarField& L,
         const scalarField& U,
         const scalarField& D,

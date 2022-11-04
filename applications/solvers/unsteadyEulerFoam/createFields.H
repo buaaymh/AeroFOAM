@@ -99,7 +99,6 @@ else
 {
     Info << "Error in simulationType!" << endl;
 }
-solver->correctFields();
 // Resident
 scalarField resRho_1(mesh.nCells());
 vectorField resRhoU_1(mesh.nCells());

@@ -5,16 +5,17 @@ void Foam::solver::solveFlowLinearSystem
     const scalarField& resRhoE
 )
 {
+    const scalar omega = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relaxOmega", 1.2);
     updateLTS();
     scalarField L(mesh_.nInternalFaces());
     scalarField U(mesh_.nInternalFaces());
     scalarField D(1.0/localDtDv_);
-    evaluateMatrixLDU(L, U, D);
+    evaluateMatrixLDU(omega, L, U, D);
     // Preconditioning step
     scalarField dRho(mesh_.nCells());
     vectorField dRhoU(mesh_.nCells());
     scalarField dRhoE(mesh_.nCells());
-    precondition(L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
+    precondition(omega, L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
     rho_.primitiveFieldRef()  += dRho;
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;
@@ -35,12 +36,12 @@ void Foam::solver::solveFlowPseudoTimeSystem
     scalarField L(mesh_.nInternalFaces());
     scalarField U(mesh_.nInternalFaces());
     scalarField D(1.0/localDtDv_ + mesh_.V().field()/dt);
-    evaluateMatrixLDU(L, U, D);
+    evaluateMatrixLDU(alpha, L, U, D);
     // Preconditioning step
     scalarField dRho(mesh_.nCells());
     vectorField dRhoU(mesh_.nCells());
     scalarField dRhoE(mesh_.nCells());
-    precondition(L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
+    precondition(alpha, L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
     resL1 = gSum(mag(dRho));
     rho_.primitiveFieldRef()  += dRho;
     rhoU_.primitiveFieldRef() += dRhoU;
@@ -49,12 +50,12 @@ void Foam::solver::solveFlowPseudoTimeSystem
 
 void Foam::solver::evaluateMatrixLDU
 (
+    const scalar& alpha,
     scalarField& L,
     scalarField& U,
     scalarField& D
 ) const
 {
-    const scalar omega = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relaxOmega", 1.2);
     // Calculate L, U and D
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
@@ -64,8 +65,8 @@ void Foam::solver::evaluateMatrixLDU
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        L[faceI] = 0.5*omega*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
-        U[faceI] = 0.5*omega*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI]);
+        L[faceI] = 0.5*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
+        U[faceI] = 0.5*alpha*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI]);
         D[i] += L[faceI];
         D[j] += U[faceI];
     }
@@ -77,13 +78,14 @@ void Foam::solver::evaluateMatrixLDU
         forAll(bfaceCells, faceI)
         {
             const label i = bfaceCells[faceI];
-            D[i] += 0.5*omega*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
+            D[i] += 0.5*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
         }
     }
 }
 
 void Foam::solver::precondition
 (
+    const scalar& alpha,
     const scalarField& L,
     const scalarField& U,
     const scalarField& D,
@@ -120,9 +122,9 @@ void Foam::solver::precondition
                     const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(fluidProps_.gamma-1.0);
                     const scalar phi0 = U_[i]&Sf[faceI];
                     const scalar phi1 = (rhoU1/rho1)&Sf[faceI];
-                    rRho  += L[faceI]*dRho[i]  + 0.5*(rho1*phi1       - rho_[i]*phi0)/h;
-                    rRhoU += L[faceI]*dRhoU[i] + 0.5*(rhoU1*phi1      - rhoU_[i]*phi0 + (p1-p_[i])*Sf[faceI])/h;
-                    rRhoE += L[faceI]*dRhoE[i] + 0.5*((rhoE1+p1)*phi1 - (rhoE_[i]+p_[i])*phi0)/h;
+                    rRho  += L[faceI]*dRho[i]  + 0.5*alpha*(rho1*phi1       - rho_[i]*phi0)/h;
+                    rRhoU += L[faceI]*dRhoU[i] + 0.5*alpha*(rhoU1*phi1      - rhoU_[i]*phi0 + (p1-p_[i])*Sf[faceI])/h;
+                    rRhoE += L[faceI]*dRhoE[i] + 0.5*alpha*((rhoE1+p1)*phi1 - (rhoE_[i]+p_[i])*phi0)/h;
                 }
             }
         }
@@ -151,9 +153,9 @@ void Foam::solver::precondition
                     const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(fluidProps_.gamma-1.0);
                     const scalar phi0 = U_[j]&Sf[faceI];
                     const scalar phi1 = (rhoU1/rho1)&Sf[faceI];
-                    rRho  += U[faceI]*dRho[j]  - 0.5*(rho1*phi1       - rho_[j]*phi0)/h;
-                    rRhoU += U[faceI]*dRhoU[j] - 0.5*(rhoU1*phi1      - rhoU_[j]*phi0 + (p1-p_[j])*Sf[faceI])/h;
-                    rRhoE += U[faceI]*dRhoE[j] - 0.5*((rhoE1+p1)*phi1 - (rhoE_[j]+p_[j])*phi0)/h;
+                    rRho  += U[faceI]*dRho[j]  - 0.5*alpha*(rho1*phi1       - rho_[j]*phi0)/h;
+                    rRhoU += U[faceI]*dRhoU[j] - 0.5*alpha*(rhoU1*phi1      - rhoU_[j]*phi0 + (p1-p_[j])*Sf[faceI])/h;
+                    rRhoE += U[faceI]*dRhoE[j] - 0.5*alpha*((rhoE1+p1)*phi1 - (rhoE_[j]+p_[j])*phi0)/h;
                 }
             }
         }
@@ -165,6 +167,7 @@ void Foam::solver::precondition
 
 void Foam::solver::precondition
 (
+    const scalar& alpha,
     const scalarField& L,
     const scalarField& U,
     const scalarField& D,
@@ -176,5 +179,5 @@ void Foam::solver::precondition
     scalarField rho_b(resRho);
     vectorField rhoU_b(resRhoU);
     scalarField rhoE_b(resRhoE);
-    precondition(L, U, D, rho_b, rhoU_b, rhoE_b, resRho, resRhoU, resRhoE);
+    precondition(alpha, L, U, D, rho_b, rhoU_b, rhoE_b, resRho, resRhoU, resRhoE);
 }
