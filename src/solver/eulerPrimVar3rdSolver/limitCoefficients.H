@@ -133,9 +133,12 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
             if (isP0Cell_[cellI]) continue;
             const symmTensor basisFuncs
             (
-                0.5*(1-basisMean_[cellI].xx()), 1-basisMean_[cellI].xy(),  1-basisMean_[cellI].xz(),
-                                           0.5*(1-basisMean_[cellI].yy()), 1-basisMean_[cellI].yz(),
-                                                                      0.5*(1-basisMean_[cellI].yy())
+                0.5*(1+mag(basisMean_[cellI].xx())),
+                1+mag(basisMean_[cellI].xy()),
+                1+mag(basisMean_[cellI].xz()),
+                0.5*(1+mag(basisMean_[cellI].yy())),
+                1+mag(basisMean_[cellI].yz()),
+                0.5*(1+mag(basisMean_[cellI].zz()))
             );
             const scalar deltaRho = cmptSum(cmptDivide(cmptMag(rhoGrad_[cellI]), rDeltaXYZ_[cellI]))
                                   + cmptSum(cmptMultiply(cmptMag(d2Rho_[cellI]), basisFuncs));
