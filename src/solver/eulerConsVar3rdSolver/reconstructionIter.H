@@ -148,6 +148,35 @@ void Foam::eulerConsVar3rdSolver::reconstructionIter()
             }
         }
     }
+    
+    /* Block Gauss–Seidel iteration */
+    forAll(mesh_.cells(), cellI)
+    {
+        if (isP0Cell_[cellI])
+        {
+            d2Var_[cellI] = Mat5X6::Zero();
+            continue;
+        }
+        const labelList& cellFaces = mesh_.cells()[cellI];
+        forAll(cellFaces, f)
+        {
+            const label faceI = cellFaces[f];
+            if (mesh_.isInternalFace(faceI))
+            {
+                label j = owner[faceI];
+                if (j != cellI) /* j < cellI */
+                {
+                    bW[cellI] += B_[faceI] * d2Var_[j].transpose();
+                }
+                else /* j > cellI */
+                {
+                    j = neighbour[faceI];
+                    bW[cellI] += (d2Var_[j] * B_[faceI]).transpose();
+                }
+            }
+        }
+        d2Var_[cellI] = (rA_[cellI]*bW[cellI]).transpose();
+    }
 
     /* Limiting coefficients of polynomials */
     limitCoefficients();

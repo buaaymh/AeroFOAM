@@ -175,6 +175,7 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                 }
             }
         }
+        d2Var_[cellI] = (rA_[cellI]*bW[cellI]).transpose();
     }
 
     /* Limiting coefficients of polynomials */
