@@ -15,7 +15,7 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
             }
         }
         const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-        Info << "P0 cell [%] = " << percent << ", ";
+        Info << "P0 cell [%] = " << percent;
     }
 
     /* Calculate b of vr linear system */

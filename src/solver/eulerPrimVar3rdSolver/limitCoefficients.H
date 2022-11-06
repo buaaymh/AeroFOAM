@@ -34,7 +34,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
         }
     }
     const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-    Info << "Trouble cell [%] = " << percent << endl;
+    Info << ", Trouble cell [%] = " << percent;
 
     /* Limiting d2 coefficients of polynomials */
     const scalar np = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("np", 10);
@@ -128,22 +128,20 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
     const Switch positive = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);
     if (positive)
     {
+        count = 0;
         forAll(mesh_.C(), cellI)
         {
             if (isP0Cell_[cellI]) continue;
             const symmTensor basisFuncs
             (
-                0.5*(1+mag(basisMean_[cellI].xx())),
-                1+mag(basisMean_[cellI].xy()),
-                1+mag(basisMean_[cellI].xz()),
-                0.5*(1+mag(basisMean_[cellI].yy())),
-                1+mag(basisMean_[cellI].yz()),
-                0.5*(1+mag(basisMean_[cellI].zz()))
+                0.5*(1-basisMean_[cellI].xx()), 1-basisMean_[cellI].xy(),  1-basisMean_[cellI].xz(),
+                                           0.5*(1-basisMean_[cellI].yy()), 1-basisMean_[cellI].yz(),
+                                                                      0.5*(1-basisMean_[cellI].zz())
             );
             const scalar deltaRho = cmptSum(cmptDivide(cmptMag(rhoGrad_[cellI]), rDeltaXYZ_[cellI]))
-                                  + cmptSum(cmptMultiply(cmptMag(d2Rho_[cellI]), basisFuncs));
+                                  + cmptSum(cmptMag(cmptMultiply(d2Rho_[cellI], basisFuncs)));
             const scalar deltaT   = cmptSum(cmptDivide(cmptMag(TGrad_[cellI]), rDeltaXYZ_[cellI]))
-                                  + cmptSum(cmptMultiply(cmptMag(d2T_[cellI]), basisFuncs));
+                                  + cmptSum(cmptMag(cmptMultiply(d2T_[cellI], basisFuncs)));
             scalar temp = min(rho_[cellI]-deltaRho, T_[cellI]-deltaT);
             if (temp < 0)
             {
@@ -156,7 +154,12 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
                 d2Uy_[cellI] *= temp;
                 d2Uz_[cellI] *= temp;
                 d2T_[cellI] *= temp;
+                d2Var_[cellI] *= temp;
+                count++;
             }
         }
+        const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
+        Info << ", Negative cell [%] = " << percent;
     }
+    Info << endl;
 }
