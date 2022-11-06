@@ -43,10 +43,26 @@ int main(int argc, char *argv[])
     const scalar p = 2.0;
     const vector rhoU = rho*U;
     const scalar rhoE = p/(gamma-1.0) + 0.5*rho*magSqr(U);
-    const vector normal = vector(0.0, 0.0, 1.0);
-    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
-    std::cout << L << nl << R << std::endl;
     Foam::Mat5X5 I = Foam::Mat5X5::Identity();
+    
+    vector normal = vector(0.8, 0.6, 0.0);
+    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+    Info << "normal = " << normal << endl;
+    std::cout << "L = \n" << L << nl << "R = \n" << R << std::endl;
+    Info << (L * R - I).cwiseAbs().maxCoeff() << endl;
+    Info << (R * L - I).cwiseAbs().maxCoeff() << endl;
+
+    normal = vector(-0.6, 0.0, 0.8);
+    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+    Info << "normal = " << normal << endl;
+    std::cout << "L = \n" << L << nl << "R = \n" << R << std::endl;
+    Info << (L * R - I).cwiseAbs().maxCoeff() << endl;
+    Info << (R * L - I).cwiseAbs().maxCoeff() << endl;
+
+    normal = vector(0.0, 0.8, -0.6);
+    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+    Info << "normal = " << normal << endl;
+    std::cout << "L = \n" << L << nl << "R = \n" << R << std::endl;
     Info << (L * R - I).cwiseAbs().maxCoeff() << endl;
     Info << (R * L - I).cwiseAbs().maxCoeff() << endl;
 
