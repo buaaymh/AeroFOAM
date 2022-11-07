@@ -138,9 +138,9 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
                                            0.5*(1-basisMean_[cellI].yy()), 1-basisMean_[cellI].yz(),
                                                                       0.5*(1-basisMean_[cellI].zz())
             );
-            const scalar deltaRho = cmptSum(cmptDivide(cmptMag(rhoGrad_[cellI]), rDeltaXYZ_[cellI]))
+            const scalar deltaRho = cmptSum(cmptMag(cmptDivide(rhoGrad_[cellI], rDeltaXYZ_[cellI])))
                                   + cmptSum(cmptMag(cmptMultiply(d2Rho_[cellI], basisFuncs)));
-            const scalar deltaT   = cmptSum(cmptDivide(cmptMag(TGrad_[cellI]), rDeltaXYZ_[cellI]))
+            const scalar deltaT   = cmptSum(cmptMag(cmptDivide(TGrad_[cellI], rDeltaXYZ_[cellI])))
                                   + cmptSum(cmptMag(cmptMultiply(d2T_[cellI], basisFuncs)));
             scalar temp = min(rho_[cellI]-deltaRho, T_[cellI]-deltaT);
             if (temp < 0)
