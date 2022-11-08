@@ -56,12 +56,6 @@ class euler2ndSolver: public solver
     volTensorField UGrad_;
     //- temperature grad
     volVectorField TGrad_;
-    //- Density limit
-    volScalarField rhoLimit_;
-    //- Velocity limit
-    volVectorField ULimit_;
-    //- pressure limit
-    volScalarField TLimit_;
 
     // Private Member Functions
     //- Disallow default bitwise copy construct
@@ -106,27 +100,6 @@ private:
         const scalar& T_R,
         const vector& normal,
         const scalar& magSf
-    ) const;
-
-    void limitGrad
-    (
-        const volScalarField& rho,
-        const volVectorField& U,
-        const volScalarField& T,
-        const volVectorField& rhoGrad,
-        const volTensorField& UGrad,
-        const volVectorField& TGrad,
-        volScalarField& rhoLimit,
-        volVectorField& ULimit,
-        volScalarField& TLimit
-    ) const;
-
-    scalar Venkat
-    (
-        const scalar& project,
-        const scalar& deltaMin,
-        const scalar& deltaMax,
-        const scalar& cellVolume
     ) const;
 
 };

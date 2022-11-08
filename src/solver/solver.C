@@ -147,4 +147,6 @@ void Foam::solver::volProjectionsInit()
 
 #include "solveFlowLinearSystem.H"
 
+#include "reconstructionVenkatakrishnan.H"
+
 // ************************************************************************* //
