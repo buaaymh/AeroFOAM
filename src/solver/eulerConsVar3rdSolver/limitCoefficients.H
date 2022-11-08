@@ -5,36 +5,36 @@ void Foam::eulerConsVar3rdSolver::limitCoefficients()
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
     const vectorField delta = mesh_.delta();
-    scalarField rho_max(rho_.primitiveField());
-    scalarField rho_mid(mesh_.nCells());
+    scalarField rhoE_max(rhoE_.primitiveField());
+    scalarField rhoE_mid(mesh_.nCells());
     scalarField error(mesh_.nCells(), 0.0);
     std::vector<bool> isTrouble(mesh_.nCells(), false);
     forAll(mesh_.cells(), cellI)
     {
-        d2Rho_[cellI] = symmTensor(d2Var_[cellI](0,0), d2Var_[cellI](0,1), d2Var_[cellI](0,2),
-                                   d2Var_[cellI](0,3), d2Var_[cellI](0,4), d2Var_[cellI](0,5));
-        rho_mid[cellI] = rho_[cellI]+scalarPoly(vector::zero, rhoGrad_[cellI], d2Rho_[cellI], rDeltaXYZ_[cellI], basisMean_[cellI]);
+        d2RhoE_[cellI] = symmTensor(d2Var_[cellI](4,0), d2Var_[cellI](4,1), d2Var_[cellI](4,2),
+                                    d2Var_[cellI](4,3), d2Var_[cellI](4,4), d2Var_[cellI](4,5));
+        rhoE_mid[cellI] = rhoE_[cellI]+scalarPoly(vector::zero, rhoEGrad_[cellI], d2RhoE_[cellI], rDeltaXYZ_[cellI], basisMean_[cellI]);
     }
     forAll(owner, faceI)
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        rho_max[i] = max(rho_max[i], rho_[j]);
-        rho_max[j] = max(rho_max[j], rho_[i]);
-        error[j] += mag(rho_[i]+scalarPoly( delta[faceI], rhoGrad_[i], d2Rho_[i], rDeltaXYZ_[i], basisMean_[i])-rho_mid[j]);
-        error[i] += mag(rho_[j]+scalarPoly(-delta[faceI], rhoGrad_[j], d2Rho_[j], rDeltaXYZ_[j], basisMean_[j])-rho_mid[i]);
+        rhoE_max[i] = max(rhoE_max[i], rhoE_[j]);
+        rhoE_max[j] = max(rhoE_max[j], rhoE_[i]);
+        error[j] += mag(rhoE_[i]+scalarPoly( delta[faceI], rhoEGrad_[i], d2RhoE_[i], rDeltaXYZ_[i], basisMean_[i])-rhoE_mid[j]);
+        error[i] += mag(rhoE_[j]+scalarPoly(-delta[faceI], rhoEGrad_[j], d2RhoE_[j], rDeltaXYZ_[j], basisMean_[j])-rhoE_mid[i]);
     }
     label count = 0;
     forAll(mesh_.cells(), cellI)
     {
-        if (error[cellI]/(N_h_[cellI]*rho_max[cellI]) > IS)
+        if (error[cellI]/(N_h_[cellI]*rhoE_max[cellI]) > IS)
         {
             isTrouble[cellI] = true;
             count++;
         }
     }
     const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-    Info << "Trouble cell [%] = " << percent << endl;
+    Info << ", Trouble cell [%] = " << percent;
 
     /* Limiting d2 coefficients of polynomials */
     const Switch characteristic = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("characteristic", false);
@@ -150,34 +150,50 @@ void Foam::eulerConsVar3rdSolver::limitCoefficients()
     const Switch positive = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);
     if (positive)
     {
+        count = 0;
         forAll(mesh_.C(), cellI)
         {
             if (isP0Cell_[cellI]) continue;
             const symmTensor basisFuncs
             (
-                0.5*(1-basisMean_[cellI].xx()), 1-basisMean_[cellI].xy(),  1-basisMean_[cellI].xz(),
-                                           0.5*(1-basisMean_[cellI].yy()), 1-basisMean_[cellI].yz(),
-                                                                      0.5*(1-basisMean_[cellI].yy())
+                0.5*(1+basisMean_[cellI].xx()), 1+basisMean_[cellI].xy(),  1+basisMean_[cellI].xz(),
+                                           0.5*(1+basisMean_[cellI].yy()), 1+basisMean_[cellI].yz(),
+                                                                      0.5*(1+basisMean_[cellI].zz())
             );
-            const scalar deltaRho  = cmptSum(cmptDivide(cmptMag(rhoGrad_[cellI]), rDeltaXYZ_[cellI]))
-                                   + cmptSum(cmptMultiply(cmptMag(d2Rho_[cellI]), basisFuncs));
-            const scalar deltaRhoE = cmptSum(cmptDivide(cmptMag(rhoEGrad_[cellI]), rDeltaXYZ_[cellI]))
-                                   + cmptSum(cmptMultiply(cmptMag(d2RhoE_[cellI]), basisFuncs));
+            const scalar deltaRho  = cmptSum(cmptMag(cmptDivide(rhoGrad_[cellI], rDeltaXYZ_[cellI])))
+                                   + cmptSum(cmptMag(cmptMultiply(d2Rho_[cellI], basisFuncs)));
+            const scalar deltaRhoE = cmptSum(cmptMag(cmptDivide(rhoEGrad_[cellI], rDeltaXYZ_[cellI])))
+                                   + cmptSum(cmptMag(cmptMultiply(d2RhoE_[cellI], basisFuncs)));
             scalar temp = min(rho_[cellI]-deltaRho, rhoE_[cellI]-deltaRhoE);
+            if (temp > 0)
+            {
+                const scalar deltaRhoUx = cmptSum(cmptMag(cmptDivide(rhoUGrad_[cellI].x(), rDeltaXYZ_[cellI])))
+                                        + cmptSum(cmptMag(cmptMultiply(d2RhoUx_[cellI], basisFuncs)));
+                const scalar deltaRhoUy = cmptSum(cmptMag(cmptDivide(rhoUGrad_[cellI].y(), rDeltaXYZ_[cellI])))
+                                        + cmptSum(cmptMag(cmptMultiply(d2RhoUy_[cellI], basisFuncs)));
+                const scalar deltaRhoUz = cmptSum(cmptMag(cmptDivide(rhoUGrad_[cellI].z(), rDeltaXYZ_[cellI])))
+                                        + cmptSum(cmptMag(cmptMultiply(d2RhoUz_[cellI], basisFuncs)));
+                vector rhoU_max = cmptMag(rhoU_[cellI]) + vector(deltaRhoUx, deltaRhoUy, deltaRhoUz);
+                temp = rhoE_[cellI]-deltaRhoE - 0.5*magSqr(rhoU_max)/(rho_[cellI]-deltaRho);
+            }
             if (temp < 0)
             {
-                temp = min(rho_[cellI]/deltaRho, rhoE_[cellI]/deltaRhoE);
-                rhoGrad_[cellI]  *= temp;
-                rhoUGrad_[cellI] *= temp;
-                rhoEGrad_[cellI] *= temp;
-                d2Rho_[cellI]   *= temp;
-                d2RhoUx_[cellI] *= temp;
-                d2RhoUy_[cellI] *= temp;
-                d2RhoUz_[cellI] *= temp;
-                d2RhoE_[cellI]  *= temp;
+                count++;
+                rhoGrad_[cellI]  = vector::zero;
+                rhoUGrad_[cellI] = tensor::zero;
+                rhoEGrad_[cellI] = vector::zero;
+                d2Rho_[cellI]    = symmTensor::zero;
+                d2RhoUx_[cellI] = symmTensor::zero;
+                d2RhoUy_[cellI] = symmTensor::zero;
+                d2RhoUz_[cellI] = symmTensor::zero;
+                d2RhoE_[cellI]  = symmTensor::zero;
+                d2Var_[cellI] = Mat5X6::Zero();
             }
         }
+        const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
+        Info << ", Negative cell [%] = " << percent;
     }
+    Info << endl;
 }
 
 void Foam::evaluateEigenMatrix

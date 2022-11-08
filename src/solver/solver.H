@@ -229,24 +229,6 @@ private:
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
 
-void reconstructionVenkatakrishnan
-(
-    const volScalarField& rho,
-    const volVectorField& U,
-    const volScalarField& T,
-    volVectorField& rhoGrad,
-    volTensorField& UGrad,
-    volVectorField& TGrad
-);
-
-scalar Venkat
-(
-    const scalar& project,
-    const scalar& deltaMin,
-    const scalar& deltaMax,
-    const scalar& eps2
-);
-
 void givensRotation
 (
     const scalar& h,

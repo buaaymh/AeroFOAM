@@ -1,26 +1,24 @@
-void Foam::reconstructionVenkatakrishnan
+void Foam::euler2ndSolver::limiterVenkatakrishnan
 (
     const volScalarField& rho,
     const volVectorField& U,
     const volScalarField& T,
-    volVectorField& rhoGrad,
-    volTensorField& UGrad,
-    volVectorField& TGrad
-)
+    const volVectorField& rhoGrad,
+    const volTensorField& UGrad,
+    const volVectorField& TGrad,
+    volScalarField& rhoLimit,
+    volVectorField& ULimit,
+    volScalarField& TLimit
+) const
 {
-    const fvMesh& mesh = rho.mesh();
-    rhoGrad = fvc::grad(rho);
-    UGrad   = fvc::grad(U);
-    TGrad   = fvc::grad(T);
-
     scalarField rhoMin = rho.field();
     scalarField rhoMax = rho.field();
     vectorField UMin = U.field();
     vectorField UMax = U.field();
     scalarField TMin = T.field();
     scalarField TMax = T.field();
-    const auto& owner = mesh.owner();
-    const auto& neighbour = mesh.neighbour();
+    const auto& owner = mesh_.owner();
+    const auto& neighbour = mesh_.neighbour();
     forAll(owner, faceI)
     {
         const label i = owner[faceI];
@@ -42,11 +40,11 @@ void Foam::reconstructionVenkatakrishnan
         UMax[j] = max(UMax[j], U[i]);
         TMax[j] = max(TMax[j], T[i]);
     }
-    forAll(mesh.boundary(), patchI)
+    forAll(mesh_.boundary(), patchI)
     {
-        if(mesh.boundary()[patchI].coupled())
+        if(mesh_.boundary()[patchI].coupled())
         {
-            const UList<label> &bfaceCells = mesh.boundary()[patchI].faceCells();
+            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
             const scalarField rho_neigh  = rho.boundaryField()[patchI].patchNeighbourField();
             const vectorField U_neigh = U.boundaryField()[patchI].patchNeighbourField();
             const scalarField T_neigh = T.boundaryField()[patchI].patchNeighbourField();
@@ -71,16 +69,17 @@ void Foam::reconstructionVenkatakrishnan
     UMax -= U.field();
     TMax -= T.field();
 
-    scalarField rhoLimit(mesh.nCells(), 1.0);
-    vectorField ULimit(mesh.nCells(), vector::one);
-    scalarField TLimit(mesh.nCells(), 1.0);
-    const scalarField delta = mag(mesh.delta());
+    rhoLimit.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
+    ULimit.primitiveFieldRef() = vectorField(mesh_.nCells(), vector::one);
+    TLimit.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
+
+    const scalarField delta = mag(mesh_.delta());
     forAll(owner, faceI)
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        const vector delta_i = mesh.Cf()[faceI] - mesh.C()[i];
-        const vector delta_j = mesh.Cf()[faceI] - mesh.C()[j];
+        const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
+        const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
         const scalar eps2 = 125*Foam::pow3(delta[faceI]);
         rhoLimit[i] = min(rhoLimit[i], Venkat(rhoGrad[i]&delta_i, rhoMin[i], rhoMax[i], eps2));
         rhoLimit[j] = min(rhoLimit[j], Venkat(rhoGrad[j]&delta_j, rhoMin[j], rhoMax[j], eps2));
@@ -95,14 +94,14 @@ void Foam::reconstructionVenkatakrishnan
         TLimit[i] = min(TLimit[i], Venkat(TGrad[i]&delta_i, TMin[i], TMax[i], eps2));
         TLimit[j] = min(TLimit[j], Venkat(TGrad[j]&delta_j, TMin[j], TMax[j], eps2));
     }
-    forAll(mesh.boundary(), patchI)
+    forAll(mesh_.boundary(), patchI)
     {
-        if(mesh.boundary()[patchI].coupled())
+        if(mesh_.boundary()[patchI].coupled())
         {
-            const UList<label> &bfaceCells = mesh.boundary()[patchI].faceCells();
-            const vectorField& Cf = mesh.boundary()[patchI].Cf();
-            const vectorField Cn = mesh.boundary()[patchI].Cn();
-            const scalarField delta = mag(mesh.boundary()[patchI].delta());
+            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
+            const vectorField Cn = mesh_.boundary()[patchI].Cn();
+            const scalarField delta = mag(mesh_.boundary()[patchI].delta());
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
@@ -117,26 +116,18 @@ void Foam::reconstructionVenkatakrishnan
             }
         }
     }
-    rhoGrad.primitiveFieldRef() *= rhoLimit;
-    forAll(mesh.C(), cellI)
-    {
-        UGrad[cellI].x() *= ULimit[cellI].x();
-        UGrad[cellI].y() *= ULimit[cellI].y();
-        UGrad[cellI].z() *= ULimit[cellI].z();
-    }
-    TGrad.primitiveFieldRef() *= TLimit;
-    rhoGrad.correctBoundaryConditions();
-    UGrad.correctBoundaryConditions();
-    TGrad.correctBoundaryConditions();
+    rhoLimit.correctBoundaryConditions();
+    ULimit.correctBoundaryConditions();
+    TLimit.correctBoundaryConditions();
 }
 
-scalar Foam::Venkat
+scalar Foam::euler2ndSolver::Venkat
 (
     const scalar& project,
     const scalar& deltaMin,
     const scalar& deltaMax,
     const scalar& eps2
-)
+) const
 {
     if (project > SMALL)
     {

@@ -8,14 +8,14 @@ void Foam::eulerConsVar3rdSolver::reconstructionIter()
         isP0Cell_ = std::vector<bool>(mesh_.nCells(), false);
         forAll(mesh_.C(), cellI)
         {
-            if (cmptSum(cmptMag(rhoGrad_[cellI])) < 1e-6)
+            if (cmptSum(cmptMag(rhoEGrad_[cellI])) < 1e-6)
             {
                 isP0Cell_[cellI] = true;
                 count++;
             }
         }
         const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-        Info << "P0 cell [%] = " << percent << ", ";
+        Info << "P0 cell [%] = " << percent;
     }
 
     /* Calculate b of vr linear system */

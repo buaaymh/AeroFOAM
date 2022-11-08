@@ -69,6 +69,39 @@ Foam::euler2ndSolver::euler2ndSolver
         ),
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
+    ),
+    rhoLimit_
+    (
+        IOobject
+        (
+            "rhoLimit",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 1)
+    ),
+    ULimit_
+    (
+        IOobject
+        (
+            "ULimit",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless, vector::one)
+    ),
+    TLimit_
+    (
+        IOobject
+        (
+            "TLimit",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 1)
     )
 {
     Info << "Ths solver is 2nd order for Euler flow." << nl
@@ -79,5 +112,7 @@ Foam::euler2ndSolver::euler2ndSolver
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 #include "evaluateFlowRes.H"
+
+#include "limiterVenkatakrishnan.H"
 
 // ************************************************************************* //
