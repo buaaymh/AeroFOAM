@@ -69,8 +69,8 @@ private:
         const scalar& rho_R,
         const vector& U_L,
         const vector& U_R,
-        const scalar& T_L,
-        const scalar& T_R,
+        const scalar& p_L,
+        const scalar& p_R,
         const vector& normal,
         const scalar& magSf
     ) const;
@@ -81,13 +81,13 @@ protected:
     //- Velocity grad
     volTensorField UGrad_;
     //- pressure grad
-    volVectorField TGrad_;
+    volVectorField pGrad_;
     //- Quadratic polynomial coefficients
     volSymmTensorField d2Rho_;
     volSymmTensorField d2Ux_;
     volSymmTensorField d2Uy_;
     volSymmTensorField d2Uz_;
-    volSymmTensorField d2T_;
+    volSymmTensorField d2P_;
     
     void reconstructionIter();
 

@@ -55,13 +55,13 @@ class euler2ndSolver: public solver
     //- Velocity grad
     volTensorField UGrad_;
     //- temperature grad
-    volVectorField TGrad_;
+    volVectorField pGrad_;
     //- Density limit
     volScalarField rhoLimit_;
     //- Velocity limit
     volVectorField ULimit_;
     //- pressure limit
-    volScalarField TLimit_;
+    volScalarField pLimit_;
 
     // Private Member Functions
     //- Disallow default bitwise copy construct
@@ -97,13 +97,13 @@ private:
     (
         const volScalarField& rho,
         const volVectorField& U,
-        const volScalarField& T,
+        const volScalarField& p,
         const volVectorField& rhoGrad,
         const volTensorField& UGrad,
-        const volVectorField& TGrad,
+        const volVectorField& pGrad,
         volScalarField& rhoLimit,
         volVectorField& ULimit,
-        volScalarField& TLimit
+        volScalarField& pLimit
     ) const;
 
     void evaluateFlux
@@ -115,8 +115,8 @@ private:
         const scalar& rho_R,
         const vector& U_L,
         const vector& U_R,
-        const scalar& T_L,
-        const scalar& T_R,
+        const scalar& p_L,
+        const scalar& p_R,
         const vector& normal,
         const scalar& magSf
     ) const;

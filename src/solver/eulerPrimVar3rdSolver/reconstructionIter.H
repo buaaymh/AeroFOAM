@@ -31,7 +31,7 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
         if (isP0Cell_[i] && isP0Cell_[j]) continue;
         const scalar dRho0 = rho_[j] - rho_[i];
         const vector dU0   = U_[j]   - U_[i];
-        const scalar dT0   = T_[j]   - T_[i];
+        const scalar dP0   = p_[j]   - p_[i];
         scalar temp = mesh_.magSf()[faceI]*sqr(vrWeight[0])/delta[faceI];
         for (label gaussI = 0; gaussI != 4; ++gaussI)
         {
@@ -40,8 +40,8 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
             const scalar wTemp = Quad4::w[gaussI] * temp;
             const scalar dRho = wTemp*(dRho0 + (rhoGrad_[j]&delta_j) - (rhoGrad_[i]&delta_i));
             const vector dU   = wTemp*(dU0   + (UGrad_[j]&delta_j)   - (UGrad_[i]&delta_i));
-            const scalar dT   = wTemp*(dT0   + (TGrad_[j]&delta_j)   - (TGrad_[i]&delta_i));
-            Col5X1 dVars(dRho, dU[0], dU[1], dU[2], dT);
+            const scalar dP   = wTemp*(dP0   + (pGrad_[j]&delta_j)   - (pGrad_[i]&delta_i));
+            Col5X1 dVars(dRho, dU[0], dU[1], dU[2], dP);
             //cell i
             bW[i] += basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i])*dVars.transpose();
             //cell j
@@ -52,8 +52,8 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
         temp = delta[faceI]*mesh_.magSf()[faceI]*sqr(vrWeight[1]);
         const scalar dRho1 = temp*(normal_[faceI]&(rhoGrad_[j]-rhoGrad_[i]));
         const vector dU1   = temp*(normal_[faceI]&(UGrad_[j]  -UGrad_[i]));
-        const scalar dT1   = temp*(normal_[faceI]&(TGrad_[j]  -TGrad_[i]));
-        Col5X1 dGrad(dRho1, dU1.x(), dU1.y(), dU1.z(), dT1);
+        const scalar dP1   = temp*(normal_[faceI]&(pGrad_[j]  -pGrad_[i]));
+        Col5X1 dGrad(dRho1, dU1.x(), dU1.y(), dU1.z(), dP1);
         //cell i
         bW[i] += basisPolyDn1<Col6X1>(delta_i, rDeltaXYZ_[i], normal_[faceI])*dGrad.transpose();
         //cell j
@@ -73,22 +73,22 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
             const vectorField neighCn = ownerCn + mesh_.boundary()[patchI].delta();
             const scalarField rho_neigh = rho_.boundaryField()[patchI].patchNeighbourField();
             const vectorField U_neigh   = U_.boundaryField()[patchI].patchNeighbourField();
-            const scalarField T_neigh   = T_.boundaryField()[patchI].patchNeighbourField();
+            const scalarField p_neigh   = p_.boundaryField()[patchI].patchNeighbourField();
             const vectorField rhoGrad_neigh = rhoGrad_.boundaryField()[patchI].patchNeighbourField();
             const tensorField UGrad_neigh   = UGrad_.boundaryField()[patchI].patchNeighbourField();
-            const vectorField TGrad_neigh   = TGrad_.boundaryField()[patchI].patchNeighbourField();
+            const vectorField pGrad_neigh   = pGrad_.boundaryField()[patchI].patchNeighbourField();
             const symmTensorField d2Rho_neigh = d2Rho_.boundaryField()[patchI].patchNeighbourField();
             const symmTensorField d2Ux_neigh = d2Ux_.boundaryField()[patchI].patchNeighbourField();
             const symmTensorField d2Uy_neigh = d2Uy_.boundaryField()[patchI].patchNeighbourField();
             const symmTensorField d2Uz_neigh = d2Uz_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2T_neigh = d2T_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2P_neigh = d2P_.boundaryField()[patchI].patchNeighbourField();
             std::vector<vector> quadPoints(4, vector::zero);
             forAll(bfaceCells, j)
             {
                 const label i = bfaceCells[j];
                 const scalar dRho0 = rho_neigh[j] - rho_[i];
                 const vector dU0   = U_neigh[j]   - U_[i];
-                const scalar dT0   = T_neigh[j]   - T_[i];
+                const scalar dP0   = p_neigh[j]   - p_[i];
                 scalar temp = magSf[j]*sqr(vrWeight[0])/delta[j];
                 gaussQuad4(mesh_, start+j, quadPoints);
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
@@ -98,25 +98,25 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                     const scalar wTemp = Quad4::w[gaussI] * temp;
                     const scalar dRho = (dRho0 + (rhoGrad_neigh[j]&delta_j) - (rhoGrad_[i]&delta_i))*wTemp;
                     const vector dU   = (dU0   + (UGrad_neigh[j]&delta_j)   - (UGrad_[i]&delta_i))  *wTemp;
-                    const scalar dT   = (dT0   + (TGrad_neigh[j]&delta_j)   - (TGrad_[i]&delta_i))  *wTemp;
+                    const scalar dP   = (dP0   + (pGrad_neigh[j]&delta_j)   - (pGrad_[i]&delta_i))  *wTemp;
                     // cell i
                     bW[i] += basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i]) *
-                             Col5X1(dRho, dU.x(), dU.y(), dU.z(), dT).transpose();
+                             Col5X1(dRho, dU.x(), dU.y(), dU.z(), dP).transpose();
                 }
                 temp = delta[j]*magSf[j]*sqr(vrWeight[1]);
                 const scalar dRho1 = temp*(normal[j]&(rhoGrad_neigh[j]-rhoGrad_[i]));
                 const vector dU1   = temp*(normal[j]&(UGrad_neigh[j]  -UGrad_[i]));
-                const scalar dT1   = temp*(normal[j]&(TGrad_neigh[j]  -TGrad_[i]));
+                const scalar dP1   = temp*(normal[j]&(pGrad_neigh[j]  -pGrad_[i]));
                 //cell i
                 bW[i] += basisPolyDn1<Col6X1>(delta_i[j], rDeltaXYZ_[i], normal[j]) *
-                         Col5X1(dRho1, dU1.x(), dU1.y(), dU1.z(), dT1).transpose();
+                         Col5X1(dRho1, dU1.x(), dU1.y(), dU1.z(), dP1).transpose();
                 bW[i] += (Mat5X6
                          {
                             {d2Rho_neigh[j][0], d2Rho_neigh[j][1], d2Rho_neigh[j][2], d2Rho_neigh[j][3], d2Rho_neigh[j][4], d2Rho_neigh[j][5]},
                             {d2Ux_neigh[j][0],  d2Ux_neigh[j][1],  d2Ux_neigh[j][2],  d2Ux_neigh[j][3],  d2Ux_neigh[j][4],  d2Ux_neigh[j][5]},
                             {d2Uy_neigh[j][0],  d2Uy_neigh[j][1],  d2Uy_neigh[j][2],  d2Uy_neigh[j][3],  d2Uy_neigh[j][4],  d2Uy_neigh[j][5]},
                             {d2Uz_neigh[j][0],  d2Uz_neigh[j][1],  d2Uz_neigh[j][2],  d2Uz_neigh[j][3],  d2Uz_neigh[j][4],  d2Uz_neigh[j][5]},
-                            {d2T_neigh[j][0],   d2T_neigh[j][1],   d2T_neigh[j][2],   d2T_neigh[j][3],   d2T_neigh[j][4],   d2T_neigh[j][5]}
+                            {d2P_neigh[j][0],   d2P_neigh[j][1],   d2P_neigh[j][2],   d2P_neigh[j][3],   d2P_neigh[j][4],   d2P_neigh[j][5]}
                          } * coupledB_[patchI][j]).transpose();
             }
         }
@@ -124,14 +124,14 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
         {
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];
-            const fvPatchScalarField& TBound = T_.boundaryField()[patchI];
+            const fvPatchScalarField& TBound = p_.boundaryField()[patchI];
             std::vector<vector> quadPoints(4, vector::zero);
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
                 const scalar dRho0 = rhoBound[faceI] - rho_[i];
                 const vector dU0   = UBound[faceI]   - U_[i];
-                const scalar dT0   = TBound[faceI]   - T_[i];
+                const scalar dP0   = TBound[faceI]   - p_[i];
                 scalar temp = magSf[faceI]*sqr(vrWeight[0])/delta[faceI];
                 gaussQuad4(mesh_, start+faceI, quadPoints);
                 for (label gaussI = 0; gaussI != 4; ++gaussI)
@@ -140,10 +140,10 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
                     const scalar wTemp = Quad4::w[gaussI] * temp;
                     const scalar dRho = wTemp*(dRho0 - (rhoGrad_[i]&delta_i));
                     const vector dU   = wTemp*(dU0   - (UGrad_[i]&delta_i));
-                    const scalar dT   = wTemp*(dT0   - (TGrad_[i]&delta_i));
+                    const scalar dP   = wTemp*(dP0   - (pGrad_[i]&delta_i));
                     //cell i
                     bW[i] += basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i]) *
-                             Col5X1(dRho, dU.x(), dU.y(), dU.z(), dT).transpose();
+                             Col5X1(dRho, dU.x(), dU.y(), dU.z(), dP).transpose();
                 }
             }
         }
@@ -182,10 +182,10 @@ void Foam::eulerPrimVar3rdSolver::reconstructionIter()
     limitCoefficients();
     rhoGrad_.correctBoundaryConditions();
     UGrad_.correctBoundaryConditions();
-    TGrad_.correctBoundaryConditions();
+    pGrad_.correctBoundaryConditions();
     d2Rho_.correctBoundaryConditions();
     d2Ux_.correctBoundaryConditions();
     d2Uy_.correctBoundaryConditions();
     d2Uz_.correctBoundaryConditions();
-    d2T_.correctBoundaryConditions();
+    d2P_.correctBoundaryConditions();
 }

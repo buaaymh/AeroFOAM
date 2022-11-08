@@ -59,11 +59,11 @@ Foam::euler2ndSolver::euler2ndSolver
         mesh_,
         dimensionedTensor(dimless/dimLength, tensor::zero)
     ),
-    TGrad_
+    pGrad_
     (
         IOobject
         (
-            "TGrad",
+            "pGrad",
             mesh_.time().timeName(),
             mesh_
         ),
@@ -92,11 +92,11 @@ Foam::euler2ndSolver::euler2ndSolver
         mesh_,
         dimensionedVector(dimless, vector::one)
     ),
-    TLimit_
+    pLimit_
     (
         IOobject
         (
-            "TLimit",
+            "pLimit",
             mesh_.time().timeName(),
             mesh_
         ),

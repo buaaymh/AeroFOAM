@@ -114,18 +114,35 @@ protected:
     (
         scalar& rho,
         vector& U,
-        scalar& T,
+        scalar& p,
         const scalar& rho_0,
         const vector& U_0,
-        const scalar& T_0,
+        const scalar& p_0,
         const vector& rhoGrad,
         const tensor& UGrad,
-        const vector& TGrad,
+        const vector& pGrad,
         const symmTensor& d2Rho,
         const symmTensor& d2Ux,
         const symmTensor& d2Uy,
         const symmTensor& d2Uz,
-        const symmTensor& d2T,
+        const symmTensor& d2P,
+        const symmTensor& basisMean,
+        const vector& rDeltaXYZ,
+        const vector& delta
+    ) const;
+
+    void evaluateVars
+    (
+        scalar& rho,
+        vector& U,
+        scalar& p,
+        const scalar& rho_0,
+        const vector& U_0,
+        const scalar& p_0,
+        const vector& rhoGrad,
+        const tensor& UGrad,
+        const vector& pGrad,
+        const Mat5X6& d2Var,
         const symmTensor& basisMean,
         const vector& rDeltaXYZ,
         const vector& delta
