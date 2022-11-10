@@ -93,19 +93,6 @@ public:
 
 private:
 
-    void limiterVenkatakrishnan
-    (
-        const volScalarField& rho,
-        const volVectorField& U,
-        const volScalarField& p,
-        const volVectorField& rhoGrad,
-        const volTensorField& UGrad,
-        const volVectorField& pGrad,
-        volScalarField& rhoLimit,
-        volVectorField& ULimit,
-        volScalarField& pLimit
-    ) const;
-
     void evaluateFlux
     (
         scalar& rhoFlux,
@@ -119,14 +106,6 @@ private:
         const scalar& p_R,
         const vector& normal,
         const scalar& magSf
-    ) const;
-
-    scalar Venkat
-    (
-        const scalar& project,
-        const scalar& deltaMin,
-        const scalar& deltaMax,
-        const scalar& eps2
     ) const;
 
 };

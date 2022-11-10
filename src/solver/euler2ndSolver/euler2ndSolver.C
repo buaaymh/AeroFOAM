@@ -113,6 +113,4 @@ Foam::euler2ndSolver::euler2ndSolver
 
 #include "evaluateFlowRes.H"
 
-#include "limiterVenkatakrishnan.H"
-
 // ************************************************************************* //

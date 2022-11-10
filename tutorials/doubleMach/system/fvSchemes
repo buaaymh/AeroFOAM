@@ -14,7 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-order               2;
+order               3;
 
 gradSchemes
 {
@@ -23,7 +23,7 @@ gradSchemes
 
 vrSchemes
 {
-    np              1;
+    np              5;
     IS              1.0;
     adaptive        on;
     positive        on;

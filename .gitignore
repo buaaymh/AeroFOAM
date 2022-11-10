@@ -165,3 +165,4 @@ dmypy.json
 *.exe
 *.out
 *.app
+tutorials/doubleMach/system/fvSchemes

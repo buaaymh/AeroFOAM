@@ -165,6 +165,39 @@ public:
 
 protected:
 
+    void deltaMaxMin
+    (
+        const volScalarField& rho,
+        const volVectorField& U,
+        const volScalarField& p,
+        scalarField& rhoMin,
+        scalarField& rhoMax,
+        vectorField& UMin,
+        vectorField& UMax,
+        scalarField& pMin,
+        scalarField& pMax
+    ) const;
+
+    void limiterVenkatakrishnan
+    (
+        const volScalarField& rho,
+        const volVectorField& U,
+        const volScalarField& p,
+        volVectorField& rhoGrad,
+        volTensorField& UGrad,
+        volVectorField& pGrad
+    ) const;
+
+    void limiterBarthJespersen
+    (
+        const volScalarField& rho,
+        const volVectorField& U,
+        const volScalarField& p,
+        volVectorField& rhoGrad,
+        volTensorField& UGrad,
+        volVectorField& pGrad
+    ) const;
+
     virtual void evaluateMatrixLDU
     (
         const scalar& alpha,
@@ -228,6 +261,21 @@ private:
 /*---------------------------------------------------------------------------*\
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
+
+scalar Venkat
+(
+    const scalar& project,
+    const scalar& deltaMin,
+    const scalar& deltaMax,
+    const scalar& eps2
+);
+
+scalar Barth
+(
+    const scalar& project,
+    const scalar& deltaMin,
+    const scalar& deltaMax
+);
 
 void givensRotation
 (
