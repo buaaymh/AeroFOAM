@@ -23,7 +23,7 @@ gradSchemes
 
 vrSchemes
 {
-    np              5;
+    np              1;
     IS              1.0;
     adaptive        on;
     positive        on;

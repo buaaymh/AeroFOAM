@@ -20,29 +20,29 @@ FoamFile
     {
         type            empty;
         inGroups        List<word> 1(empty);
-        nFaces          200440;
-        startFace       149850;
+        nFaces          200818;
+        startFace       150133;
     }
     outlet
     {
         type            patch;
         physicalType    patch;
         nFaces          140;
-        startFace       350290;
+        startFace       350951;
+    }
+    inlet
+    {
+        type            patch;
+        physicalType    patch;
+        nFaces          481;
+        startFace       351091;
     }
     wall
     {
         type            wall;
         inGroups        List<word> 1(wall);
         nFaces          340;
-        startFace       350430;
-    }
-    inlet
-    {
-        type            patch;
-        physicalType    patch;
-        nFaces          480;
-        startFace       350770;
+        startFace       351572;
     }
 )
 
