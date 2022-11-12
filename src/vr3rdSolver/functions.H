@@ -128,7 +128,7 @@ tensor Foam::vectorPolyGrad
     );
 }
 
-Foam::Mat5X3 Foam::evaluateGrad
+Foam::Mat5X3 Foam::evaluate1stOrderCoefs
 (
     const vector& delta,
     const Mat5X3& d1Var,
@@ -158,6 +158,24 @@ Foam::Mat5X3 Foam::evaluateGrad
                  (gradTensor.y()&vector(d2Var(4,1), d2Var(4,3), d2Var(4,4))),
                  (gradTensor.z()&vector(d2Var(4,2), d2Var(4,4), d2Var(4,5)));
     return d2VarGrad + d1Var;
+}
+
+Foam::Mat5X6 Foam::evaluate2ndOrderCoefs
+(
+    const Mat5X6& d2Var,
+    const vector& rDeltaXYZ_i,
+    const vector& rDeltaXYZ_j
+)
+{
+    const vector rDeltaXYZ_ij = cmptDivide(rDeltaXYZ_j, rDeltaXYZ_i);
+    Mat5X6 d2Var_ij = d2Var;
+    d2Var_ij.col(0) *= sqr(rDeltaXYZ_ij.x());
+    d2Var_ij.col(1) *= rDeltaXYZ_ij.x()*rDeltaXYZ_ij.y();
+    d2Var_ij.col(2) *= rDeltaXYZ_ij.x()*rDeltaXYZ_ij.z();
+    d2Var_ij.col(3) *= sqr(rDeltaXYZ_ij.y());
+    d2Var_ij.col(4) *= rDeltaXYZ_ij.y()*rDeltaXYZ_ij.z();
+    d2Var_ij.col(5) *= sqr(rDeltaXYZ_ij.z());
+    return d2Var_ij;
 }
 
 void Foam::vr3rdSolver::evaluateVars

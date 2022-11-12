@@ -64,6 +64,7 @@ void Foam::solver::deltaMaxMin
 
 void Foam::solver::limiterVenkatakrishnan
 (
+    const scalar K,
     const volScalarField& rho,
     const volVectorField& U,
     const volScalarField& p,
@@ -91,7 +92,7 @@ void Foam::solver::limiterVenkatakrishnan
         const label j = neighbour[faceI];
         const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
         const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-        const scalar eps2 = 125*Foam::pow3(delta[faceI]);
+        const scalar eps2 = Foam::pow3(K*delta[faceI]);
         rhoLimit[i] = min(rhoLimit[i], Venkat(rhoGrad[i]&delta_i, rhoMin[i], rhoMax[i], eps2));
         rhoLimit[j] = min(rhoLimit[j], Venkat(rhoGrad[j]&delta_j, rhoMin[j], rhoMax[j], eps2));
         vector UProj = UGrad[i]&delta_i;
@@ -117,7 +118,7 @@ void Foam::solver::limiterVenkatakrishnan
             {
                 const label i = bfaceCells[faceI];
                 const vector delta_i = Cf[faceI] - Cn[faceI];
-                const scalar eps2 = 125*Foam::pow3(delta[faceI]);
+                const scalar eps2 = Foam::pow3(K*delta[faceI]);
                 rhoLimit[i] = min(rhoLimit[i], Venkat(rhoGrad[i]&delta_i, rhoMin[i], rhoMax[i], eps2));
                 const vector UProj = UGrad[i]&delta_i;
                 ULimit[i][0] = min(ULimit[i][0], Venkat(UProj[0], UMin[i][0], UMax[i][0], eps2));

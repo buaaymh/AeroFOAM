@@ -8,8 +8,16 @@ void Foam::euler2ndSolver::evaluateFlowRes
     rhoGrad_ = fvc::grad(rho_);
     UGrad_   = fvc::grad(U_);
     pGrad_   = fvc::grad(p_);
-    // limiterVenkatakrishnan(rho_, U_, p_, rhoGrad_, UGrad_, pGrad_);
-    limiterBarthJespersen(rho_, U_, p_, rhoGrad_, UGrad_, pGrad_);
+    const word limiter = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<scalar>("Limiter", "Venkat");
+    if (limiter == "Venkat")
+    {
+        const scalar K = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<scalar>("Venkat", 5);
+        limiterVenkatakrishnan(K, rho_, U_, p_, rhoGrad_, UGrad_, pGrad_);
+    }
+    else if (limiter == "Barth")
+    {
+        limiterBarthJespersen(rho_, U_, p_, rhoGrad_, UGrad_, pGrad_);
+    }
     resRho  = scalarField(mesh_.nCells(), 0.0);
     resRhoU = vectorField(mesh_.nCells(), vector::zero);
     resRhoE = scalarField(mesh_.nCells(), 0.0);

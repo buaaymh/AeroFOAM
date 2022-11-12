@@ -285,12 +285,19 @@ tensor vectorPolyGrad
     const vector& rDeltaXYZ
 );
 
-Mat5X3 evaluateGrad
+Mat5X3 evaluate1stOrderCoefs
 (
     const vector& delta,
     const Mat5X3& d1Var,
     const Mat5X6& d2Var,
     const vector& rDeltaXYZ
+);
+
+Mat5X6 evaluate2ndOrderCoefs
+(
+    const Mat5X6& d2Var,
+    const vector& rDeltaXYZ_i,
+    const vector& rDeltaXYZ_j
 );
 
 // * * * * * * * * * * * * WBAP Functions * * * * * * * * * * * * //

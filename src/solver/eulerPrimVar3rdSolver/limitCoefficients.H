@@ -60,7 +60,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
             {
                 label j = owner[faceI];
                 if (j == cellI) { j = neighbour[faceI]; }
-                d2VarList.emplace_back(d2Var_[j]);
+                d2VarList.emplace_back(evaluate2ndOrderCoefs(d2Var_[j], rDeltaXYZ_[cellI], rDeltaXYZ_[j]));
             }
         }
         d2VarLimited[count++] = WBAP_L2_Limiter<6>(d2VarList, np);
@@ -104,7 +104,7 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
                 label j = owner[faceI];
                 if (j == cellI) { j = neighbour[faceI]; }
                 const vector delta_ij = mesh_.C()[cellI] - mesh_.C()[j];
-                d1VarList.emplace_back(evaluateGrad(delta_ij, d1Var_[j], d2Var_[j], rDeltaXYZ_[j]));
+                d1VarList.emplace_back(evaluate1stOrderCoefs(delta_ij, d1Var_[j], d2Var_[j], rDeltaXYZ_[j]));
             }
         }
         Mat5X3 d1VarLimited = WBAP_L2_Limiter<3>(d1VarList, np);

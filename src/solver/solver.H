@@ -180,6 +180,7 @@ protected:
 
     void limiterVenkatakrishnan
     (
+        const scalar K,
         const volScalarField& rho,
         const volVectorField& U,
         const volScalarField& p,

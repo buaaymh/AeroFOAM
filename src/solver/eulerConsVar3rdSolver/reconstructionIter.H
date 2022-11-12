@@ -17,7 +17,7 @@ void Foam::eulerConsVar3rdSolver::reconstructionIter()
         const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
         Info << "P0 cell [%] = " << percent;
     }
-    limiterVenkatakrishnan(rho_, rhoU_, rhoE_, rhoGrad_, rhoUGrad_, rhoEGrad_);
+    
     /* Calculate b of vr linear system */
     std::vector<Mat6X5> bW(mesh_.nCells(), Mat6X5::Zero());
     const vector vrWeight = mesh_.schemesDict().subDict("vrSchemes").lookup<vector>("weightList");

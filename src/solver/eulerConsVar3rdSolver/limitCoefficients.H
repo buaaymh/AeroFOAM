@@ -58,7 +58,7 @@ void Foam::eulerConsVar3rdSolver::limitCoefficients()
                 label j = owner[faceI];
                 if (j == cellI) { j = neighbour[faceI]; }
                 normalList.emplace_back(normal_[faceI]);
-                d2VarList.emplace_back(d2Var_[j]);
+                d2VarList.emplace_back(evaluate2ndOrderCoefs(d2Var_[j], rDeltaXYZ_[cellI], rDeltaXYZ_[j]));
             }
         }
         if (characteristic)
@@ -112,7 +112,7 @@ void Foam::eulerConsVar3rdSolver::limitCoefficients()
                 if (j == cellI) { j = neighbour[faceI]; }
                 const vector delta_ij = mesh_.C()[cellI] - mesh_.C()[j];
                 normalList.emplace_back(normal_[faceI]);
-                d1VarList.emplace_back(evaluateGrad(delta_ij, d1Var_[j], d2Var_[j], rDeltaXYZ_[j]));
+                d1VarList.emplace_back(evaluate1stOrderCoefs(delta_ij, d1Var_[j], d2Var_[j], rDeltaXYZ_[j]));
             }
         }
         Mat5X3 d1VarLimited;
