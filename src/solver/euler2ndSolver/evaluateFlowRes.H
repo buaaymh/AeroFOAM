@@ -8,7 +8,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
     rhoGrad_ = fvc::grad(rho_);
     UGrad_   = fvc::grad(U_);
     pGrad_   = fvc::grad(p_);
-    const word limiter = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<scalar>("Limiter", "Venkat");
+    const word limiter = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<word>("Limiter", "Venkat");
     if (limiter == "Venkat")
     {
         const scalar K = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<scalar>("Venkat", 5);
