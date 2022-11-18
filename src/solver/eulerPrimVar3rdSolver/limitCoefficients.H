@@ -5,35 +5,29 @@ void Foam::eulerPrimVar3rdSolver::limitCoefficients()
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
     const vectorField delta = mesh_.delta();
-    scalarField rhoE_max(rhoE_.primitiveField());
-    scalarField rhoE_mid(mesh_.nCells());
+    scalarField rho_max(rho_.primitiveField());
+    scalarField rho_mid(mesh_.nCells());
     scalarField error(mesh_.nCells(), 0.0);
     std::vector<bool> isTrouble(mesh_.nCells(), false);
     forAll(mesh_.cells(), cellI)
     {
-        scalar rho; vector U; scalar p;
-        evaluateVars(rho, U, p, rho_[cellI], U_[cellI], p_[cellI], rhoGrad_[cellI], UGrad_[cellI], pGrad_[cellI],
-                     d2Var_[cellI], basisMean_[cellI], rDeltaXYZ_[cellI], vector::zero);
-        rhoE_mid[cellI] = p/(fluidProps_.gamma-1.0) + 0.5*rho*magSqr(U);
+        d2Rho_[cellI] = symmTensor(d2Var_[cellI](0,0), d2Var_[cellI](0,1), d2Var_[cellI](0,2),
+                                   d2Var_[cellI](0,3), d2Var_[cellI](0,4), d2Var_[cellI](0,5));
+        rho_mid[cellI] = rho_[cellI]+scalarPoly(vector::zero, rhoGrad_[cellI], d2Rho_[cellI], rDeltaXYZ_[cellI], basisMean_[cellI]);
     }
     forAll(owner, faceI)
     {
-        scalar rho; vector U; scalar p;
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        rhoE_max[i] = max(rhoE_max[i], rhoE_[j]);
-        rhoE_max[j] = max(rhoE_max[j], rhoE_[i]);
-        evaluateVars(rho, U, p, rho_[i], U_[i], p_[i], rhoGrad_[i], UGrad_[i], pGrad_[i],
-                     d2Var_[i], basisMean_[i], rDeltaXYZ_[i], delta[faceI]);
-        error[j] += mag(p/(fluidProps_.gamma-1.0)+0.5*rho*magSqr(U) - rhoE_mid[j]);
-        evaluateVars(rho, U, p, rho_[j], U_[j], p_[j], rhoGrad_[j], UGrad_[j], pGrad_[j],
-                     d2Var_[j], basisMean_[j], rDeltaXYZ_[j], -delta[faceI]);
-        error[i] += mag(p/(fluidProps_.gamma-1.0)+0.5*rho*magSqr(U) - rhoE_mid[i]);
+        rho_max[i] = max(rho_max[i], rho_[j]);
+        rho_max[j] = max(rho_max[j], rho_[i]);
+        error[j] += mag(rho_[i]+scalarPoly( delta[faceI], rhoGrad_[i], d2Rho_[i], rDeltaXYZ_[i], basisMean_[i])-rho_mid[j]);
+        error[i] += mag(rho_[j]+scalarPoly(-delta[faceI], rhoGrad_[j], d2Rho_[j], rDeltaXYZ_[j], basisMean_[j])-rho_mid[i]);
     }
     label count = 0;
     forAll(mesh_.cells(), cellI)
     {
-        if (error[cellI]/(N_h_[cellI]*rhoE_max[cellI]) > IS)
+        if (error[cellI]/(N_h_[cellI]*rho_max[cellI]) > IS)
         {
             isTrouble[cellI] = true;
             count++;

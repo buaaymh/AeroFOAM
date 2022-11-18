@@ -8,7 +8,10 @@ void Foam::eulerConsVar3rdSolver::reconstructionIter()
         isP0Cell_ = std::vector<bool>(mesh_.nCells(), false);
         forAll(mesh_.C(), cellI)
         {
-            if (cmptSum(cmptMag(rhoEGrad_[cellI])) < 1e-6)
+            scalar indicator = cmptSum(cmptMag(rhoGrad_[cellI]))
+                             + cmptSum(cmptMag(rhoUGrad_[cellI]))
+                             + cmptSum(cmptMag(rhoEGrad_[cellI]));
+            if ( indicator < 1e-6)
             {
                 isP0Cell_[cellI] = true;
                 count++;
@@ -67,6 +70,7 @@ void Foam::eulerConsVar3rdSolver::reconstructionIter()
         const scalarField delta = mag(mesh_.boundary()[patchI].delta());
         const vectorField delta_i = mesh_.boundary()[patchI].Cf()-mesh_.boundary()[patchI].Cn();
         const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
+        const word type = mesh_.boundary()[patchI].type();
         const label start = mesh_.boundary()[patchI].start();
         if (mesh_.boundary()[patchI].coupled())
         {
@@ -120,31 +124,49 @@ void Foam::eulerConsVar3rdSolver::reconstructionIter()
                         } * coupledB_[patchI][j]).transpose();
             }
         }
-        else
+        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
         {
-            const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
-            const fvPatchVectorField& rhoUBound = rhoU_.boundaryField()[patchI];
-            const fvPatchScalarField& rhoEBound = rhoE_.boundaryField()[patchI];
-            std::vector<vector> quadPoints(4, vector::zero);
+            std::vector<vector> quadPoints(9, vector::zero);
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                const scalar dRho0  = rhoBound[faceI]  - rho_[i];
-                const vector dRhoU0 = rhoUBound[faceI] - rhoU_[i];
-                const scalar dRhoE0 = rhoEBound[faceI] - rhoE_[i];
-                scalar temp = magSf[faceI]*sqr(vrWeight[0])/delta[faceI];
-                gaussQuad4(mesh_, start+faceI, quadPoints);
-                for (label gaussI = 0; gaussI != 4; ++gaussI)
+                gaussQuad9(mesh_, start+faceI, quadPoints);
+                const vector dp = magSf[faceI]*cmptMultiply(vector(1/delta[faceI], delta[faceI], pow3(delta[faceI])),
+                                                            cmptMultiply(vrWeight, vrWeight));
+                Mat6X5 b = Mat6X5::Zero();
+                for (label gaussI = 0; gaussI != 9; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - ownerCn[faceI];
-                    const scalar wTemp = Quad4::w[gaussI] * temp;
-                    const scalar dRho  = wTemp*(dRho0  - (rhoGrad_[i]&delta_i));
-                    const vector dRhoU = wTemp*(dRhoU0 - (rhoUGrad_[i]&delta_i));
-                    const scalar dRhoE = wTemp*(dRhoE0 - (rhoEGrad_[i]&delta_i));
-                    //cell i
-                    bW[i] += basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i]) *
-                             Col5X1(dRho, dRhoU[0], dRhoU[1], dRhoU[2], dRhoE).transpose();
+                    const vector dpwTemp = Quad9::w[gaussI]*dp;
+                    Col6X1 Dn0_i = basisPoly<Col6X1>(delta_i, rDeltaXYZ_[i], basisMean_[i]);
+                    Col6X1 Dn1_i = basisPolyDn1<Col6X1>(delta_i, rDeltaXYZ_[i], normal[faceI]);
+                    // Zero Order
+                    const vector rhoU_i = rhoU_[i] + (rhoUGrad_[i]&delta_i) + vector(d2Var_[i].row(1)*Dn0_i,
+                                                                                     d2Var_[i].row(2)*Dn0_i,
+                                                                                     d2Var_[i].row(3)*Dn0_i);
+                    const vector rhoU_j = rhoU_i - 2*(rhoU_i&normal[faceI])*normal[faceI];
+                    const vector dRhoU = dpwTemp[0]*(rhoU_j-(rhoU_[i]+(rhoUGrad_[i]&delta_i)));
+                    b.col(1) += Dn0_i*dRhoU[0];
+                    b.col(2) += Dn0_i*dRhoU[1];
+                    b.col(3) += Dn0_i*dRhoU[2];
+                    // First Order
+                    Col5X1 Dn1Var_i = d2Var_[i]*Dn1_i;
+                    scalar rhoGrad  = (rhoGrad_[i]&normal[faceI])  + Dn1Var_i(0);
+                    vector rhoUGrad = (rhoUGrad_[i]&normal[faceI]) + vector(Dn1Var_i(1), Dn1Var_i(2), Dn1Var_i(3));
+                    scalar rhoEGrad = (rhoEGrad_[i]&normal[faceI]) + Dn1Var_i(4);
+                    rhoGrad  = -dpwTemp[1]*(rhoGrad  +(rhoGrad_[i] &normal[faceI]));
+                    rhoUGrad = -dpwTemp[1]*(rhoUGrad +(rhoUGrad_[i]&normal[faceI])-2*(rhoUGrad&normal[faceI])*normal[faceI]);
+                    rhoEGrad = -dpwTemp[1]*(rhoEGrad +(rhoEGrad_[i]&normal[faceI]));
+                    b += Dn1_i*Col5X1(rhoGrad, rhoUGrad[0], rhoUGrad[1], rhoUGrad[2], rhoEGrad).transpose();
                 }
+                // Second Order
+                Col6X1 Dn2_i = basisPolyDn2<Col6X1>(rDeltaXYZ_[i], normal[faceI]);
+                vector d2RhoU = vector(d2Var_[i].row(1)*Dn2_i, d2Var_[i].row(2)*Dn2_i, d2Var_[i].row(3)*Dn2_i);
+                d2RhoU = dp[2]*(d2RhoU-2*(d2RhoU&normal[faceI])*normal[faceI]);
+                b.col(1) += Dn2_i*d2RhoU[0];
+                b.col(2) += Dn2_i*d2RhoU[1];
+                b.col(3) += Dn2_i*d2RhoU[2];
+                bW[i] += b;
             }
         }
     }

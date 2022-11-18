@@ -52,19 +52,20 @@ void Foam::vr3rdSolver::initVrLinearSystem()
     }
     forAll(mesh_.boundary(), patchI)
     {
+        const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+        const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
+        const vectorField& normal = normal_.boundaryField()[patchI];
+        const scalarField delta = mag(mesh_.boundary()[patchI].delta());
+        const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
+        const label start = mesh_.boundary()[patchI].start();
+        const word type = mesh_.boundary()[patchI].type();
+        std::vector<vector> quadPoints(9, vector::zero);
         if (mesh_.boundary()[patchI].coupled())
         {
             coupledB_[patchI] = std::vector<Mat6X6>(mesh_.boundary()[patchI].size(), Mat6X6::Zero());
-            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-            const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
-            const vectorField& normal = normal_.boundaryField()[patchI];
-            const scalarField delta = mag(mesh_.boundary()[patchI].delta());
             const vectorField rDeltaXYZ_neigh = rDeltaXYZ_.boundaryField()[patchI].patchNeighbourField();
             const symmTensorField basisMean_neigh = basisMean_.boundaryField()[patchI].patchNeighbourField();
-            const label start = mesh_.boundary()[patchI].start();
-            const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
             const vectorField neighCn = ownerCn + mesh_.boundary()[patchI].delta();
-            std::vector<vector> quadPoints(9, vector::zero);
             forAll(bfaceCells, j)
             {
                 const label i = bfaceCells[j];
@@ -97,6 +98,34 @@ void Foam::vr3rdSolver::initVrLinearSystem()
                 }
                 rA_[i] += A_i;
                 coupledB_[patchI][j] = B_ij;
+            }
+        }
+        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
+        {
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                gaussQuad9(mesh_, start+faceI, quadPoints);
+                Mat6X6 A_i  = Mat6X6::Zero();
+                const vector dp = magSf[faceI]*cmptMultiply(vector(1/delta[faceI], delta[faceI], pow3(delta[faceI])),
+                                                            cmptMultiply(vrWeight, vrWeight));
+                for (label gaussI = 0; gaussI != 9; ++gaussI)
+                {
+                    const vector delta_i = quadPoints[gaussI] - ownerCn[faceI];
+                    const vector dpwTemp = Quad9::w[gaussI] * dp;
+                    symmTensor Dn0_i = basisPoly<symmTensor>(delta_i, rDeltaXYZ_[i], basisMean_[i]);
+                    symmTensor Dn1_i = basisPolyDn1<symmTensor>(delta_i, rDeltaXYZ_[i], normal[faceI]);
+                    symmTensor Dn2_i = basisPolyDn2<symmTensor>(rDeltaXYZ_[i], normal[faceI]);
+                    for (label m = 0; m != 6; ++m) {
+                        for (label n = 0; n != 6; ++n)
+                        {
+                            const vector n_i(Dn0_i[n], Dn1_i[n], Dn2_i[n]);
+                            const vector m_i(Dn0_i[m], Dn1_i[m], Dn2_i[m]);
+                            A_i(m, n) += dpwTemp&vector(cmptMultiply(n_i, m_i));
+                        }    
+                    }
+                }
+                rA_[i] += A_i;
             }
         }
     }
