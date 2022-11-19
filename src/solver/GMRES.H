@@ -9,12 +9,13 @@
 //     const label nDirs  = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<label>("searchDir", 5);
 //     const label innerIter = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<label>("innerIter", 10);
 //     const scalar relTol = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.1);
+//     const scalar omega = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relaxOmega", 1.2);
 //     // Calculate L, U and D
 //     updateLTS();
 //     scalarField L(mesh_.nInternalFaces());
 //     scalarField U(mesh_.nInternalFaces());
 //     scalarField D(1.0/localDtDv_);
-//     evaluateMatrixLDU(L, U, D);
+//     evaluateMatrixLDU(omega, L, U, D);
 //     scalarField dRho(mesh_.nCells(), 0);
 //     vectorField dRhoU(mesh_.nCells(), vector::zero);
 //     scalarField dRhoE(mesh_.nCells(), 0);
@@ -49,7 +50,7 @@
 //             w_Rho[i]  /= beta;
 //             w_RhoU[i] /= beta;
 //             w_RhoE[i] /= beta;
-//             precondition(L, U, D, w_Rho[i], w_RhoU[i], w_RhoE[i], z_Rho[i], z_RhoU[i], z_RhoE[i]);
+//             precondition(omega, L, U, D, w_Rho[i], w_RhoU[i], w_RhoE[i], z_Rho[i], z_RhoU[i], z_RhoE[i]);
 //             matrixVectorProduct(L, U, D, z_Rho[i], z_RhoU[i], z_RhoE[i], w_Rho[i+1], w_RhoU[i+1], w_RhoE[i+1]);
 //             /*---  Modified Gram-Schmidt orthogonalization ---*/
 //             for (label j = 0; j <= i; j++)

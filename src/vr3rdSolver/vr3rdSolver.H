@@ -45,16 +45,7 @@ Author
 
 namespace Foam
 {
-
-using Col3X1 = Eigen::Matrix<scalar, 3, 1>;
-using Col5X1 = Eigen::Matrix<scalar, 5, 1>;
-using Col6X1 = Eigen::Matrix<scalar, 6, 1>;
-using Mat5X3 = Eigen::Matrix<scalar, 5, 3>;
-using Mat5X5 = Eigen::Matrix<scalar, 5, 5>;
-using Mat5X6 = Eigen::Matrix<scalar, 5, 6>;
-using Mat6X5 = Eigen::Matrix<scalar, 6, 5>;
-using Mat6X6 = Eigen::Matrix<scalar, 6, 6>;
-
+    
 /*---------------------------------------------------------------------------*\
                            Class vr3rdSolver Declaration
 \*---------------------------------------------------------------------------*/
@@ -126,23 +117,6 @@ protected:
         const symmTensor& d2Uy,
         const symmTensor& d2Uz,
         const symmTensor& d2P,
-        const symmTensor& basisMean,
-        const vector& rDeltaXYZ,
-        const vector& delta
-    ) const;
-
-    void evaluateVars
-    (
-        scalar& rho,
-        vector& U,
-        scalar& p,
-        const scalar& rho_0,
-        const vector& U_0,
-        const scalar& p_0,
-        const vector& rhoGrad,
-        const tensor& UGrad,
-        const vector& pGrad,
-        const Mat5X6& d2Var,
         const symmTensor& basisMean,
         const vector& rDeltaXYZ,
         const vector& delta

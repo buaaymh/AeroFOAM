@@ -206,28 +206,3 @@ void Foam::vr3rdSolver::evaluateVars
                                            cmptSum(cmptMultiply(d2Uz, basis)));
     p   = p_0   + (pGrad  &delta) + cmptSum(cmptMultiply(d2P, basis));
 }
-
-void Foam::vr3rdSolver::evaluateVars
-(
-    scalar& rho,
-    vector& U,
-    scalar& p,
-    const scalar& rho_0,
-    const vector& U_0,
-    const scalar& p_0,
-    const vector& rhoGrad,
-    const tensor& UGrad,
-    const vector& pGrad,
-    const Mat5X6& d2Var,
-    const symmTensor& basisMean,
-    const vector& rDeltaXYZ,
-    const vector& delta
-) const
-{
-    Col6X1 basis = basisPoly<Col6X1>(delta, rDeltaXYZ, basisMean);
-    rho = rho_0 + (rhoGrad&delta) + d2Var.row(0)*basis;
-    U   = U_0   + (UGrad  &delta) + vector(d2Var.row(1)*basis,
-                                           d2Var.row(2)*basis,
-                                           d2Var.row(3)*basis);
-    p   = p_0   + (pGrad  &delta) + d2Var.row(4)*basis;
-}
