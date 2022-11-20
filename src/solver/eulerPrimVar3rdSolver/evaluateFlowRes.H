@@ -124,6 +124,29 @@ void Foam::eulerPrimVar3rdSolver::evaluateFlowRes
                 }
                 resRhoU[i] -= rhoUFlux*magSf[faceI];
             }
+            // forAll(bfaceCells, faceI)
+            // {
+            //     const label i = bfaceCells[faceI];
+            //     scalar rhoFlux  = 0.0;
+            //     vector rhoUFlux = vector::zero;
+            //     scalar rhoEFlux = 0.0;
+            //     gaussQuad9(mesh_, start+faceI, quadPoints);
+            //     for (label gaussI = 0; gaussI != 9; ++gaussI)
+            //     {
+            //         const vector delta_i = quadPoints[gaussI] - Cn[faceI];
+            //         evaluateVars(rho_i, U_i, p_i, rho_[i], U_[i], p_[i], rhoGrad_[i], UGrad_[i], pGrad_[i],
+            //                      d2Rho_[i], d2Ux_[i], d2Uy_[i], d2Uz_[i], d2P_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+            //         vector N = vector(-quadPoints[gaussI].x(), -quadPoints[gaussI].y(), 0); N /= mag(N);
+            //         U_j = vector(U_i[0]*(sqr(N[1])-sqr(N[0]))-2*N[0]*N[1]*U_i[1],
+            //                      U_i[1]*(sqr(N[0])-sqr(N[1]))-2*N[0]*N[1]*U_i[0], 0);
+            //         evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+            //                      rho_i, rho_i, U_i, U_j, p_i, p_i,
+            //                      normal[faceI], magSf[faceI]*Quad9::w[gaussI]);
+            //     }
+            //     resRho[i]  -= rhoFlux;
+            //     resRhoU[i] -= rhoUFlux;
+            //     resRhoE[i] -= rhoEFlux;
+            // }
         }
         if (name == "inlet" || name == "outlet" || name == "farField")
         {

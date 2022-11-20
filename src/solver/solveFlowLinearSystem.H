@@ -1,25 +1,25 @@
-void Foam::solver::solveFlowLinearSystem
-(
-    const scalarField& resRho,
-    const vectorField& resRhoU,
-    const scalarField& resRhoE
-)
-{
-    const scalar omega = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relaxOmega", 1.2);
-    updateLTS();
-    scalarField L(mesh_.nInternalFaces());
-    scalarField U(mesh_.nInternalFaces());
-    scalarField D(1.0/localDtDv_);
-    evaluateMatrixLDU(omega, L, U, D);
-    // Preconditioning step
-    scalarField dRho(mesh_.nCells());
-    vectorField dRhoU(mesh_.nCells());
-    scalarField dRhoE(mesh_.nCells());
-    precondition(omega, L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
-    rho_.primitiveFieldRef()  += dRho;
-    rhoU_.primitiveFieldRef() += dRhoU;
-    rhoE_.primitiveFieldRef() += dRhoE;
-}
+// void Foam::solver::solveFlowLinearSystem
+// (
+//     const scalarField& resRho,
+//     const vectorField& resRhoU,
+//     const scalarField& resRhoE
+// )
+// {
+//     const scalar omega = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relaxOmega", 1.2);
+//     updateLTS();
+//     scalarField L(mesh_.nInternalFaces());
+//     scalarField U(mesh_.nInternalFaces());
+//     scalarField D(1.0/localDtDv_);
+//     evaluateMatrixLDU(omega, L, U, D);
+//     // Preconditioning step
+//     scalarField dRho(mesh_.nCells());
+//     vectorField dRhoU(mesh_.nCells());
+//     scalarField dRhoE(mesh_.nCells());
+//     precondition(omega, L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
+//     rho_.primitiveFieldRef()  += dRho;
+//     rhoU_.primitiveFieldRef() += dRhoU;
+//     rhoE_.primitiveFieldRef() += dRhoE;
+// }
 
 void Foam::solver::solveFlowPseudoTimeSystem
 (
@@ -163,21 +163,4 @@ void Foam::solver::precondition
         dRhoU[cellI] += rRhoU / D[cellI];
         dRhoE[cellI] += rRhoE / D[cellI];
     }
-}
-
-void Foam::solver::precondition
-(
-    const scalar& alpha,
-    const scalarField& L,
-    const scalarField& U,
-    const scalarField& D,
-    scalarField& resRho,
-    vectorField& resRhoU,
-    scalarField& resRhoE
-) const
-{
-    scalarField rho_b(resRho);
-    vectorField rhoU_b(resRhoU);
-    scalarField rhoE_b(resRhoE);
-    precondition(alpha, L, U, D, rho_b, rhoU_b, rhoE_b, resRho, resRhoU, resRhoE);
 }

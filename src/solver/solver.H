@@ -229,6 +229,19 @@ protected:
         scalarField& y_RhoE
     ) const;
 
+    void matrixVectorProduct
+    (
+        const scalarField& resRho,
+        const vectorField& resRhoU,
+        const scalarField& resRhoE,
+        const scalarField& v_Rho,
+        const vectorField& v_RhoU,
+        const scalarField& v_RhoE,
+        scalarField& y_Rho,
+        vectorField& y_RhoU,
+        scalarField& y_RhoE
+    );
+
     virtual void correctPrimitiveBoundary
     (
         volScalarField& rho,
@@ -246,17 +259,6 @@ protected:
         const scalarField& resRho,
         const vectorField& resRhoU,
         const scalarField& resRhoE,
-        scalarField& dRho,
-        vectorField& dRhoU,
-        scalarField& dRhoE
-    ) const;
-
-    void precondition
-    (
-        const scalar& alpha,
-        const scalarField& L,
-        const scalarField& U,
-        const scalarField& D,
         scalarField& dRho,
         vectorField& dRhoU,
         scalarField& dRhoE
@@ -287,12 +289,29 @@ scalar Barth
     const scalar& deltaMax
 );
 
-void givensRotation
+void ApplyGivens
 (
-    const scalar& h,
-    const scalar& beta,
-    scalar& c,
-    scalar& s
+    scalar s,
+    scalar c,
+    scalar& h1,
+    scalar& h2
+);
+
+void GenerateGivens
+(
+    scalar& dx,
+    scalar& dy,
+    scalar& s,
+    scalar& c
+);
+
+Mat5X5 evaluateAcJacobian
+(
+    const scalar& rho,
+    const vector& rhoU,
+    const scalar& rhoE,
+    const vector& normal,
+    const scalar& gamma
 );
 
 } // End namespace Foam
