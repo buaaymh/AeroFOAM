@@ -75,9 +75,6 @@ void Foam::euler2ndSolver::evaluateFlowRes
                 const vector U_j = U_neigh[faceI] + (UGrad_neigh[faceI]&delta_j[faceI]);
                 const scalar p_i = p_[i] + (pGrad_[i]&delta_i[faceI]);
                 const scalar p_j = p_neigh[faceI] + (pGrad_neigh[faceI]&delta_j[faceI]);
-                riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                       rho_i, rho_j, U_i, U_j, p_i, p_j,
-                                       normal[faceI], fluidProps_.gamma);
                 evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                              rho_i, rho_j, U_i, U_j, p_i, p_j,
                              normal[faceI], magSf[faceI]);
@@ -104,7 +101,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
             forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux;
-                vector rhoUFlux = vector::zero;
+                vector rhoUFlux;
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
                 Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,

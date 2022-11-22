@@ -110,8 +110,8 @@ Foam::solver::solver
 
 void Foam::solver::updateLTS()
 {
-    scalar localCFL = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("LocalCFL", 1.0);
-    localDtDv_ = localCFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
+    scalar CFL = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
+    localDtDv_ = CFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
 }
 
 void Foam::solver::volProjectionsInit()
