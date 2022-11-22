@@ -149,7 +149,7 @@ public:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
-    ) = 0;
+    );
 
     void solveFlowLinearSystem
     (

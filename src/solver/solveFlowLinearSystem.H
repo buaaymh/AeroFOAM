@@ -99,7 +99,7 @@ void Foam::solver::precondition
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
     const surfaceVectorField& Sf = mesh_.Sf();
-    const scalar h = 1e-8;
+    const scalar h = 1e-8/Foam::sqrt(gSumSqr(resRho) + gSum(magSqr(resRhoU)) + gSumSqr(resRhoE));
     // Forward Sweep
     forAll(mesh_.cells(), cellI)
     {

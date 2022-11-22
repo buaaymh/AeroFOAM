@@ -18,6 +18,11 @@ void Foam::solver::solveFlowLinearSystem
     scalarField dRho(mesh_.nCells(), 0);
     vectorField dRhoU(mesh_.nCells(), vector::zero);
     scalarField dRhoE(mesh_.nCells(), 0);
+
+    scalarField resRho0(mesh_.nCells());
+    vectorField resRhoU0(mesh_.nCells());
+    scalarField resRhoE0(mesh_.nCells());
+    solver::evaluateFlowRes(resRho0, resRhoU0, resRhoE0);
     // Initialize W
     List<scalarField> w_Rho(nDirs+1, scalarField(mesh_.nCells()));
     List<vectorField> w_RhoU(nDirs+1, vectorField(mesh_.nCells()));
@@ -26,7 +31,6 @@ void Foam::solver::solveFlowLinearSystem
     List<scalarField> z_Rho(nDirs, scalarField(mesh_.nCells()));
     List<vectorField> z_RhoU(nDirs, vectorField(mesh_.nCells()));
     List<scalarField> z_RhoE(nDirs, scalarField(mesh_.nCells()));
-    
     w_Rho[0]  = resRho;
     w_RhoU[0] = resRhoU;
     w_RhoE[0] = resRhoE;
@@ -38,8 +42,8 @@ void Foam::solver::solveFlowLinearSystem
     {
         RectangularMatrix<scalar> H(nDirs+1, nDirs, 0);
         scalarField g(nDirs+1, 0);
-        scalarField sn(nDirs+1, 0);
-        scalarField cs(nDirs+1, 0);
+        scalarField sn(nDirs, 0);
+        scalarField cs(nDirs, 0);
         scalarField y(nDirs, 0);
         g[0] = beta;
         label i;
@@ -50,8 +54,7 @@ void Foam::solver::solveFlowLinearSystem
             w_RhoU[i] /= beta;
             w_RhoE[i] /= beta;
             precondition(1.0, L, U, D, w_Rho[i], w_RhoU[i], w_RhoE[i], z_Rho[i], z_RhoU[i], z_RhoE[i]);
-            matrixVectorProduct(L, U, D, z_Rho[i], z_RhoU[i], z_RhoE[i], w_Rho[i+1], w_RhoU[i+1], w_RhoE[i+1]);
-            // matrixVectorProduct(resRho, resRhoU, resRhoE, z_Rho[i], z_RhoU[i], z_RhoE[i], w_Rho[i+1], w_RhoU[i+1], w_RhoE[i+1]);
+            matrixVectorProduct(resRho0, resRhoU0, resRhoE0, z_Rho[i], z_RhoU[i], z_RhoE[i], w_Rho[i+1], w_RhoU[i+1], w_RhoE[i+1]);
             /*---  Modified Gram-Schmidt orthogonalization ---*/
             for (label j = 0; j < i+1; j++)
             {
@@ -94,8 +97,7 @@ void Foam::solver::solveFlowLinearSystem
                  break;
         }
         // Re-calculate the residual
-        matrixVectorProduct(L, U, D, dRho, dRhoU, dRhoE, w_Rho[0], w_RhoU[0], w_RhoE[0]);
-        // matrixVectorProduct(resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE, w_Rho[0], w_RhoU[0], w_RhoE[0]);
+        matrixVectorProduct(resRho0, resRhoU0, resRhoE0, dRho, dRhoU, dRhoE, w_Rho[0], w_RhoU[0], w_RhoE[0]);
         w_Rho[0]  = resRho  - w_Rho[0];
         w_RhoU[0] = resRhoU - w_RhoU[0];
         w_RhoE[0] = resRhoE - w_RhoE[0];
@@ -151,36 +153,4 @@ void Foam::GenerateGivens
     }
     dx = mag(dx*dy);
     dy = 0.0;
-}
-
-Foam::Mat5X5 Foam::evaluateAcJacobian
-(
-    const scalar& rho,
-    const vector& rhoU,
-    const scalar& rhoE,
-    const vector& normal,
-    const scalar& gamma
-)
-{
-    const vector U = rhoU/rho;
-    const scalar V = U&normal;
-    const scalar a2 = gamma-1;
-    const scalar phi = 0.5*a2*magSqr(U);
-    const scalar a1 = gamma*rhoE/rho - phi;
-    Mat5X5 jacobian = Mat5X5::Zero();
-    for (label iDim = 0; iDim != 3; ++iDim)
-    {
-        jacobian(0, iDim+1) = normal[iDim];
-        jacobian(iDim+1, 0) = normal[iDim]*phi-U[iDim]*V;
-        jacobian(iDim+1, iDim+1) += V;
-        jacobian(4, iDim+1) += normal[iDim]*a1 - a2*U[iDim]*V;
-        jacobian(iDim+1, 4) += a2*normal[iDim];
-        for (label jDim = 0; jDim != 3; ++jDim)
-        {
-            jacobian(iDim+1, jDim+1) += normal[jDim]*U[iDim] - a2*normal[iDim]*U[jDim];
-        }
-    }
-    jacobian(4, 0) = V*(phi-a1);
-    jacobian(4, 4) = gamma*V;
-    return jacobian;
 }
