@@ -218,19 +218,6 @@ protected:
 
     void matrixVectorProduct
     (
-        const scalarField& L,
-        const scalarField& U,
-        const scalarField& D,
-        const scalarField& v_Rho,
-        const vectorField& v_RhoU,
-        const scalarField& v_RhoE,
-        scalarField& y_Rho,
-        vectorField& y_RhoU,
-        scalarField& y_RhoE
-    ) const;
-
-    void matrixVectorProduct
-    (
         const scalarField& resRho,
         const vectorField& resRhoU,
         const scalarField& resRhoE,
@@ -289,20 +276,12 @@ scalar Barth
     const scalar& deltaMax
 );
 
-void ApplyGivens
+void givensRotation
 (
-    scalar s,
-    scalar c,
-    scalar& h1,
-    scalar& h2
-);
-
-void GenerateGivens
-(
-    scalar& dx,
-    scalar& dy,
-    scalar& s,
-    scalar& c
+    const scalar& h,
+    const scalar& beta,
+    scalar& c,
+    scalar& s
 );
 
 Mat5X5 evaluateAcJacobian

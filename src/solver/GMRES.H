@@ -40,7 +40,7 @@ void Foam::solver::solveFlowLinearSystem
     label solverIter = 0;
     while (solverIter < innerIter)
     {
-        RectangularMatrix<scalar> H(nDirs+1, nDirs, 0);
+        scalarSquareMatrix H(nDirs, 0);
         scalarField g(nDirs+1, 0);
         scalarField sn(nDirs, 0);
         scalarField cs(nDirs, 0);
@@ -64,12 +64,19 @@ void Foam::solver::solveFlowLinearSystem
                 w_RhoE[i+1] -= H[j][i] * w_RhoE[j];
             }
             beta = Foam::sqrt(gSumSqr(w_Rho[i+1]) + gSum(magSqr(w_RhoU[i+1])) + gSumSqr(w_RhoE[i+1]));
-            H[i+1][i] = beta;
             // Apply previous Givens rotations to new column of H.
             for (label j = 0; j < i; j++)
-                ApplyGivens(sn[j], cs[j], H[j][i], H[j+1][i]);
-            GenerateGivens(H[i][i], H[i+1][i], sn[i], cs[i]);
-            ApplyGivens(sn[i], cs[i], g[i], g[i+1]);
+            {
+                const scalar Hji = H[j][i];
+                H[j][i]   = cs[j]*Hji - sn[j]*H[j+1][i];
+                H[j+1][i] = sn[j]*Hji + cs[j]*H[j+1][i];
+            }
+            // Apply Givens rotation to current row.
+            givensRotation(H[i][i], beta, cs[i], sn[i]);
+            const scalar gi = g[i];
+            g[i]   = cs[i]*gi - sn[i]*g[i+1];
+            g[i+1] = sn[i]*gi + cs[i]*g[i+1];
+            H[i][i] = cs[i]*H[i][i] - sn[i]*beta;
 
             finalRes = mag(g[i+1]);
             solverIter++;
@@ -108,49 +115,29 @@ void Foam::solver::solveFlowLinearSystem
     rhoE_.primitiveFieldRef() += dRhoE;
 }
 
-void Foam::ApplyGivens
+void Foam::givensRotation
 (
-    scalar s,
-    scalar c,
-    scalar& h1,
-    scalar& h2
+    const scalar& h,
+    const scalar& beta,
+    scalar& c,
+    scalar& s
 )
 {
-    scalar temp = c*h1 + s*h2;
-    h2 = c*h2 - s*h1;
-    h1 = temp;
-}
-
-void Foam::GenerateGivens
-(
-    scalar& dx,
-    scalar& dy,
-    scalar& s,
-    scalar& c
-)
-{
-    if ( (dx == 0.0) && (dy == 0.0) ) {
-        c = 1.0;
-        s = 0.0;
+    if (beta == 0)
+    {
+        c = 1;
+        s = 0;
     }
-    else if ( mag(dy) > mag(dx) ) {
-        scalar tmp = dx/dy;
-        dx = sqrt(1.0 + tmp*tmp);
-        s = mag(1.0/dx) * (dy < 0.0 ? -1.0 : 1.0);
-        c = tmp*s;
+    else if (mag(beta) > mag(h))
+    {
+        scalar tau = -h/beta;
+        s = 1.0/Foam::sqrt(1.0 + sqr(tau));
+        c = s*tau;
     }
-    else if ( mag(dy) <= mag(dx) ) {
-        scalar tmp = dy/dx;
-        dy = sqrt(1.0 + tmp*tmp);
-        c = mag(1.0/dy) * (dx < 0.0 ? -1.0 : 1.0);
-        s = tmp*c;
+    else
+    {
+        scalar tau = -beta/h;
+        c = 1.0/Foam::sqrt(1.0 + sqr(tau));
+        s = c*tau;
     }
-    else {
-        dx = 0.0;
-        dy = 0.0;
-        c = 1.0;
-        s = 0.0;
-    }
-    dx = mag(dx*dy);
-    dy = 0.0;
 }
