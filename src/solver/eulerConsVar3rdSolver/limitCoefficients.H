@@ -27,7 +27,8 @@ void Foam::eulerConsVar3rdSolver::limitCoefficients()
     label count = 0;
     forAll(mesh_.cells(), cellI)
     {
-        if (error[cellI]/(N_h_[cellI]*rhoE_max[cellI]) > IS)
+        IS_[cellI] = error[cellI]/(N_h_[cellI]*rhoE_max[cellI]);
+        if (IS_[cellI] > IS)
         {
             isTrouble[cellI] = true;
             count++;

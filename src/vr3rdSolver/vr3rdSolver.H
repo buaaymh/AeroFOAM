@@ -89,6 +89,7 @@ protected:
     //- Mesh data
     volVectorField rDeltaXYZ_;
     volSymmTensorField basisMean_;
+    volScalarField IS_;
     scalarField N_h_;
     std::vector<bool> isP0Cell_;
     //- Linear system
@@ -97,6 +98,7 @@ protected:
     std::map<label, std::vector<Mat6X6>> coupledB_;
     //- Quadrature points
     std::vector<std::vector<vector>> quad_;
+    
 
     // Member Functions
     void initVrLinearSystem();

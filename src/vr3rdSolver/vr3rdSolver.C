@@ -61,6 +61,19 @@ Foam::vr3rdSolver::vr3rdSolver
         mesh_,
         dimensionedSymmTensor(dimless, symmTensor::zero)
     ),
+    IS_
+    (
+        IOobject
+        (
+            "IS",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 0.0)
+    ),
     N_h_(mesh_.nCells(), 0.0),
     isP0Cell_(mesh_.nCells(), false),
     rA_(mesh_.nCells(), Mat6X6::Zero()),
