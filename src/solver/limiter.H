@@ -246,11 +246,11 @@ scalar Foam::Barth
     const scalar& deltaMax
 )
 {
-    if (project > SMALL)
+    if (project > deltaMax)
     {
         return deltaMax / project;
     }
-    else if (project < -SMALL)
+    else if (project < deltaMin)
     {
         return deltaMin / project;
     }

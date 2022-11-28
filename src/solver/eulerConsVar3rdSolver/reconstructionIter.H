@@ -1,5 +1,8 @@
 void Foam::eulerConsVar3rdSolver::reconstructionIter()
 {
+    rhoGrad_  = fvc::grad(rho_);
+    rhoUGrad_ = fvc::grad(rhoU_);
+    rhoEGrad_ = fvc::grad(rhoE_);
     /* Detect adaptive P0 cells */
     const Switch adaptive = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
     if (adaptive)

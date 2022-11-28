@@ -10,9 +10,6 @@ void Foam::eulerConsVar3rdSolver::evaluateFlowRes
     resRho  = scalarField(mesh_.nCells(), 0.0);
     resRhoU = vectorField(mesh_.nCells(), vector::zero);
     resRhoE = scalarField(mesh_.nCells(), 0.0);
-    rhoGrad_  = fvc::grad(rho_);
-    rhoUGrad_ = fvc::grad(rhoU_);
-    rhoEGrad_ = fvc::grad(rhoE_);
     reconstructionIter();
     forAll(mesh_.owner(), faceI)
     {

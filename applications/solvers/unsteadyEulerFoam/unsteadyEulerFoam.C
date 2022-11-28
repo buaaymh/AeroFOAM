@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
                 if (L1_deltaRho/L1_deltaRho_0 < relTol)  break;
             }
         }
-        Info << "LUSGS 1 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
+        Info << "LUSGS 1 converged in " << count << " iterations, and L1(dRho)/L1(dRho_0) = " << L1_deltaRho/L1_deltaRho_0 << endl;
 
         // Stage 2
         count = 0;
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
                 if (L1_deltaRho/L1_deltaRho_0 < relTol) break;
             }
         }
-        Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
+        Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho)/L1(dRho_0) = " << L1_deltaRho/L1_deltaRho_0 << endl;
 
         solver->rho()  = rho_0  + 0.5 * dt_dv * (resRho_1 + resRho_2);
         solver->rhoU() = rhoU_0 + 0.5 * dt_dv * (resRhoU_1 + resRhoU_2);
