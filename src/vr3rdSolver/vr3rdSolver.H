@@ -36,10 +36,7 @@ Author
 #define vr3rdSolver_H
 
 #include "solver.H"
-#include <array>
 #include <map>
-#include <vector>
-#include <Eigen/Dense>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

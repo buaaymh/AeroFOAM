@@ -8,6 +8,7 @@ solver/euler2ndSolver/euler2ndSolver.C
 
 vr3rdSolver/vr3rdSolver.C
 solver/eulerPrimVar3rdSolver/eulerPrimVar3rdSolver.C
-solver/eulerConsVar3rdSolver/eulerConsVar3rdSolver.C
+
+solver/euler3rdSolver/euler3rdSolver.C
 
 LIB = $(FOAM_USER_LIBBIN)/libAeroFoam

@@ -55,11 +55,17 @@ namespace Foam
 using Col3X1 = Eigen::Matrix<scalar, 3, 1>;
 using Col5X1 = Eigen::Matrix<scalar, 5, 1>;
 using Col6X1 = Eigen::Matrix<scalar, 6, 1>;
+using Col9X1 = Eigen::Matrix<scalar, 9, 1>;
+
+using Mat3X5 = Eigen::Matrix<scalar, 3, 5>;
 using Mat5X3 = Eigen::Matrix<scalar, 5, 3>;
 using Mat5X5 = Eigen::Matrix<scalar, 5, 5>;
 using Mat5X6 = Eigen::Matrix<scalar, 5, 6>;
+using Mat5X9 = Eigen::Matrix<scalar, 5, 9>;
 using Mat6X5 = Eigen::Matrix<scalar, 6, 5>;
 using Mat6X6 = Eigen::Matrix<scalar, 6, 6>;
+using Mat9X5 = Eigen::Matrix<scalar, 9, 5>;
+using Mat9X9 = Eigen::Matrix<scalar, 9, 9>;
 
 /*---------------------------------------------------------------------------*\
                    Structure fluidProperties Declaration
