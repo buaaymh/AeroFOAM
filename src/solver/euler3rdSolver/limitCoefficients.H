@@ -5,33 +5,9 @@ void Foam::euler3rdSolver::limitCoefficients()
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
     const vectorField delta = mesh_.delta();
-    scalarField rho_max(rho_.primitiveField());
-    scalarField rho_mid(mesh_.nCells());
-    scalarField error(mesh_.nCells(), 0.0);
-    std::vector<bool> isTrouble(mesh_.nCells(), false);
-    forAll(mesh_.cells(), cellI)
-    {
-        rho_mid[cellI] = rho_[cellI] + coefs_[cellI].col(0).dot(polynomialDn0(vector::zero, rDeltaXYZ_[cellI], basisMean_[cellI]));
-    }
-    forAll(owner, faceI)
-    {
-        const label i = owner[faceI];
-        const label j = neighbour[faceI];
-        rho_max[i] = max(rho_max[i], rho_[j]);
-        rho_max[j] = max(rho_max[j], rho_[i]);
-        error[j] += mag(rho_[i] + coefs_[i].col(0).dot(polynomialDn0( delta[faceI], rDeltaXYZ_[i], basisMean_[i])) - rho_mid[j]);
-        error[i] += mag(rho_[j] + coefs_[j].col(0).dot(polynomialDn0(-delta[faceI], rDeltaXYZ_[j], basisMean_[j])) - rho_mid[i]);
-    }
+    std::vector<bool> isTrouble(mesh_.nCells(), false); 
     label count = 0;
-    forAll(mesh_.cells(), cellI)
-    {
-        IS_[cellI] = error[cellI]/(N_h_[cellI]*rho_max[cellI]);
-        if (IS_[cellI] > IS)
-        {
-            isTrouble[cellI] = true;
-            count++;
-        }
-    }
+    #include "troubleIndicator.H"
     const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
     Info << "Trouble cell [%] = " << percent;
 
@@ -130,24 +106,33 @@ void Foam::euler3rdSolver::limitCoefficients()
     if (positive)
     {
         count = 0;
+        volVectorField pGrad = fvc::grad(p_);
         forAll(mesh_.C(), cellI)
         {
-            const Col9X1 polyTemp
-            (
-                1, 1, 1,
-                0.5*(1+basisMean_[cellI].xx()), 1+basisMean_[cellI].xy(),  1+basisMean_[cellI].xz(),
-                0.5*(1+basisMean_[cellI].yy()), 1+basisMean_[cellI].yz(),
-                0.5*(1+basisMean_[cellI].zz())
-            );
-            const Col5X1 deltaVars = coefs_[cellI].transpose().array().abs().matrix()*polyTemp;
-            const scalar rho_min  = rho_[cellI] - deltaVars(0);
-            const vector rhoU_max = cmptMag(rhoU_[cellI]) + vector(deltaVars(1), deltaVars(2), deltaVars(3));
-            const scalar rhoE_min = rhoE_[cellI] - deltaVars(4);
-            const scalar p_min = rhoE_min - 0.5*magSqr(rhoU_max)/rho_min;
-            if (min(min(rho_min, rhoE_min), p_min) < 0)
+            
+            const scalar p_min   = 0.5*p_[cellI] - cmptSum(cmptMag(cmptDivide(pGrad[cellI], rDeltaXYZ_[cellI])));
+            if (p_min < 0.0)
             {
                 count++;
                 coefs_[cellI] = Mat9X5::Zero();
+            }
+            else
+            {
+                const Col9X1 polyTemp
+                (
+                    1, 1, 1,
+                    0.5*(1+basisMean_[cellI].xx()), 1+basisMean_[cellI].xy(),  1+basisMean_[cellI].xz(),
+                    0.5*(1+basisMean_[cellI].yy()), 1+basisMean_[cellI].yz(),
+                    0.5*(1+basisMean_[cellI].zz())
+                );
+                const scalar deltaRho  = coefs_[cellI].col(0).dot(polyTemp);
+                const scalar deltaRhoE = coefs_[cellI].col(4).dot(polyTemp);
+                if (min(rho_[cellI]-deltaRho, rhoE_[cellI]-deltaRhoE) < 0)
+                {
+                    count++;
+                    const scalar temp = min(rho_[cellI]/deltaRho, rhoE_[cellI]/deltaRhoE);
+                    coefs_[cellI] *= temp;
+                }
             }
         }
         const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
