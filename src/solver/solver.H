@@ -282,6 +282,12 @@ scalar Barth
     const scalar& deltaMax
 );
 
+scalar MinMod
+(
+    const scalar& a,
+    const scalar& b
+);
+
 void givensRotation
 (
     const scalar& h,

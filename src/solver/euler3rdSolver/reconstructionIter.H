@@ -1,9 +1,6 @@
 void Foam::euler3rdSolver::reconstructionIter()
 {
     /* Calculate b of vr linear system */
-    const vector vrWeight = mesh_.schemesDict().subDict("vrSchemes").lookup<vector>("weightList");
-    const vector vrWeightSqr = cmptMultiply(vrWeight, vrWeight);
-    const scalarField d_ij = mag(mesh_.delta());
     std::vector<Mat9X5> bW(mesh_.nCells(), Mat9X5::Zero());
     
     const auto& owner = mesh_.owner();
@@ -76,9 +73,9 @@ void Foam::euler3rdSolver::reconstructionIter()
             {
                 const label i = bfaceCells[faceI];
                 gaussQuad9(mesh_, start+faceI, quadPoints);
-                const vector dp = magSf[faceI] * vector(vrWeightSqr[0]/d_ij[faceI],
-                                                        vrWeightSqr[1]*d_ij[faceI],
-                                                        vrWeightSqr[2]*pow3(d_ij[faceI]));
+                const vector dp = magSf[faceI] * vector(vrWeightSqr_[0]/d_ij[faceI],
+                                                        vrWeightSqr_[1]*d_ij[faceI],
+                                                        vrWeightSqr_[2]*pow3(d_ij[faceI]));
                 Mat9X5 b = Mat9X5::Zero();
                 for (label gaussI = 0; gaussI != 9; ++gaussI)
                 {

@@ -10,14 +10,12 @@ if (indicator)
         const label j = neighbour[faceI];
         rhoU_max[i] = max(rhoU_max[i], rhoU_mag[j]);
         rhoU_max[j] = max(rhoU_max[j], rhoU_mag[i]);
-        const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
-        const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-        Col3X1 dRhoU_i = coefs_[i].block<9,3>(0,1).transpose()*polynomialDn0(delta_i, rDeltaXYZ_[i], basisMean_[i]);
-        Col3X1 dRhoU_j = coefs_[j].block<9,3>(0,1).transpose()*polynomialDn0(delta_j, rDeltaXYZ_[j], basisMean_[j]);
-        scalar error_ij = mag((rhoU_[i]+vector(dRhoU_i(0), dRhoU_i(1), dRhoU_i(2)) - 
-                               rhoU_[j]-vector(dRhoU_j(0), dRhoU_j(1), dRhoU_j(2)))&normal_[faceI]);
-        error[j] += error_ij;
+        const scalar temp = d_ij_[faceI]/(mesh_.magSf()[faceI]*vrWeightSqr_[0]);
+        Col3X1 dRhoU = (coefs_[i].block<9,3>(0,1).transpose()*lowerb_[faceI] -
+                        coefs_[j].block<9,3>(0,1).transpose()*upperb_[faceI]) * temp;
+        scalar error_ij = mag((rhoU_[i] - rhoU_[j] + vector(dRhoU(0), dRhoU(1), dRhoU(2)))&normal_[faceI]);
         error[i] += error_ij;
+        error[j] += error_ij;
     }
     forAll(mesh_.cells(), cellI)
     {
@@ -44,8 +42,8 @@ else
         const label j = neighbour[faceI];
         rho_max[i] = max(rho_max[i], rho_[j]);
         rho_max[j] = max(rho_max[j], rho_[i]);
-        error[j] += mag(rho_[i] + coefs_[i].col(0).dot(polynomialDn0( delta[faceI], rDeltaXYZ_[i], basisMean_[i])) - rho_mid[j]);
-        error[i] += mag(rho_[j] + coefs_[j].col(0).dot(polynomialDn0(-delta[faceI], rDeltaXYZ_[j], basisMean_[j])) - rho_mid[i]);
+        error[j] += mag(rho_[i] + coefs_[i].col(0).dot(polynomialDn0( delta_[faceI], rDeltaXYZ_[i], basisMean_[i])) - rho_mid[j]);
+        error[i] += mag(rho_[j] + coefs_[j].col(0).dot(polynomialDn0(-delta_[faceI], rDeltaXYZ_[j], basisMean_[j])) - rho_mid[i]);
     }
     forAll(mesh_.cells(), cellI)
     {

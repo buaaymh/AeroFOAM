@@ -66,6 +66,20 @@ int main(int argc, char *argv[])
     Info << (L * R - I).cwiseAbs().maxCoeff() << endl;
     Info << (R * L - I).cwiseAbs().maxCoeff() << endl;
 
+    Foam::Mat5X5 limiter
+    {
+        {0.2, 0.0, 0.0, 0.0, 0.0},
+        {0.0, 0.4, 0.0, 0.0, 0.0},
+        {0.0, 0.0, 0.6, 0.0, 0.0},
+        {0.0, 0.0, 0.0, 0.7, 0.0},
+        {0.0, 0.0, 0.0, 0.0, 0.8}
+    };
+    std::cout << "eigen limiter = \n" << limiter << std::endl;
+    std::cout << "conse limiter = \n" << L*limiter*R << std::endl;
+
+    Foam::Col5X1 coef(1.0, 2.0, 3.0, 4.0, 5.0);
+    std::cout << "eigen coefficient = \n" << (R*limiter*L)*coef << std::endl;
+    std::cout << "conse coefficient = \n" <<    coef            << std::endl;
     return 0;
 }
 

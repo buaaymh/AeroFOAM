@@ -209,3 +209,81 @@ void Foam::euler3rdSolver::evaluateVars
     rhoU = rhoU_0 + vector(varProj(1), varProj(2), varProj(3));
     rhoE = rhoE_0 + varProj(4);
 }
+
+Mat5X3 Foam::slope1_Limiter
+(
+    const std::vector<vector>& normalList,
+    const std::vector<vector>& deltaList,
+    const std::vector<Col5X1>& d0_AdjList,
+    const Col5X1& d0_Own,
+    const Mat5X3& d1_Own,
+    const vector& rDeltaXYZ,
+    const scalar& gamma
+)
+{
+    Mat5X3 d1_limited(d1_Own);
+    Mat5X5 L, R;
+    const scalar rho  = d0_Own(0);
+    const vector rhoU = vector(d0_Own(1), d0_Own(2), d0_Own(3));
+    const scalar rhoE = d0_Own(4);
+    for (const auto& normal : normalList)
+    {
+        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+        std::vector<Col5X1> d0_AdjListTemp;
+        d0_AdjListTemp.reserve(d0_AdjList.size());
+        for (const auto& d0_Adj : d0_AdjList)
+        {
+            d0_AdjListTemp.emplace_back(L*d0_Adj);
+        }
+        const Col5X1 d0_OwnTemp = L*d0_Own;
+        const Mat5X3 d1_OwnTemp = L*d1_Own;
+        Mat5X3 d1Temp = R*slope1_Limiter(deltaList, d0_AdjListTemp, d0_OwnTemp, d1_OwnTemp, rDeltaXYZ);
+        for (label i = 0; i < 5; i++)
+        {
+            for (label j = 0; j < 3; j++)
+            {
+                d1_limited(i,j) = MinMod(d1_limited(i,j), d1Temp(i,j));
+            }
+        }
+    }
+    return d1_limited;
+}
+
+Mat5X3 Foam::slope1_Limiter
+(
+    const std::vector<vector>& deltaList,
+    const std::vector<Col5X1>& d0_AdjList,
+    const Col5X1& d0_Own,
+    const Mat5X3& d1_Own,
+    const vector& rDeltaXYZ
+)
+{
+    Mat5X3 d1_limited = d1_Own;
+    Col5X1 pj_Min( GREAT*Col5X1::Ones());
+    Col5X1 pj_Max(-GREAT*Col5X1::Ones());
+    Col5X1 d0_Min(d0_Own);
+    Col5X1 d0_Max(d0_Own);
+    for (const auto& delta : deltaList)
+    {
+        const Col5X1 project = d1_Own*Col3X1(delta[0]*rDeltaXYZ[0],
+                                             delta[1]*rDeltaXYZ[1],
+                                             delta[2]*rDeltaXYZ[2]);
+        pj_Min = pj_Min.array().min(project.array());
+        pj_Max = pj_Max.array().max(project.array());
+    }
+    for (const auto& d0_Adj : d0_AdjList)
+    {
+        d0_Min = d0_Min.array().min(d0_Adj.array());
+        d0_Max = d0_Max.array().max(d0_Adj.array());
+    }
+    d0_Min -= d0_Own;
+    d0_Max -= d0_Own;
+    for (label i = 0; i < 5; i++)
+    {
+        scalar limiter = 1.0;
+        limiter = min(limiter, Barth(pj_Min(i), d0_Min(i), d0_Max(i)));
+        limiter = min(limiter, Barth(pj_Max(i), d0_Min(i), d0_Max(i)));
+        d1_limited.row(i) *= limiter;
+    }
+    return d1_limited;
+}

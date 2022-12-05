@@ -9,8 +9,7 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     basisMean_.correctBoundaryConditions();
 
     const vector vrWeight = mesh_.schemesDict().subDict("vrSchemes").lookup<vector>("weightList");
-    const vector vrWeightSqr = cmptMultiply(vrWeight, vrWeight);
-    const scalarField d_ij = mag(mesh_.delta());
+    vrWeightSqr_ = cmptMultiply(vrWeight, vrWeight);
     forAll(mesh_.owner(), faceI)
     {
         // rA, B, b Initialize
@@ -23,9 +22,9 @@ void Foam::euler3rdSolver::initVrLinearSystem()
         Mat9X9 B_ij = Mat9X9::Zero();
         Col9X1 b_i  = Col9X1::Zero();
         Col9X1 b_j  = Col9X1::Zero();
-        const vector dp = mesh_.magSf()[faceI] * vector(vrWeightSqr[0]/d_ij[faceI],
-                                                        vrWeightSqr[1]*d_ij[faceI],
-                                                        vrWeightSqr[2]*pow3(d_ij[faceI]));
+        const vector dp = mesh_.magSf()[faceI] * vector(vrWeightSqr_[0]/d_ij_[faceI],
+                                                        vrWeightSqr_[1]*d_ij_[faceI],
+                                                        vrWeightSqr_[2]*pow3(d_ij_[faceI]));
         for (label gaussI = 0; gaussI != 9; ++gaussI)
         {
             const vector delta_i = quadPoints[gaussI] - mesh_.C()[i];
@@ -82,9 +81,9 @@ void Foam::euler3rdSolver::initVrLinearSystem()
                 Mat9X9 A_i  = Mat9X9::Zero();
                 Mat9X9 B_ij = Mat9X9::Zero();
                 Col9X1 b_i  = Col9X1::Zero();
-                const vector dp = magSf[j] * vector(vrWeightSqr[0]/d_ij[j],
-                                                    vrWeightSqr[1]*d_ij[j],
-                                                    vrWeightSqr[2]*pow3(d_ij[j]));
+                const vector dp = magSf[j] * vector(vrWeightSqr_[0]/d_ij[j],
+                                                    vrWeightSqr_[1]*d_ij[j],
+                                                    vrWeightSqr_[2]*pow3(d_ij[j]));
                 for (label gaussI = 0; gaussI != 9; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - ownerCn[j];
@@ -120,9 +119,9 @@ void Foam::euler3rdSolver::initVrLinearSystem()
                 const label i = bfaceCells[faceI];
                 gaussQuad9(mesh_, start+faceI, quadPoints);
                 Mat9X9 A_i = Mat9X9::Zero();
-                const vector dp = magSf[faceI] * vector(vrWeightSqr[0]/d_ij[faceI],
-                                                        vrWeightSqr[1]*d_ij[faceI],
-                                                        vrWeightSqr[2]*pow3(d_ij[faceI]));
+                const vector dp = magSf[faceI] * vector(vrWeightSqr_[0]/d_ij[faceI],
+                                                        vrWeightSqr_[1]*d_ij[faceI],
+                                                        vrWeightSqr_[2]*pow3(d_ij[faceI]));
                 for (label gaussI = 0; gaussI != 9; ++gaussI)
                 {
                     const vector delta_i = quadPoints[gaussI] - ownerCn[faceI];
@@ -152,7 +151,7 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     // Initialize N*h^((k+1)/2)
     forAll(mesh_.owner(), faceI)
     {
-        const scalar h_k = pow(d_ij[faceI], 1.5);
+        const scalar h_k = pow(d_ij_[faceI], 1.5);
         N_h_[mesh_.owner()[faceI]] += h_k;
         N_h_[mesh_.neighbour()[faceI]] += h_k;
     }

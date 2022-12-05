@@ -37,6 +37,7 @@ Foam::euler3rdSolver::euler3rdSolver
 )
 :
     solver(fluidProps, rho, U, p),
+    vrWeightSqr_(vector::zero),
     coefs_(mesh_.nCells(), Mat9X5::Zero()),
     rDeltaXYZ_
     (
@@ -74,6 +75,8 @@ Foam::euler3rdSolver::euler3rdSolver
         dimensionedScalar(dimless, 0.0)
     ),
     N_h_(mesh_.nCells(), 0.0),
+    delta_(mesh_.delta()),
+    d_ij_(mag(mesh_.delta())),
     rA_(mesh_.nCells(), Mat9X9::Zero()),
     lowerb_(mesh_.nInternalFaces(), Col9X1::Zero()),
     upperb_(mesh_.nInternalFaces(), Col9X1::Zero()),

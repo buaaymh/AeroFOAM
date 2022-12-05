@@ -114,12 +114,15 @@ private:
     ) const;
 
 protected:
+    vector vrWeightSqr_;
     std::vector<Mat9X5> coefs_;
     //- Mesh data
     volVectorField rDeltaXYZ_;
     volSymmTensorField basisMean_;
     volScalarField IS_;
     scalarField N_h_;
+    vectorField delta_;
+    scalarField d_ij_;
     //- Linear system
     std::vector<Mat9X9> rA_;
     std::vector<Col9X1> lowerb_;
@@ -253,6 +256,25 @@ Eigen::Matrix<scalar, 5, cols> Eigen_WBAP_L2_Limiter
     return WBAP_L2_Limiter<cols>(list, 1.0);
 }
 
+Mat5X3 slope1_Limiter
+(
+    const std::vector<vector>& normalList,
+    const std::vector<vector>& deltaList,
+    const std::vector<Col5X1>& d0_AdjList,
+    const Col5X1& d0_Own,
+    const Mat5X3& d1_Own,
+    const vector& rDeltaXYZ,
+    const scalar& gamma
+);
+
+Mat5X3 slope1_Limiter
+(
+    const std::vector<vector>& deltaList,
+    const std::vector<Col5X1>& d0_AdjList,
+    const Col5X1& d0_Own,
+    const Mat5X3& d1_Own,
+    const vector& rDeltaXYZ
+);
 
 } // End namespace Foam
 
