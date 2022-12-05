@@ -276,6 +276,28 @@ Mat5X3 slope1_Limiter
     const vector& rDeltaXYZ
 );
 
+Mat5X9 slope2_Limiter
+(
+    const std::vector<vector>& normalList,
+    const std::vector<vector>& deltaList,
+    const std::vector<Col5X1>& d0_AdjList,
+    const std::vector<Mat5X3>& d1_AdjList,
+    const Col5X1& d0_Own,
+    const Mat5X9& d1_d2_Own,
+    const vector& rDeltaXYZ,
+    const scalar& gamma
+);
+
+Mat5X9 slope2_Limiter
+(
+    const std::vector<vector>& deltaList,
+    const std::vector<Col5X1>& d0_AdjList,
+    const std::vector<Mat5X3>& d1_AdjList,
+    const Col5X1& d0_Own,
+    const Mat5X9& d1_d2_Own,
+    const vector& rDeltaXYZ
+);
+
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
