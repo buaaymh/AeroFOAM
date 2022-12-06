@@ -35,7 +35,8 @@ Author
 #ifndef euler3rdSolver_H
 #define euler3rdSolver_H
 
-#include "vr3rdSolver.H"
+#include "solver.H"
+#include <map>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -176,6 +177,45 @@ public:
 
 // * * * * * * * * * * * * Gauss Points * * * * * * * * * * * * * * //
 
+void gaussQuad4
+(
+    const fvMesh& mesh,
+    const label& faceI,
+    std::vector<vector>& quadPoints
+);
+
+void gaussQuad9
+(
+    const fvMesh& mesh,
+    const label& faceI,
+    std::vector<vector>& quadPoints
+);
+
+void gaussHexa8
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    std::vector<vector>& quadPoints
+);
+
+void gaussPrism6
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    std::vector<vector>& quadPoints
+);
+
+
+// * * * * * * * * * * rDeltaXYZ and basisMean * * * * * * * * * * * * //
+
+void evaluateBasisFunctionConst
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    vector& rDeltaXYZ,
+    symmTensor& basisMean
+);
+
 
 // * * * * * * ** * * * Taylor Basis Functions * * * * * * * * * * * //
 Col9X1 polynomialDn0
@@ -227,6 +267,39 @@ void evaluateEigenMatrix
 );
 
 template<int cols>
+Eigen::Matrix<scalar, 5, cols> WBAP_L2_Limiter
+(
+    const std::vector<Eigen::Matrix<scalar, 5, cols>>& list,
+    const scalar& value
+)
+{
+    const label n = list.size();
+    Eigen::Matrix<scalar, 5, cols> result = list[0];
+    for (label i = 0; i != 5; i++)
+    {
+        for (label j = 0; j != cols; j++)
+        {
+            if (mag(list[0](i, j)) < 1e-10) continue;
+            scalar temp3 = value;
+            scalar temp4 = value;
+            for (label k = 1; k != n; k++)
+            {
+                const scalar theta = list[k](i, j)/list[0](i, j);
+                if (theta <= 1e-6)
+                {
+                    temp3 = 0;
+                    break;
+                }
+                temp3 += 1.0 / Foam::sqr(theta);
+                temp4 += 1.0 / Foam::pow3(theta);
+            }
+            result(i, j) *= temp3 / temp4;
+        }
+    }
+    return result;
+}
+
+template<int cols>
 Eigen::Matrix<scalar, 5, cols> Eigen_WBAP_L2_Limiter
 (
     const std::vector<vector>& normalList,
@@ -239,21 +312,26 @@ Eigen::Matrix<scalar, 5, cols> Eigen_WBAP_L2_Limiter
 )
 {
     const label n = matList.size();
-    std::vector<Eigen::Matrix<scalar, 5, cols>> list;
-    list.reserve(normalList.size());
+    Eigen::Matrix<scalar, 5, cols> limited(matList[0]);
+    std::vector<Eigen::Matrix<scalar, 5, cols>> tempList(n);
     Mat5X5 L, R;
     for (const auto& normal : normalList)
     {
-        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma); 
-        std::vector<Eigen::Matrix<scalar, 5, cols>> tempList;
-        tempList.reserve(n);
-        for (const auto& mat : matList)
+        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+        for (label i = 0; i < n; i++)
         {
-            tempList.emplace_back(L*mat);
+            tempList[i] = L*matList[i];
         }
-        list.emplace_back(R*WBAP_L2_Limiter<cols>(tempList, value));
+        Eigen::Matrix<scalar, 5, cols> temp = R*WBAP_L2_Limiter<cols>(tempList, value);
+        for (label i = 0; i != 5; i++)
+        {
+            for (label j = 0; j != cols; j++)
+            {
+                limited(i,j) = MinMod(limited(i,j), temp(i,j));
+            }
+        }
     }
-    return WBAP_L2_Limiter<cols>(list, 1.0);
+    return limited;
 }
 
 Mat5X3 slope1_Limiter
@@ -276,27 +354,55 @@ Mat5X3 slope1_Limiter
     const vector& rDeltaXYZ
 );
 
-Mat5X9 slope2_Limiter
-(
-    const std::vector<vector>& normalList,
-    const std::vector<vector>& deltaList,
-    const std::vector<Col5X1>& d0_AdjList,
-    const std::vector<Mat5X3>& d1_AdjList,
-    const Col5X1& d0_Own,
-    const Mat5X9& d1_d2_Own,
-    const vector& rDeltaXYZ,
-    const scalar& gamma
-);
 
-Mat5X9 slope2_Limiter
-(
-    const std::vector<vector>& deltaList,
-    const std::vector<Col5X1>& d0_AdjList,
-    const std::vector<Mat5X3>& d1_AdjList,
-    const Col5X1& d0_Own,
-    const Mat5X9& d1_d2_Own,
-    const vector& rDeltaXYZ
-);
+/*---------------------------------------------------------------------------*\
+                           Gauss Namespace  Declaration
+\*---------------------------------------------------------------------------*/
+
+namespace Quad4
+{
+    static constexpr std::array<scalar, 4> x{-0.577350269189626, +0.577350269189626,
+                                             -0.577350269189626, +0.577350269189626};
+    static constexpr std::array<scalar, 4> y{+0.577350269189626, +0.577350269189626,
+                                             -0.577350269189626, -0.577350269189626};
+    static constexpr std::array<scalar, 4> w{0.25, 0.25, 0.25, 0.25};
+}
+
+namespace Quad9
+{
+    static constexpr std::array<scalar, 9> x{-0.774596669241483,                0.0, +0.774596669241483,
+                                             -0.774596669241483,                0.0, +0.774596669241483,
+                                             -0.774596669241483,                0.0, +0.774596669241483};
+    static constexpr std::array<scalar, 9> y{+0.774596669241483, +0.774596669241483, +0.774596669241483,
+                                                            0.0,                0.0,                0.0,
+                                             -0.774596669241483, -0.774596669241483, -0.774596669241483};
+    static constexpr std::array<scalar, 9> w{0.07716049382716049383, 0.12345679012345679012, 0.07716049382716049383,
+                                             0.12345679012345679012, 0.19753086419753086420, 0.12345679012345679012,
+                                             0.07716049382716049383, 0.12345679012345679012, 0.07716049382716049383};
+}
+
+namespace Hexa8
+{
+    static constexpr std::array<scalar, 8> x{-0.577350269189626, +0.577350269189626, +0.577350269189626, -0.577350269189626,
+                                             -0.577350269189626, +0.577350269189626, +0.577350269189626, -0.577350269189626};
+    static constexpr std::array<scalar, 8> y{-0.577350269189626, -0.577350269189626, +0.577350269189626, +0.577350269189626,
+                                             -0.577350269189626, -0.577350269189626, +0.577350269189626, +0.577350269189626};
+    static constexpr std::array<scalar, 8> z{+0.577350269189626, +0.577350269189626, +0.577350269189626, +0.577350269189626,
+                                             -0.577350269189626, -0.577350269189626, -0.577350269189626, -0.577350269189626};
+    static constexpr std::array<scalar, 8> w{0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125};
+}
+
+namespace Prism6
+{
+    static constexpr std::array<scalar, 6> x{+1.0/6.0, +2.0/3.0, +1.0/6.0,
+                                             +1.0/6.0, +2.0/3.0, +1.0/6.0};
+    static constexpr std::array<scalar, 6> y{+1.0/6.0, +1.0/6.0, +2.0/3.0,
+                                             +1.0/6.0, +1.0/6.0, +2.0/3.0};
+    static constexpr std::array<scalar, 6> z{-0.577350269189626, -0.577350269189626, -0.577350269189626,
+                                             +0.577350269189626, +0.577350269189626, +0.577350269189626};
+    static constexpr std::array<scalar, 6> w{1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0};
+}
+
 
 } // End namespace Foam
 

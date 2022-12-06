@@ -17,10 +17,6 @@ void Foam::euler3rdSolver::limitCoefficients()
     {
         #include "slope1Limiter.H"
     }
-    else if (limiter == "Slope2")
-    {
-        #include "slope2Limiter.H"
-    }
     else if (limiter == "WBAP")
     {
         #include "WBAPLimiter.H"

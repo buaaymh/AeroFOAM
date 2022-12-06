@@ -1,3 +1,61 @@
+void Foam::evaluateBasisFunctionConst
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    vector& rDeltaXYZ,
+    symmTensor& basisMean
+)
+{
+    //rDeltaXYZ Initialize
+    vector pointMin = mesh.C()[cellI];
+    vector pointMax = mesh.C()[cellI];
+    const UList<label>& cellPointsId = mesh.cellPoints()[cellI];
+    forAll(cellPointsId, pointI)
+    {
+        pointMin = min(pointMin, mesh.points()[cellPointsId[pointI]]);
+        pointMax = max(pointMax, mesh.points()[cellPointsId[pointI]]);
+    }
+    rDeltaXYZ = cmptDivide(vector::one, 0.5*(pointMax-pointMin));
+    // basisMean Initialize
+    const label nNodes = mesh.cellShapes()[cellI].size();
+    if (nNodes == 8)
+    {
+        std::vector<vector> quadPoints(8, vector::zero);
+        gaussHexa8(mesh, cellI, quadPoints);
+        for (label i = 0; i != 8; ++i)
+        {
+            const vector B = cmptMultiply(quadPoints[i]-mesh.C()[cellI], rDeltaXYZ);
+            symmTensor temp
+            (
+                sqr(B.x()), B.x()*B.y(), B.x()*B.z(),
+                             sqr(B.y()), B.y()*B.z(),
+                                           sqr(B.z())
+            );
+            basisMean += Hexa8::w[i] * temp;
+        }
+    }
+    else if (nNodes == 6)
+    {
+        std::vector<vector> quadPoints(6, vector::zero);
+        gaussPrism6(mesh, cellI, quadPoints);
+        for (label i = 0; i != 6; ++i)
+        {
+            const vector B = cmptMultiply(quadPoints[i]-mesh.C()[cellI], rDeltaXYZ);
+            symmTensor temp
+            (
+                sqr(B.x()), B.x()*B.y(), B.x()*B.z(),
+                             sqr(B.y()), B.y()*B.z(),
+                                           sqr(B.z())
+            );
+            basisMean += Prism6::w[i] * temp;
+        }
+    }
+    else
+    {
+        Info << "Wrong element type!" << endl;
+    }
+}
+
 Col9X1 Foam::polynomialDn0
 (
     const vector& delta,
@@ -286,174 +344,4 @@ Mat5X3 Foam::slope1_Limiter
         d1_limited.row(i) *= limiter;
     }
     return d1_limited;
-}
-
-Mat5X9 Foam::slope2_Limiter
-(
-    const std::vector<vector>& normalList,
-    const std::vector<vector>& deltaList,
-    const std::vector<Col5X1>& d0_AdjList,
-    const std::vector<Mat5X3>& d1_AdjList,
-    const Col5X1& d0_Own,
-    const Mat5X9& d1_d2_Own,
-    const vector& rDeltaXYZ,
-    const scalar& gamma
-)
-{
-    Mat5X9 d1_d2_limited = d1_d2_Own;
-    Mat5X5 L, R;
-    const scalar rho  = d0_Own(0);
-    const vector rhoU = vector(d0_Own(1), d0_Own(2), d0_Own(3));
-    const scalar rhoE = d0_Own(4);
-    for (const auto& normal : normalList)
-    {
-        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
-        std::vector<Col5X1> d0_AdjListTemp;
-        std::vector<Mat5X3> d1_AdjListTemp;
-        d0_AdjListTemp.reserve(d0_AdjList.size());
-        d1_AdjListTemp.reserve(d1_AdjList.size());
-        for (const auto& d0_Adj : d0_AdjList)
-        {
-            d0_AdjListTemp.emplace_back(L*d0_Adj);
-        }
-        for (const auto& d1_Adj : d1_AdjList)
-        {
-            d1_AdjListTemp.emplace_back(L*d1_Adj);
-        }
-        const Col5X1 d0_OwnTemp = L*d0_Own;
-        const Mat5X9 d1_d2_OwnTemp = L*d1_d2_Own;
-        Mat5X9 d1_d2_Temp = R*slope2_Limiter(deltaList, d0_AdjListTemp, d1_AdjListTemp, d0_OwnTemp, d1_d2_OwnTemp, rDeltaXYZ);
-        for (label i = 0; i < 5; i++)
-        {
-            for (label j = 0; j < 9; j++)
-            {
-                d1_d2_limited(i,j) = MinMod(d1_d2_limited(i,j), d1_d2_Temp(i,j));
-            }
-        }
-    }
-    return d1_d2_limited;
-}
-
-Mat5X9 Foam::slope2_Limiter
-(
-    const std::vector<vector>& deltaList,
-    const std::vector<Col5X1>& d0_AdjList,
-    const std::vector<Mat5X3>& d1_AdjList,
-    const Col5X1& d0_Own,
-    const Mat5X9& d1_d2_Own,
-    const vector& rDeltaXYZ
-)
-{
-    Mat5X9 d1_d2_limited = d1_d2_Own;
-    Col5X1 d2_limiter = Col5X1::Ones();
-    // grad x
-    Col5X1 pj_Min( GREAT*Col5X1::Ones());
-    Col5X1 pj_Max(-GREAT*Col5X1::Ones());
-    Col5X1 d1_Own(d1_d2_Own.col(0)*rDeltaXYZ[0]);
-    Col5X1 d1_Min(d1_Own);
-    Col5X1 d1_Max(d1_Own);
-    for (const auto& delta : deltaList)
-    {
-        const vector temp = cmptMultiply(delta, rDeltaXYZ)*rDeltaXYZ[0];
-        const Col5X1 project = d1_d2_Own.col(3)*temp[0]
-                             + d1_d2_Own.col(4)*temp[1]
-                             + d1_d2_Own.col(5)*temp[2];
-        pj_Min = pj_Min.array().min(project.array());
-        pj_Max = pj_Max.array().max(project.array());
-    }
-    for (const auto& d1_Adj : d1_AdjList)
-    {
-        d1_Min = d1_Min.array().min(d1_Adj.col(0).array());
-        d1_Max = d1_Max.array().max(d1_Adj.col(0).array());
-    }
-    d1_Min -= d1_Own;
-    d1_Max -= d1_Own;
-    for (label i = 0; i < 5; i++)
-    {
-        d2_limiter(i) = min(d2_limiter(i), Barth(pj_Min(i), d1_Min(i), d1_Max(i)));
-        d2_limiter(i) = min(d2_limiter(i), Barth(pj_Max(i), d1_Min(i), d1_Max(i)));
-    }
-    // grad y
-    pj_Min =  GREAT*Col5X1::Ones();
-    pj_Max = -GREAT*Col5X1::Ones();
-    d1_Own = d1_d2_Own.col(1)*rDeltaXYZ[1];
-    d1_Min = d1_Own;
-    d1_Max = d1_Own;
-    for (const auto& delta : deltaList)
-    {
-        const vector temp = cmptMultiply(delta, rDeltaXYZ)*rDeltaXYZ[1];
-        const Col5X1 project = d1_d2_Own.col(4)*temp[0]
-                             + d1_d2_Own.col(6)*temp[1]
-                             + d1_d2_Own.col(7)*temp[2];
-        pj_Min = pj_Min.array().min(project.array());
-        pj_Max = pj_Max.array().max(project.array());
-    }
-    for (const auto& d1_Adj : d1_AdjList)
-    {
-        d1_Min = d1_Min.array().min(d1_Adj.col(1).array());
-        d1_Max = d1_Max.array().max(d1_Adj.col(1).array());
-    }
-    d1_Min -= d1_Own;
-    d1_Max -= d1_Own;
-    for (label i = 0; i < 5; i++)
-    {
-        d2_limiter(i) = min(d2_limiter(i), Barth(pj_Min(i), d1_Min(i), d1_Max(i)));
-        d2_limiter(i) = min(d2_limiter(i), Barth(pj_Max(i), d1_Min(i), d1_Max(i)));
-    }
-    // grad z
-    pj_Min =  GREAT*Col5X1::Ones();
-    pj_Max = -GREAT*Col5X1::Ones();
-    d1_Own = d1_d2_Own.col(2)*rDeltaXYZ[2];
-    d1_Min = d1_Own;
-    d1_Max = d1_Own;
-    for (const auto& delta : deltaList)
-    {
-        const vector temp = cmptMultiply(delta, rDeltaXYZ)*rDeltaXYZ[2];
-        const Col5X1 project = d1_d2_Own.col(5)*temp[0]
-                             + d1_d2_Own.col(7)*temp[1]
-                             + d1_d2_Own.col(8)*temp[2];
-        pj_Min = pj_Min.array().min(project.array());
-        pj_Max = pj_Max.array().max(project.array());
-    }
-    for (const auto& d1_Adj : d1_AdjList)
-    {
-        d1_Min = d1_Min.array().min(d1_Adj.col(2).array());
-        d1_Max = d1_Max.array().max(d1_Adj.col(2).array());
-    }
-    d1_Min -= d1_Own;
-    d1_Max -= d1_Own;
-    for (label i = 0; i < 5; i++)
-    {
-        d2_limiter(i) = min(d2_limiter(i), Barth(pj_Min(i), d1_Min(i), d1_Max(i)));
-        d2_limiter(i) = min(d2_limiter(i), Barth(pj_Max(i), d1_Min(i), d1_Max(i)));
-        d1_d2_limited.block<1,6>(i,3) *= d2_limiter(i);
-    }
-    // d0
-    pj_Min =  GREAT*Col5X1::Ones();
-    pj_Max = -GREAT*Col5X1::Ones();
-    Col5X1 d0_Min(d0_Own);
-    Col5X1 d0_Max(d0_Own);
-    for (const auto& delta : deltaList)
-    {
-        const Col5X1 project = d1_d2_Own.block<5,3>(0,0) * Col3X1(delta[0]*rDeltaXYZ[0],
-                                                                  delta[1]*rDeltaXYZ[1],
-                                                                  delta[2]*rDeltaXYZ[2]);
-        pj_Min = pj_Min.array().min(project.array());
-        pj_Max = pj_Max.array().max(project.array());
-    }
-    for (const auto& d0_Adj : d0_AdjList)
-    {
-        d0_Min = d0_Min.array().min(d0_Adj.array());
-        d0_Max = d0_Max.array().max(d0_Adj.array());
-    }
-    d0_Min -= d0_Own;
-    d0_Max -= d0_Own;
-    for (label i = 0; i < 5; i++)
-    {
-        scalar limiter = 1.0;
-        limiter = min(limiter, Barth(pj_Min(i), d0_Min(i), d0_Max(i)));
-        limiter = min(limiter, Barth(pj_Max(i), d0_Min(i), d0_Max(i)));
-        d1_d2_limited.block<1,3>(i,0) *= limiter;
-    }
-    return d1_d2_limited;
 }
