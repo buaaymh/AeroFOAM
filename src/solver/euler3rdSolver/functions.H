@@ -50,6 +50,22 @@ void Foam::evaluateBasisFunctionConst
             basisMean += Prism6::w[i] * temp;
         }
     }
+    else if (nNodes == 4)
+    {
+        std::vector<vector> quadPoints(4, vector::zero);
+        gaussTetra4(mesh, cellI, quadPoints);
+        for (label i = 0; i != 4; ++i)
+        {
+            const vector B = cmptMultiply(quadPoints[i]-mesh.C()[cellI], rDeltaXYZ);
+            symmTensor temp
+            (
+                sqr(B.x()), B.x()*B.y(), B.x()*B.z(),
+                             sqr(B.y()), B.y()*B.z(),
+                                           sqr(B.z())
+            );
+            basisMean += Tetra4::w[i] * temp;
+        }
+    }
     else
     {
         Info << "Wrong element type!" << endl;

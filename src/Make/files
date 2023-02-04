@@ -4,6 +4,7 @@ dbnsFlux/hllcFlux/hllcFlux.C
 dbnsFlux/AUSMplusUpFlux/AUSMplusUpFlux.C
 solver/solver.C
 bound/boundMinMax.C
+element/element.C
 solver/euler2ndSolver/euler2ndSolver.C
 solver/euler3rdSolver/euler3rdSolver.C
 

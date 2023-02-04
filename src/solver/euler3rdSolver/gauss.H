@@ -84,3 +84,20 @@ void Foam::gaussPrism6
                         N[3]*cellShapes[3] + N[4]*cellShapes[4] + N[5]*cellShapes[5];
     }
 }
+
+void Foam::gaussTetra4
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    std::vector<vector>& quadPoints
+)
+{
+    const UList<label>& cellShapesId = mesh.cellShapes()[cellI];
+    std::array<vector, 4> cellShapes{mesh.points()[cellShapesId[0]], mesh.points()[cellShapesId[1]],
+                                     mesh.points()[cellShapesId[2]], mesh.points()[cellShapesId[3]]};
+    for (label i = 0; i != 4; ++i)
+    {
+        quadPoints[i] = cellShapes[0]*Tetra4::x[i] + cellShapes[1]*Tetra4::y[i] +
+                        cellShapes[2]*Tetra4::z[i] + cellShapes[3]*(1.0-Tetra4::x[i]-Tetra4::y[i]-Tetra4::z[i]);
+    }
+}
