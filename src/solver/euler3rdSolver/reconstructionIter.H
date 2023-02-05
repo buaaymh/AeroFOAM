@@ -2,7 +2,7 @@ void Foam::euler3rdSolver::reconstructionIter()
 {
     /* Calculate b of vr linear system */
     std::vector<Mat9X5> bW(mesh_.nCells(), Mat9X5::Zero());
-    
+    std::unique_ptr<Face> faceQuad;
     const auto& owner = mesh_.owner();
     const auto& neighbour = mesh_.neighbour();
     forAll(owner, faceI)
@@ -72,15 +72,15 @@ void Foam::euler3rdSolver::reconstructionIter()
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                gaussQuad9(mesh_, start+faceI, quadPoints);
+                build4stFace(mesh_, start+faceI, faceQuad);
                 const vector dp = magSf[faceI] * vector(vrWeightSqr_[0]/d_ij[faceI],
                                                         vrWeightSqr_[1]*d_ij[faceI],
                                                         vrWeightSqr_[2]*pow3(d_ij[faceI]));
                 Mat9X5 b = Mat9X5::Zero();
-                for (label gaussI = 0; gaussI != 9; ++gaussI)
+                for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
                 {
-                    const vector delta_i = quadPoints[gaussI] - ownerCn[faceI];
-                    const vector dpwTemp = Quad9::w[gaussI]*dp;
+                    const vector delta_i = faceQuad->at(gaussI) - ownerCn[faceI];
+                    const vector dpwTemp = faceQuad->weight(gaussI)*dp;
                     Col9X1 Dn0_i = polynomialDn0(delta_i, rDeltaXYZ_[i], basisMean_[i]);
                     Col9X1 Dn1_i = polynomialDn1(delta_i, rDeltaXYZ_[i], normal[faceI]);
                     Col9X1 Dn2_i = polynomialDn2(rDeltaXYZ_[i], normal[faceI]);

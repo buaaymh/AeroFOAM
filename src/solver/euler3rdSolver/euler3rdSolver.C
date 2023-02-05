@@ -81,7 +81,6 @@ Foam::euler3rdSolver::euler3rdSolver
     lowerb_(mesh_.nInternalFaces(), Col9X1::Zero()),
     upperb_(mesh_.nInternalFaces(), Col9X1::Zero()),
     B_(mesh_.nInternalFaces(), Mat9X9::Zero()),
-    quad_(mesh_.nInternalFaces(), std::vector<vector>(4, vector::zero)),
     d1Rho_
     (
         IOobject
@@ -175,8 +174,6 @@ Foam::euler3rdSolver::euler3rdSolver
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-
-#include "gauss.H"
 
 #include "functions.H"
 

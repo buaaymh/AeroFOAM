@@ -11,6 +11,7 @@ void Foam::euler3rdSolver::evaluateFlowRes
     resRhoU = vectorField(mesh_.nCells(), vector::zero);
     resRhoE = scalarField(mesh_.nCells(), 0.0);
     reconstructionIter();
+    std::unique_ptr<Face> faceQuad;
     forAll(mesh_.owner(), faceI)
     {
         scalar rhoFlux = 0.0;
@@ -18,14 +19,14 @@ void Foam::euler3rdSolver::evaluateFlowRes
         scalar rhoEFlux = 0.0;
         const label i = mesh_.owner()[faceI];
         const label j = mesh_.neighbour()[faceI];
-        for (label gaussI = 0; gaussI != 4; ++gaussI)
+        for (label gaussI = 0; gaussI != faceQuad_[faceI]->size(); ++gaussI)
         {
-            const vector delta_i = quad_[faceI][gaussI] - mesh_.C()[i];
-            const vector delta_j = quad_[faceI][gaussI] - mesh_.C()[j];
+            const vector delta_i = faceQuad_[faceI]->at(gaussI) - mesh_.C()[i];
+            const vector delta_j = faceQuad_[faceI]->at(gaussI) - mesh_.C()[j];
             evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
             evaluateVars(rho_j, rhoU_j, rhoE_j, rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], delta_j);
             evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
-                         normal_[faceI], mesh_.magSf()[faceI]*Quad4::w[gaussI]);
+                         normal_[faceI], mesh_.magSf()[faceI]*faceQuad_[faceI]->weight(gaussI));
         }
         resRho[i]  -= rhoFlux;
         resRhoU[i] -= rhoUFlux;
@@ -66,17 +67,17 @@ void Foam::euler3rdSolver::evaluateFlowRes
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[j];
-                gaussQuad4(mesh_, start+j, quadPoints);
-                for (label gaussI = 0; gaussI != 4; ++gaussI)
+                build2ndFace(mesh_, start+j, faceQuad);
+                for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
                 {
-                    const vector delta_i = quadPoints[gaussI] - ownerCn[j];
-                    const vector delta_j = quadPoints[gaussI] - neighCn[j];
+                    const vector delta_i = faceQuad->at(gaussI) - ownerCn[j];
+                    const vector delta_j = faceQuad->at(gaussI) - neighCn[j];
                     evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], d1Rho_[i], d1RhoU_[i], d1RhoE_[i],
                                  d2Rho_[i], d2RhoUx_[i], d2RhoUy_[i], d2RhoUz_[i], d2RhoE_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
                     evaluateVars(rho_j, rhoU_j, rhoE_j, rho_neigh[j], rhoU_neigh[j], rhoE_neigh[j], d1Rho_neigh[j], d1RhoU_neigh[j], d1RhoE_neigh[j],
                                  d2Rho_neigh[j], d2RhoUx_neigh[j], d2RhoUy_neigh[j], d2RhoUz_neigh[j], d2RhoE_neigh[j], basisMean_neigh[j], rDeltaXYZ_neigh[j], delta_j);
                     evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
-                                 normal[j], magSf[j]*Quad4::w[gaussI]);
+                                 normal[j], magSf[j]*faceQuad->weight(gaussI));
                 }
                 resRho[i]  -= rhoFlux;
                 resRhoU[i] -= rhoUFlux;
@@ -91,12 +92,12 @@ void Foam::euler3rdSolver::evaluateFlowRes
             {
                 const label i = bfaceCells[faceI];
                 vector rhoUFlux = vector::zero;
-                gaussQuad4(mesh_, start+faceI, quadPoints);
-                for (label gaussI = 0; gaussI != 4; ++gaussI)
+                build2ndFace(mesh_, start+faceI, faceQuad);
+                for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
                 {
-                    const vector delta_i = quadPoints[gaussI] - Cn[faceI];
+                    const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
                     evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                    rhoUFlux += (rhoE_i-0.5*magSqr(rhoU_i)/rho_i)*(fluidProps_.gamma-1.0)*normal[faceI]*Quad4::w[gaussI];
+                    rhoUFlux += (rhoE_i-0.5*magSqr(rhoU_i)/rho_i)*(fluidProps_.gamma-1.0)*normal[faceI]*faceQuad->weight(gaussI);
                 }
                 resRhoU[i] -= rhoUFlux*magSf[faceI];
             }

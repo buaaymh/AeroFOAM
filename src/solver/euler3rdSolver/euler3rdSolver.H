@@ -36,6 +36,7 @@ Author
 #define euler3rdSolver_H
 
 #include "solver.H"
+#include "element.H"
 #include <map>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -132,7 +133,7 @@ protected:
     std::map<label, std::vector<Mat9X9>> coupledB_;
     std::map<label, std::vector<Col9X1>> coupledb_;
     //- Quadrature points
-    std::vector<std::vector<vector>> quad_;
+    std::vector<std::unique_ptr<Face>> faceQuad_;
 
     //- First polynomial coefficients
     volVectorField d1Rho_;
@@ -174,44 +175,6 @@ public:
 /*---------------------------------------------------------------------------*\
                            Methods Declaration
 \*---------------------------------------------------------------------------*/
-
-// * * * * * * * * * * * * Gauss Points * * * * * * * * * * * * * * //
-
-void gaussQuad4
-(
-    const fvMesh& mesh,
-    const label& faceI,
-    std::vector<vector>& quadPoints
-);
-
-void gaussQuad9
-(
-    const fvMesh& mesh,
-    const label& faceI,
-    std::vector<vector>& quadPoints
-);
-
-void gaussHexa8
-(
-    const fvMesh& mesh,
-    const label& cellI,
-    std::vector<vector>& quadPoints
-);
-
-void gaussPrism6
-(
-    const fvMesh& mesh,
-    const label& cellI,
-    std::vector<vector>& quadPoints
-);
-
-void gaussTetra4
-(
-    const fvMesh& mesh,
-    const label& cellI,
-    std::vector<vector>& quadPoints
-);
-
 
 // * * * * * * * * * * rDeltaXYZ and basisMean * * * * * * * * * * * * //
 
@@ -360,82 +323,6 @@ Mat5X3 slope1_Limiter
     const Mat5X3& d1_Own,
     const vector& rDeltaXYZ
 );
-
-
-/*---------------------------------------------------------------------------*\
-                           Gauss Namespace  Declaration
-\*---------------------------------------------------------------------------*/
-
-namespace Tria3
-{
-    static constexpr std::array<scalar, 3> x{0.0, 0.5, 0.5};
-    static constexpr std::array<scalar, 3> y{0.5, 0.0, 0.5};
-    static constexpr std::array<scalar, 3> w{0.3333333333333333, 0.3333333333333333, 0.3333333333333333};
-}
-
-namespace Tria4
-{
-    static constexpr std::array<scalar, 4> x{0.3333333333333333, 0.6, 0.2, 0.2};
-    static constexpr std::array<scalar, 4> y{0.3333333333333333, 0.2, 0.2, 0.6};
-    static constexpr std::array<scalar, 4> w{-0.5624999999999998, 0.5208333333333332,
-                                              0.5208333333333332, 0.5208333333333332};
-}
-
-namespace Quad4
-{
-    static constexpr std::array<scalar, 4> x{-0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, +0.577350269189626};
-    static constexpr std::array<scalar, 4> y{+0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 4> w{0.25, 0.25, 0.25, 0.25};
-}
-
-namespace Quad9
-{
-    static constexpr std::array<scalar, 9> x{-0.774596669241483,                0.0, +0.774596669241483,
-                                             -0.774596669241483,                0.0, +0.774596669241483,
-                                             -0.774596669241483,                0.0, +0.774596669241483};
-    static constexpr std::array<scalar, 9> y{+0.774596669241483, +0.774596669241483, +0.774596669241483,
-                                                            0.0,                0.0,                0.0,
-                                             -0.774596669241483, -0.774596669241483, -0.774596669241483};
-    static constexpr std::array<scalar, 9> w{0.07716049382716049383, 0.12345679012345679012, 0.07716049382716049383,
-                                             0.12345679012345679012, 0.19753086419753086420, 0.12345679012345679012,
-                                             0.07716049382716049383, 0.12345679012345679012, 0.07716049382716049383};
-}
-
-namespace Hexa8
-{
-    static constexpr std::array<scalar, 8> x{-0.577350269189626, +0.577350269189626, +0.577350269189626, -0.577350269189626,
-                                             -0.577350269189626, +0.577350269189626, +0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 8> y{-0.577350269189626, -0.577350269189626, +0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, -0.577350269189626, +0.577350269189626, +0.577350269189626};
-    static constexpr std::array<scalar, 8> z{+0.577350269189626, +0.577350269189626, +0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, -0.577350269189626, -0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 8> w{0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125};
-}
-
-namespace Prism6
-{
-    static constexpr std::array<scalar, 6> x{+1.0/6.0, +2.0/3.0, +1.0/6.0,
-                                             +1.0/6.0, +2.0/3.0, +1.0/6.0};
-    static constexpr std::array<scalar, 6> y{+1.0/6.0, +1.0/6.0, +2.0/3.0,
-                                             +1.0/6.0, +1.0/6.0, +2.0/3.0};
-    static constexpr std::array<scalar, 6> z{-0.577350269189626, -0.577350269189626, -0.577350269189626,
-                                             +0.577350269189626, +0.577350269189626, +0.577350269189626};
-    static constexpr std::array<scalar, 6> w{1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0};
-}
-
-namespace Tetra4
-{
-    static constexpr std::array<scalar, 4> x{0.1381966011250105, 0.1381966011250105,
-                                             0.1381966011250105, 0.5854101966249685};
-    static constexpr std::array<scalar, 4> y{0.1381966011250105, 0.1381966011250105,
-                                             0.5854101966249685, 0.1381966011250105};
-    static constexpr std::array<scalar, 4> z{0.1381966011250105, 0.5854101966249685,
-                                             0.1381966011250105, 0.1381966011250105};
-    static constexpr std::array<scalar, 4> w{0.25, 0.25, 0.25, 0.25};
-}
-
 
 } // End namespace Foam
 
