@@ -25,25 +25,76 @@ License
 
 #include "element.H"
 
+void Foam::Face::GetQuadrangleCoordAndWeight
+(
+    const scalar x_local,
+    const scalar y_local,
+    const scalar w_local,
+    const Mat4X3& facePoints,
+    scalar& weight,
+    vector& quadPoint
+)
+{
+    // weight
+    Mat4X2 dn;
+    Arr4X1 factor_x = Quad4::x_hexa_i * x_local; factor_x += 1;
+    Arr4X1 factor_y = Quad4::y_hexa_i * y_local; factor_y += 1;
+    dn.col(0) << Quad4::x_hexa_i * factor_y;
+    dn.col(1) << Quad4::y_hexa_i * factor_x;
+    dn *= 0.25;
+    Mat3X2 dr = facePoints.transpose()*dn;
+    weight = w_local* sqrt((dr.transpose() * dr).determinant());
+    // coord
+    Arr4X1 N = 0.25*(1+Quad4::x_hexa_i*x_local)*(1+Quad4::y_hexa_i*y_local);
+    Col3X1 coord = facePoints.transpose()*N.matrix();
+    quadPoint = vector(coord(0), coord(1), coord(2));
+}
+
+void Foam::Face::GetTriangleCoordAndWeight
+(
+    const scalar x_local,
+    const scalar y_local,
+    const scalar w_local,
+    const Mat3X3& facePoints,
+    scalar& weight,
+    vector& quadPoint
+)
+{
+    // weight
+    Mat3X2 dn
+    {
+        { 1,  0},
+        { 0,  1},
+        {-1, -1}
+    };
+    Mat3X2 dr = facePoints.transpose()*dn;
+    weight = w_local* sqrt((dr.transpose() * dr).determinant());
+    // coord
+    Col3X1 N{x_local, y_local, 1-x_local-y_local};
+    Col3X1 coord = facePoints.transpose()*N;
+    quadPoint = vector(coord(0), coord(1), coord(2));
+}
+
 Foam::Triangle3::Triangle3
 (
     const fvMesh& mesh,
     const label& faceI
 )
 :
+    weights(3),
     quadPoints(3)
 {
     const UList<label>& facePointsId = mesh.faces()[faceI];
-    std::array<vector, 3> facePoints{mesh.points()[facePointsId[0]], mesh.points()[facePointsId[1]], mesh.points()[facePointsId[2]]};
-    tensor transform
-    (
-      facePoints[0].x(), facePoints[1].x(), facePoints[2].x(),
-      facePoints[0].y(), facePoints[1].y(), facePoints[2].y(),
-      facePoints[0].z(), facePoints[1].z(), facePoints[2].z()
-    );
+    Mat3X3 facePoints
+    {
+        {mesh.points()[facePointsId[0]][0], mesh.points()[facePointsId[0]][1], mesh.points()[facePointsId[0]][2]},
+        {mesh.points()[facePointsId[1]][0], mesh.points()[facePointsId[1]][1], mesh.points()[facePointsId[1]][2]},
+        {mesh.points()[facePointsId[2]][0], mesh.points()[facePointsId[2]][1], mesh.points()[facePointsId[2]][2]}
+    };
     for (label i = 0; i != 3; ++i)
     {
-        quadPoints[i] = transform&vector(Tria3::x[i], Tria3::y[i], 1-Tria3::x[i]-Tria3::y[i]);
+        GetTriangleCoordAndWeight(Tria3::x[i], Tria3::y[i], Tria3::w[i], facePoints,
+                                  weights[i], quadPoints[i]);
     }
 }
 
@@ -53,19 +104,20 @@ Foam::Triangle4::Triangle4
     const label& faceI
 )
 :
+    weights(4),
     quadPoints(4)
 {
     const UList<label>& facePointsId = mesh.faces()[faceI];
-    std::array<vector, 3> facePoints{mesh.points()[facePointsId[0]], mesh.points()[facePointsId[1]], mesh.points()[facePointsId[2]]};
-    tensor transform
-    (
-      facePoints[0].x(), facePoints[1].x(), facePoints[2].x(),
-      facePoints[0].y(), facePoints[1].y(), facePoints[2].y(),
-      facePoints[0].z(), facePoints[1].z(), facePoints[2].z()
-    );
+    Mat3X3 facePoints
+    {
+        {mesh.points()[facePointsId[0]][0], mesh.points()[facePointsId[0]][1], mesh.points()[facePointsId[0]][2]},
+        {mesh.points()[facePointsId[1]][0], mesh.points()[facePointsId[1]][1], mesh.points()[facePointsId[1]][2]},
+        {mesh.points()[facePointsId[2]][0], mesh.points()[facePointsId[2]][1], mesh.points()[facePointsId[2]][2]}
+    };
     for (label i = 0; i != 4; ++i)
     {
-        quadPoints[i] = transform&vector(Tria4::x[i], Tria4::y[i], 1-Tria4::x[i]-Tria4::y[i]);
+        GetTriangleCoordAndWeight(Tria4::x[i], Tria4::y[i], Tria4::w[i], facePoints,
+                                  weights[i], quadPoints[i]);
     }
 }
 
@@ -75,16 +127,21 @@ Foam::Quadrangle4::Quadrangle4
     const label& faceI
 )
 :
+    weights(4),
     quadPoints(4)
 {
     const UList<label>& facePointsId = mesh.faces()[faceI];
-    std::array<vector, 4> facePoints{mesh.points()[facePointsId[0]], mesh.points()[facePointsId[1]],
-                                     mesh.points()[facePointsId[2]], mesh.points()[facePointsId[3]]};
+    Mat4X3 facePoints
+    {
+        {mesh.points()[facePointsId[0]][0], mesh.points()[facePointsId[0]][1], mesh.points()[facePointsId[0]][2]},
+        {mesh.points()[facePointsId[1]][0], mesh.points()[facePointsId[1]][1], mesh.points()[facePointsId[1]][2]},
+        {mesh.points()[facePointsId[2]][0], mesh.points()[facePointsId[2]][1], mesh.points()[facePointsId[2]][2]},
+        {mesh.points()[facePointsId[3]][0], mesh.points()[facePointsId[3]][1], mesh.points()[facePointsId[3]][2]}
+    };
     for (label i = 0; i != 4; ++i)
     {
-        std::array<scalar, 4> N{0.25*(1+Quad4::x[i])*(1+Quad4::y[i]), 0.25*(1-Quad4::x[i])*(1+Quad4::y[i]),
-                                0.25*(1-Quad4::x[i])*(1-Quad4::y[i]), 0.25*(1+Quad4::x[i])*(1-Quad4::y[i])};
-        quadPoints[i] = N[0]*facePoints[0] + N[1]*facePoints[1] + N[2]*facePoints[2] + N[3]*facePoints[3];
+        GetQuadrangleCoordAndWeight(Quad4::x[i], Quad4::y[i], Quad4::w[i], facePoints,
+                                    weights[i], quadPoints[i]);
     }
 }
 
@@ -94,19 +151,23 @@ Foam::Quadrangle9::Quadrangle9
     const label& faceI
 )
 :
+    weights(9), 
     quadPoints(9)
 {
     const UList<label>& facePointsId = mesh.faces()[faceI];
-    std::array<vector, 4> facePoints{mesh.points()[facePointsId[0]], mesh.points()[facePointsId[1]],
-                                     mesh.points()[facePointsId[2]], mesh.points()[facePointsId[3]]};
+    Mat4X3 facePoints
+    {
+        {mesh.points()[facePointsId[0]][0], mesh.points()[facePointsId[0]][1], mesh.points()[facePointsId[0]][2]},
+        {mesh.points()[facePointsId[1]][0], mesh.points()[facePointsId[1]][1], mesh.points()[facePointsId[1]][2]},
+        {mesh.points()[facePointsId[2]][0], mesh.points()[facePointsId[2]][1], mesh.points()[facePointsId[2]][2]},
+        {mesh.points()[facePointsId[3]][0], mesh.points()[facePointsId[3]][1], mesh.points()[facePointsId[3]][2]}
+    };
     for (label i = 0; i != 9; ++i)
     {
-        std::array<scalar, 4> N{0.25*(1+Quad9::x[i])*(1+Quad9::y[i]), 0.25*(1-Quad9::x[i])*(1+Quad9::y[i]),
-                                0.25*(1-Quad9::x[i])*(1-Quad9::y[i]), 0.25*(1+Quad9::x[i])*(1-Quad9::y[i])};
-        quadPoints[i] = N[0]*facePoints[0] + N[1]*facePoints[1] + N[2]*facePoints[2] + N[3]*facePoints[3];
+        GetQuadrangleCoordAndWeight(Quad9::x[i], Quad9::y[i], Quad9::w[i], facePoints,
+                                    weights[i], quadPoints[i]);
     }
 }
-
 
 void Foam::build2ndFace
 (
@@ -138,26 +199,39 @@ void Foam::gaussHexa8
 (
     const fvMesh& mesh,
     const label& cellI,
+    std::vector<scalar>& weight,
     std::vector<vector>& quadPoints
 )
 {
     const UList<label>& cellShapesId = mesh.cellShapes()[cellI];
-    std::array<vector, 8> cellShapes{mesh.points()[cellShapesId[0]], mesh.points()[cellShapesId[1]],
-                                     mesh.points()[cellShapesId[2]], mesh.points()[cellShapesId[3]],
-                                     mesh.points()[cellShapesId[4]], mesh.points()[cellShapesId[5]],
-                                     mesh.points()[cellShapesId[6]], mesh.points()[cellShapesId[7]]};
+    Mat8X3 cellShapes
+    {
+        {mesh.points()[cellShapesId[0]][0], mesh.points()[cellShapesId[0]][1], mesh.points()[cellShapesId[0]][2]},
+        {mesh.points()[cellShapesId[1]][0], mesh.points()[cellShapesId[1]][1], mesh.points()[cellShapesId[1]][2]},
+        {mesh.points()[cellShapesId[2]][0], mesh.points()[cellShapesId[2]][1], mesh.points()[cellShapesId[2]][2]},
+        {mesh.points()[cellShapesId[3]][0], mesh.points()[cellShapesId[3]][1], mesh.points()[cellShapesId[3]][2]},
+        {mesh.points()[cellShapesId[4]][0], mesh.points()[cellShapesId[4]][1], mesh.points()[cellShapesId[4]][2]},
+        {mesh.points()[cellShapesId[5]][0], mesh.points()[cellShapesId[5]][1], mesh.points()[cellShapesId[5]][2]},
+        {mesh.points()[cellShapesId[6]][0], mesh.points()[cellShapesId[6]][1], mesh.points()[cellShapesId[6]][2]},
+        {mesh.points()[cellShapesId[7]][0], mesh.points()[cellShapesId[7]][1], mesh.points()[cellShapesId[7]][2]}
+    };
     for (label i = 0; i != 8; ++i)
     {
-        std::array<scalar, 8> N{0.125*(1-Hexa8::x[i])*(1-Hexa8::y[i])*(1-Hexa8::z[i]),
-                                0.125*(1+Hexa8::x[i])*(1-Hexa8::y[i])*(1-Hexa8::z[i]),
-                                0.125*(1+Hexa8::x[i])*(1+Hexa8::y[i])*(1-Hexa8::z[i]),
-                                0.125*(1-Hexa8::x[i])*(1+Hexa8::y[i])*(1-Hexa8::z[i]),
-                                0.125*(1-Hexa8::x[i])*(1-Hexa8::y[i])*(1+Hexa8::z[i]),
-                                0.125*(1+Hexa8::x[i])*(1-Hexa8::y[i])*(1+Hexa8::z[i]),
-                                0.125*(1+Hexa8::x[i])*(1+Hexa8::y[i])*(1+Hexa8::z[i]),
-                                0.125*(1-Hexa8::x[i])*(1+Hexa8::y[i])*(1+Hexa8::z[i])};
-        quadPoints[i] = N[0]*cellShapes[0] + N[1]*cellShapes[1] + N[2]*cellShapes[2] + N[3]*cellShapes[3] +
-                        N[4]*cellShapes[4] + N[5]*cellShapes[5] + N[6]*cellShapes[6] + N[7]*cellShapes[7];
+        // weight
+        Mat8X3 dn;
+        Arr8X1 factor_x = Hexa8::x_hexa_i * Hexa8::x[i]; factor_x += 1;
+        Arr8X1 factor_y = Hexa8::y_hexa_i * Hexa8::y[i]; factor_y += 1;
+        Arr8X1 factor_z = Hexa8::z_hexa_i * Hexa8::z[i]; factor_z += 1;
+        dn.col(0) << Hexa8::x_hexa_i * factor_y * factor_z;
+        dn.col(1) << Hexa8::y_hexa_i * factor_x * factor_z;
+        dn.col(2) << Hexa8::z_hexa_i * factor_x * factor_y;
+        dn *= 0.125;
+        Mat3X3 dr = cellShapes.transpose()*dn;
+        weight[i] = Hexa8::w[i] * mag(dr.determinant());
+        // coord
+        Arr8X1 N = 0.125*(1+Hexa8::x_hexa_i*Hexa8::x[i])*(1+Hexa8::y_hexa_i*Hexa8::y[i])*(1+Hexa8::z_hexa_i*Hexa8::z[i]);
+        Col3X1 coord = cellShapes.transpose()*N.matrix();
+        quadPoints[i] = vector(coord(0), coord(1), coord(2));
     }
 }
 
@@ -165,23 +239,44 @@ void Foam::gaussPrism6
 (
     const fvMesh& mesh,
     const label& cellI,
+    std::vector<scalar>& weight,
     std::vector<vector>& quadPoints
 )
 {
     const UList<label>& cellShapesId = mesh.cellShapes()[cellI];
-    std::array<vector, 6> cellShapes{mesh.points()[cellShapesId[0]], mesh.points()[cellShapesId[1]],
-                                     mesh.points()[cellShapesId[2]], mesh.points()[cellShapesId[3]],
-                                     mesh.points()[cellShapesId[4]], mesh.points()[cellShapesId[5]]};
+    Mat6X3 cellShapes
+    {
+        {mesh.points()[cellShapesId[0]][0], mesh.points()[cellShapesId[0]][1], mesh.points()[cellShapesId[0]][2]},
+        {mesh.points()[cellShapesId[1]][0], mesh.points()[cellShapesId[1]][1], mesh.points()[cellShapesId[1]][2]},
+        {mesh.points()[cellShapesId[2]][0], mesh.points()[cellShapesId[2]][1], mesh.points()[cellShapesId[2]][2]},
+        {mesh.points()[cellShapesId[3]][0], mesh.points()[cellShapesId[3]][1], mesh.points()[cellShapesId[3]][2]},
+        {mesh.points()[cellShapesId[4]][0], mesh.points()[cellShapesId[4]][1], mesh.points()[cellShapesId[4]][2]},
+        {mesh.points()[cellShapesId[5]][0], mesh.points()[cellShapesId[5]][1], mesh.points()[cellShapesId[5]][2]}
+    };
     for (label i = 0; i != 6; ++i)
     {
-        std::array<scalar, 6> N{0.5*(1-Prism6::z[i])*Prism6::x[i],
-                                0.5*(1-Prism6::z[i])*Prism6::y[i],
-                                0.5*(1-Prism6::z[i])*(1-Prism6::x[i]-Prism6::y[i]),
-                                0.5*(1+Prism6::z[i])*Prism6::x[i],
-                                0.5*(1+Prism6::z[i])*Prism6::y[i],
-                                0.5*(1+Prism6::z[i])*(1-Prism6::x[i]-Prism6::y[i])};
-        quadPoints[i] = N[0]*cellShapes[0] + N[1]*cellShapes[1] + N[2]*cellShapes[2] +
-                        N[3]*cellShapes[3] + N[4]*cellShapes[4] + N[5]*cellShapes[5];
+        // weight
+        Mat6X3 dn
+        {
+            { 1-Prism6::z[i],               0,               -Prism6::x[i]},
+            {              0,  1-Prism6::z[i],               -Prism6::y[i]},
+            { Prism6::z[i]-1,  Prism6::z[i]-1, Prism6::x[i]+Prism6::y[i]-1},
+            { 1+Prism6::z[i],               0,                Prism6::x[i]},
+            {              0,  1+Prism6::z[i],                Prism6::y[i]},
+            {-Prism6::z[i]-1, -Prism6::z[i]-1, 1-Prism6::x[i]-Prism6::y[i]},
+        };
+        dn *= 0.5;
+        Mat3X3 dr = cellShapes.transpose()*dn;
+        weight[i] = Prism6::w[i] * mag(dr.determinant());
+        // coord
+        Col6X1 N{0.5*(1-Prism6::z[i])*Prism6::x[i],
+                 0.5*(1-Prism6::z[i])*Prism6::y[i],
+                 0.5*(1-Prism6::z[i])*(1-Prism6::x[i]-Prism6::y[i]),
+                 0.5*(1+Prism6::z[i])*Prism6::x[i],
+                 0.5*(1+Prism6::z[i])*Prism6::y[i],
+                 0.5*(1+Prism6::z[i])*(1-Prism6::x[i]-Prism6::y[i])};
+        Col3X1 coord = cellShapes.transpose()*N;
+        quadPoints[i] = vector(coord(0), coord(1), coord(2));
     }
 }
 
@@ -189,15 +284,33 @@ void Foam::gaussTetra4
 (
     const fvMesh& mesh,
     const label& cellI,
+    std::vector<scalar>& weight,
     std::vector<vector>& quadPoints
 )
 {
     const UList<label>& cellShapesId = mesh.cellShapes()[cellI];
-    std::array<vector, 4> cellShapes{mesh.points()[cellShapesId[0]], mesh.points()[cellShapesId[1]],
-                                     mesh.points()[cellShapesId[2]], mesh.points()[cellShapesId[3]]};
+    Mat4X3 cellShapes
+    {
+        {mesh.points()[cellShapesId[0]][0], mesh.points()[cellShapesId[0]][1], mesh.points()[cellShapesId[0]][2]},
+        {mesh.points()[cellShapesId[1]][0], mesh.points()[cellShapesId[1]][1], mesh.points()[cellShapesId[1]][2]},
+        {mesh.points()[cellShapesId[2]][0], mesh.points()[cellShapesId[2]][1], mesh.points()[cellShapesId[2]][2]},
+        {mesh.points()[cellShapesId[3]][0], mesh.points()[cellShapesId[3]][1], mesh.points()[cellShapesId[3]][2]}
+    };
     for (label i = 0; i != 4; ++i)
     {
-        quadPoints[i] = cellShapes[0]*Tetra4::x[i] + cellShapes[1]*Tetra4::y[i] +
-                        cellShapes[2]*Tetra4::z[i] + cellShapes[3]*(1.0-Tetra4::x[i]-Tetra4::y[i]-Tetra4::z[i]);
+        // weight
+        Mat4X3 dn
+        {
+            { 1,  0,  0},
+            { 0,  1,  0},
+            { 0,  0,  1},
+            {-1, -1, -1},
+        };
+        Mat3X3 dr = cellShapes.transpose()*dn;
+        weight[i] = Tetra4::w[i] * mag(dr.determinant());
+        // coord
+        Col4X1 N{Tetra4::x[i], Tetra4::y[i], Tetra4::z[i], 1-Tetra4::x[i]-Tetra4::y[i]-Tetra4::z[i]};
+        Col3X1 coord = cellShapes.transpose()*N;
+        quadPoints[i] = vector(coord(0), coord(1), coord(2));
     }
 }

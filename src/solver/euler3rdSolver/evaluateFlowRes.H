@@ -26,7 +26,7 @@ void Foam::euler3rdSolver::evaluateFlowRes
             evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
             evaluateVars(rho_j, rhoU_j, rhoE_j, rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], delta_j);
             evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
-                         normal_[faceI], mesh_.magSf()[faceI]*faceQuad_[faceI]->weight(gaussI));
+                         normal_[faceI], faceQuad_[faceI]->weight(gaussI));
         }
         resRho[i]  -= rhoFlux;
         resRhoU[i] -= rhoUFlux;
@@ -77,7 +77,7 @@ void Foam::euler3rdSolver::evaluateFlowRes
                     evaluateVars(rho_j, rhoU_j, rhoE_j, rho_neigh[j], rhoU_neigh[j], rhoE_neigh[j], d1Rho_neigh[j], d1RhoU_neigh[j], d1RhoE_neigh[j],
                                  d2Rho_neigh[j], d2RhoUx_neigh[j], d2RhoUy_neigh[j], d2RhoUz_neigh[j], d2RhoE_neigh[j], basisMean_neigh[j], rDeltaXYZ_neigh[j], delta_j);
                     evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
-                                 normal[j], magSf[j]*faceQuad->weight(gaussI));
+                                 normal[j], faceQuad->weight(gaussI));
                 }
                 resRho[i]  -= rhoFlux;
                 resRhoU[i] -= rhoUFlux;
@@ -99,7 +99,7 @@ void Foam::euler3rdSolver::evaluateFlowRes
                     evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
                     rhoUFlux += (rhoE_i-0.5*magSqr(rhoU_i)/rho_i)*(fluidProps_.gamma-1.0)*normal[faceI]*faceQuad->weight(gaussI);
                 }
-                resRhoU[i] -= rhoUFlux*magSf[faceI];
+                resRhoU[i] -= rhoUFlux;
             }
         }
         if (name == "inlet" || name == "outlet" || name == "farField")

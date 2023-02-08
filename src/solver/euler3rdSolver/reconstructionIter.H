@@ -19,7 +19,6 @@ void Foam::euler3rdSolver::reconstructionIter()
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-        const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
         const vectorField& normal = normal_.boundaryField()[patchI];
         const word type = mesh_.boundary()[patchI].type();
         const label start = mesh_.boundary()[patchI].start();
@@ -68,14 +67,13 @@ void Foam::euler3rdSolver::reconstructionIter()
         {
             const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
             const scalarField d_ij = mag(mesh_.boundary()[patchI].delta());
-            std::vector<vector> quadPoints(9, vector::zero);
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
                 build4stFace(mesh_, start+faceI, faceQuad);
-                const vector dp = magSf[faceI] * vector(vrWeightSqr_[0]/d_ij[faceI],
-                                                        vrWeightSqr_[1]*d_ij[faceI],
-                                                        vrWeightSqr_[2]*pow3(d_ij[faceI]));
+                const vector dp = vector(vrWeightSqr_[0]/d_ij[faceI],
+                                         vrWeightSqr_[1]*d_ij[faceI],
+                                         vrWeightSqr_[2]*pow3(d_ij[faceI]));
                 Mat9X5 b = Mat9X5::Zero();
                 for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
                 {

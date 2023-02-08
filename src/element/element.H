@@ -50,48 +50,55 @@ namespace Tria3
 {
     static constexpr std::array<scalar, 3> x{0.0, 0.5, 0.5};
     static constexpr std::array<scalar, 3> y{0.5, 0.0, 0.5};
-    static constexpr std::array<scalar, 3> w{0.3333333333333333, 0.3333333333333333, 0.3333333333333333};
+    static constexpr std::array<scalar, 3> w{1.0/6.0, 1.0/6.0, 1.0/6.0};
 }
 
 namespace Tria4
 {
-    static constexpr std::array<scalar, 4> x{0.3333333333333333, 0.6, 0.2, 0.2};
-    static constexpr std::array<scalar, 4> y{0.3333333333333333, 0.2, 0.2, 0.6};
-    static constexpr std::array<scalar, 4> w{-0.5624999999999998, 0.5208333333333332,
-                                              0.5208333333333332, 0.5208333333333332};
+    static constexpr std::array<scalar, 4> x{std::sqrt(1.0/3.0), 0.6, 0.2, 0.2};
+    static constexpr std::array<scalar, 4> y{std::sqrt(1.0/3.0), 0.2, 0.2, 0.6};
+    static constexpr std::array<scalar, 4> w{-0.2812499999999999, 0.2604166666666666,
+                                              0.2604166666666666, 0.2604166666666666};
 }
 
 namespace Quad4
 {
-    static constexpr std::array<scalar, 4> x{-0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, +0.577350269189626};
-    static constexpr std::array<scalar, 4> y{+0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 4> w{0.25, 0.25, 0.25, 0.25};
+    static constexpr std::array<scalar, 4> x{-std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0),
+                                             +std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0)};
+    static constexpr std::array<scalar, 4> y{-std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0),
+                                             +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0)};
+    static constexpr std::array<scalar, 4> w{1.0, 1.0, 1.0, 1.0};
+
+    static const Arr4X1 x_hexa_i{-1, +1, +1, -1};
+    static const Arr4X1 y_hexa_i{-1, -1, +1, +1};
 }
 
 namespace Quad9
 {
-    static constexpr std::array<scalar, 9> x{-0.774596669241483,                0.0, +0.774596669241483,
-                                             -0.774596669241483,                0.0, +0.774596669241483,
-                                             -0.774596669241483,                0.0, +0.774596669241483};
-    static constexpr std::array<scalar, 9> y{+0.774596669241483, +0.774596669241483, +0.774596669241483,
-                                                            0.0,                0.0,                0.0,
-                                             -0.774596669241483, -0.774596669241483, -0.774596669241483};
-    static constexpr std::array<scalar, 9> w{0.07716049382716049383, 0.12345679012345679012, 0.07716049382716049383,
-                                             0.12345679012345679012, 0.19753086419753086420, 0.12345679012345679012,
-                                             0.07716049382716049383, 0.12345679012345679012, 0.07716049382716049383};
+    static constexpr std::array<scalar, 9> x{-std::sqrt(0.6),                0.0, +std::sqrt(0.6),
+                                             -std::sqrt(0.6),                0.0, +std::sqrt(0.6),
+                                             -std::sqrt(0.6),                0.0, +std::sqrt(0.6)};
+    static constexpr std::array<scalar, 9> y{+std::sqrt(0.6), +std::sqrt(0.6), +std::sqrt(0.6),
+                                                         0.0,             0.0,             0.0,
+                                             -std::sqrt(0.6), -std::sqrt(0.6), -std::sqrt(0.6)};
+    static constexpr std::array<scalar, 9> w{25.0/81.0, 40.0/81.0, 25.0/81.0,
+                                             40.0/81.0, 64.0/81.0, 40.0/81.0,
+                                             25.0/81.0, 40.0/81.0, 25.0/81.0};
 }
 
 namespace Hexa8
 {
-    static constexpr std::array<scalar, 8> x{-0.577350269189626, +0.577350269189626, +0.577350269189626, -0.577350269189626,
-                                             -0.577350269189626, +0.577350269189626, +0.577350269189626, -0.577350269189626};
-    static constexpr std::array<scalar, 8> y{-0.577350269189626, -0.577350269189626, +0.577350269189626, +0.577350269189626,
-                                             -0.577350269189626, -0.577350269189626, +0.577350269189626, +0.577350269189626};
-    static constexpr std::array<scalar, 8> z{-0.577350269189626, -0.577350269189626, -0.577350269189626, -0.577350269189626,
-                                             +0.577350269189626, +0.577350269189626, +0.577350269189626, +0.577350269189626};
-    static constexpr std::array<scalar, 8> w{0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125};
+    static constexpr std::array<scalar, 8> x{-std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0),
+                                             -std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0)};
+    static constexpr std::array<scalar, 8> y{-std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0),
+                                             -std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0)};
+    static constexpr std::array<scalar, 8> z{-std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0),
+                                             +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0)};
+    static constexpr std::array<scalar, 8> w{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+
+    static const Arr8X1 x_hexa_i{-1, +1, +1, -1, -1, +1, +1, -1};
+    static const Arr8X1 y_hexa_i{-1, -1, +1, +1, -1, -1, +1, +1};
+    static const Arr8X1 z_hexa_i{-1, -1, -1, -1, +1, +1, +1, +1};
 }
 
 namespace Prism6
@@ -100,8 +107,8 @@ namespace Prism6
                                              +1.0/6.0, +2.0/3.0, +1.0/6.0};
     static constexpr std::array<scalar, 6> y{+1.0/6.0, +1.0/6.0, +2.0/3.0,
                                              +1.0/6.0, +1.0/6.0, +2.0/3.0};
-    static constexpr std::array<scalar, 6> z{-0.577350269189626, -0.577350269189626, -0.577350269189626,
-                                             +0.577350269189626, +0.577350269189626, +0.577350269189626};
+    static constexpr std::array<scalar, 6> z{-std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0),
+                                             +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0)};
     static constexpr std::array<scalar, 6> w{1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0};
 }
 
@@ -113,7 +120,7 @@ namespace Tetra4
                                              0.5854101966249685, 0.1381966011250105};
     static constexpr std::array<scalar, 4> z{0.1381966011250105, 0.5854101966249685,
                                              0.1381966011250105, 0.1381966011250105};
-    static constexpr std::array<scalar, 4> w{0.25, 0.25, 0.25, 0.25};
+    static constexpr std::array<scalar, 4> w{1.0/24.0, 1.0/24.0, 1.0/24.0, 1.0/24.0};
 }
 
 /*---------------------------------------------------------------------------*\
@@ -136,6 +143,11 @@ public:
     
     virtual const vector& at(label i) const = 0;
 
+    void GetTriangleCoordAndWeight(const scalar x_local, const scalar y_local, const scalar w_local,
+                                   const Mat3X3& facePoints, scalar& weight, vector& quadPoint);
+
+    void GetQuadrangleCoordAndWeight(const scalar x_local, const scalar y_local, const scalar w_local,
+                                     const Mat4X3& facePoints, scalar& weight, vector& quadPoint);
 };
 
 class Triangle3: public Face
@@ -150,11 +162,12 @@ public:
     // Member Functions
     label size() const { return 3; };
 
-    scalar weight(label i) const { return Tria3::w[i]; };
+    scalar weight(label i) const { return weights[i]; };
     
     const vector& at(label i) const { return quadPoints[i]; };
 
 private:
+    std::vector<scalar> weights;
     std::vector<vector> quadPoints;
 };
 
@@ -170,11 +183,12 @@ public:
     // Member Functions
     label size() const { return 4; };
 
-    scalar weight(label i) const { return Tria4::w[i]; };
+    scalar weight(label i) const { return weights[i]; };
     
     const vector& at(label i) const { return quadPoints[i]; };
 
 private:
+    std::vector<scalar> weights;
     std::vector<vector> quadPoints;
 };
 
@@ -190,11 +204,12 @@ public:
     // Member Functions
     label size() const { return 4; };
 
-    scalar weight(label i) const { return Quad4::w[i]; };
+    scalar weight(label i) const { return weights[i]; };
     
     const vector& at(label i) const { return quadPoints[i]; };
 
 private:
+    std::vector<scalar> weights;
     std::vector<vector> quadPoints;
 };
 
@@ -210,11 +225,12 @@ public:
     // Member Functions
     label size() const { return 9; };
 
-    scalar weight(label i) const { return Quad9::w[i]; };
+    scalar weight(label i) const { return weights[i]; };
     
     const vector& at(label i) const { return quadPoints[i]; };
 
 private:
+    std::vector<scalar> weights;
     std::vector<vector> quadPoints;
 };
 
@@ -226,6 +242,7 @@ void gaussHexa8
 (
     const fvMesh& mesh,
     const label& cellI,
+    std::vector<scalar>& weight,
     std::vector<vector>& quadPoints
 );
 
@@ -233,6 +250,7 @@ void gaussPrism6
 (
     const fvMesh& mesh,
     const label& cellI,
+    std::vector<scalar>& weight,
     std::vector<vector>& quadPoints
 );
 
@@ -240,6 +258,7 @@ void gaussTetra4
 (
     const fvMesh& mesh,
     const label& cellI,
+    std::vector<scalar>& weight,
     std::vector<vector>& quadPoints
 );
 

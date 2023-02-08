@@ -20,8 +20,9 @@ void Foam::evaluateBasisFunctionConst
     const label nNodes = mesh.cellShapes()[cellI].size();
     if (nNodes == 8)
     {
+        std::vector<scalar> weight(8);
         std::vector<vector> quadPoints(8, vector::zero);
-        gaussHexa8(mesh, cellI, quadPoints);
+        gaussHexa8(mesh, cellI, weight, quadPoints);
         for (label i = 0; i != 8; ++i)
         {
             const vector B = cmptMultiply(quadPoints[i]-mesh.C()[cellI], rDeltaXYZ);
@@ -31,13 +32,15 @@ void Foam::evaluateBasisFunctionConst
                              sqr(B.y()), B.y()*B.z(),
                                            sqr(B.z())
             );
-            basisMean += Hexa8::w[i] * temp;
+            basisMean += weight[i] * temp;
         }
+        basisMean /= mesh.V()[cellI];
     }
     else if (nNodes == 6)
     {
+        std::vector<scalar> weight(6);
         std::vector<vector> quadPoints(6, vector::zero);
-        gaussPrism6(mesh, cellI, quadPoints);
+        gaussPrism6(mesh, cellI, weight, quadPoints);
         for (label i = 0; i != 6; ++i)
         {
             const vector B = cmptMultiply(quadPoints[i]-mesh.C()[cellI], rDeltaXYZ);
@@ -47,13 +50,15 @@ void Foam::evaluateBasisFunctionConst
                              sqr(B.y()), B.y()*B.z(),
                                            sqr(B.z())
             );
-            basisMean += Prism6::w[i] * temp;
+            basisMean += weight[i] * temp;
         }
+        basisMean /= mesh.V()[cellI];
     }
     else if (nNodes == 4)
     {
+        std::vector<scalar> weight(4);
         std::vector<vector> quadPoints(4, vector::zero);
-        gaussTetra4(mesh, cellI, quadPoints);
+        gaussTetra4(mesh, cellI, weight, quadPoints);
         for (label i = 0; i != 4; ++i)
         {
             const vector B = cmptMultiply(quadPoints[i]-mesh.C()[cellI], rDeltaXYZ);
@@ -63,8 +68,9 @@ void Foam::evaluateBasisFunctionConst
                              sqr(B.y()), B.y()*B.z(),
                                            sqr(B.z())
             );
-            basisMean += Tetra4::w[i] * temp;
+            basisMean += weight[i] * temp;
         }
+        basisMean /= mesh.V()[cellI];
     }
     else
     {
