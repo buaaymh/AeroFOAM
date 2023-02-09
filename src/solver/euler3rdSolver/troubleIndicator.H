@@ -10,9 +10,8 @@ if (indicator)
         const label j = neighbour[faceI];
         rhoU_max[i] = max(rhoU_max[i], rhoU_mag[j]);
         rhoU_max[j] = max(rhoU_max[j], rhoU_mag[i]);
-        const scalar temp = d_ij_[faceI]/(mesh_.magSf()[faceI]*vrWeightSqr_[0]);
-        Col3X1 dRhoU = (coefs_[i].block<9,3>(0,1).transpose()*lowerb_[faceI] -
-                        coefs_[j].block<9,3>(0,1).transpose()*upperb_[faceI]) * temp;
+        Col3X1 dRhoU = coefs_[i].block<9,3>(0,1).transpose()*polynomialDn0(mesh_.Cf()[faceI]-mesh_.C()[i], rDeltaXYZ_[i], basisMean_[i])
+                     - coefs_[j].block<9,3>(0,1).transpose()*polynomialDn0(mesh_.Cf()[faceI]-mesh_.C()[j], rDeltaXYZ_[j], basisMean_[j]);
         scalar error_ij = mag((rhoU_[i] - rhoU_[j] + vector(dRhoU(0), dRhoU(1), dRhoU(2)))&normal_[faceI]);
         error[i] += error_ij;
         error[j] += error_ij;
