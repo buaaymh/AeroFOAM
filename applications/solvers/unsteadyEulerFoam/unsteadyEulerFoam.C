@@ -86,15 +86,16 @@ int main(int argc, char *argv[])
             {
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
                 solver->correctFields();
+                if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
             {
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
                 solver->correctFields();
-                if (L1_deltaRho/L1_deltaRho_0 < relTol|| L1_deltaRho < tolerance)  break;
+                if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
             }
         }
-        Info << "LUSGS 1 converged in " << count << " iterations, and L1(dRho)/L1(dRho_0) = " << L1_deltaRho/L1_deltaRho_0 << endl;
+        Info << "LUSGS 1 converged in " << count << " iterations, and L1(dRho) = " << L1_deltaRho << endl;
 
         // Stage 2
         count = 0;
@@ -109,6 +110,7 @@ int main(int argc, char *argv[])
             {
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
                 solver->correctFields();
+                if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
             {
@@ -117,7 +119,7 @@ int main(int argc, char *argv[])
                 if (L1_deltaRho/L1_deltaRho_0 < relTol|| L1_deltaRho < tolerance)  break;
             }
         }
-        Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho)/L1(dRho_0) = " << L1_deltaRho/L1_deltaRho_0 << endl;
+        Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
 
         solver->rho()  = rho_0  + 0.5 * dt_dv * (resRho_1 + resRho_2);
         solver->rhoU() = rhoU_0 + 0.5 * dt_dv * (resRhoU_1 + resRhoU_2);
