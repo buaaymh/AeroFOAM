@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
     while (runTime.run())
     {
         const label innerIter = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
+        const scalar tolerance = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
         const scalar relTol = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
         const scalar dt = runTime.deltaT().value();
         const scalarField dt_dv(dt/mesh.V().field());
@@ -90,7 +91,7 @@ int main(int argc, char *argv[])
             {
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
                 solver->correctFields();
-                if (L1_deltaRho/L1_deltaRho_0 < relTol)  break;
+                if (L1_deltaRho/L1_deltaRho_0 < relTol|| L1_deltaRho < tolerance)  break;
             }
         }
         Info << "LUSGS 1 converged in " << count << " iterations, and L1(dRho)/L1(dRho_0) = " << L1_deltaRho/L1_deltaRho_0 << endl;
@@ -113,7 +114,7 @@ int main(int argc, char *argv[])
             {
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
                 solver->correctFields();
-                if (L1_deltaRho/L1_deltaRho_0 < relTol) break;
+                if (L1_deltaRho/L1_deltaRho_0 < relTol|| L1_deltaRho < tolerance)  break;
             }
         }
         Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho)/L1(dRho_0) = " << L1_deltaRho/L1_deltaRho_0 << endl;
