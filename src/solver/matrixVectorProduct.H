@@ -11,7 +11,7 @@ void Foam::solver::matrixVectorProduct
     scalarField& y_RhoE
 )
 {
-    const scalar eps = 1e-8/Foam::sqrt(gSumSqr(v_Rho)+gSum(magSqr(v_RhoU))+gSumSqr(v_RhoE));
+    const scalar eps = 1e-8/Foam::sqrt(gSumSqr(v_Rho)+gSum(magSqr(v_RhoU))+gSumSqr(v_RhoE)+1e-16);
     volScalarField rho  = rho_;
     volVectorField rhoU = rhoU_;
     volScalarField rhoE = rhoE_;
