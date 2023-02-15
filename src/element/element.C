@@ -98,14 +98,14 @@ Foam::Triangle3::Triangle3
     }
 }
 
-Foam::Triangle4::Triangle4
+Foam::Triangle6::Triangle6
 (
     const fvMesh& mesh,
     const label& faceI
 )
 :
-    weights(4),
-    quadPoints(4)
+    weights(6),
+    quadPoints(6)
 {
     const UList<label>& facePointsId = mesh.faces()[faceI];
     Mat3X3 facePoints
@@ -114,9 +114,9 @@ Foam::Triangle4::Triangle4
         {mesh.points()[facePointsId[1]][0], mesh.points()[facePointsId[1]][1], mesh.points()[facePointsId[1]][2]},
         {mesh.points()[facePointsId[2]][0], mesh.points()[facePointsId[2]][1], mesh.points()[facePointsId[2]][2]}
     };
-    for (label i = 0; i != 4; ++i)
+    for (label i = 0; i != 6; ++i)
     {
-        GetTriangleCoordAndWeight(Tria4::x[i], Tria4::y[i], Tria4::w[i], facePoints,
+        GetTriangleCoordAndWeight(Tria6::x[i], Tria6::y[i], Tria6::w[i], facePoints,
                                   weights[i], quadPoints[i]);
     }
 }
@@ -191,7 +191,7 @@ void Foam::build4stFace
 {
     const UList<label>& facePointsId = mesh.faces()[faceI];
     const label nNodes = facePointsId.size();
-    if (nNodes == 3) face.reset(new Triangle4(mesh, faceI));
+    if (nNodes == 3) face.reset(new Triangle6(mesh, faceI));
     if (nNodes == 4) face.reset(new Quadrangle9(mesh, faceI));
 }
 

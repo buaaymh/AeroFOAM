@@ -53,12 +53,14 @@ namespace Tria3
     static constexpr std::array<scalar, 3> w{1.0/6.0, 1.0/6.0, 1.0/6.0};
 }
 
-namespace Tria4
+namespace Tria6
 {
-    static constexpr std::array<scalar, 4> x{std::sqrt(1.0/3.0), 0.6, 0.2, 0.2};
-    static constexpr std::array<scalar, 4> y{std::sqrt(1.0/3.0), 0.2, 0.2, 0.6};
-    static constexpr std::array<scalar, 4> w{-0.2812499999999999, 0.2604166666666666,
-                                              0.2604166666666666, 0.2604166666666666};
+    static constexpr std::array<scalar, 6> x{0.8168475729804585, 0.0915762135097708, 0.0915762135097708,
+                                             0.1081030181680702, 0.4459484909159649, 0.4459484909159649};
+    static constexpr std::array<scalar, 6> y{0.0915762135097708, 0.0915762135097708, 0.8168475729804585,
+                                             0.4459484909159649, 0.4459484909159649, 0.1081030181680702};
+    static constexpr std::array<scalar, 6> w{0.054975871827660935, 0.054975871827660935, 0.054975871827660935,
+                                             0.111690794839005740, 0.111690794839005740, 0.111690794839005740};
 }
 
 namespace Quad4
@@ -171,17 +173,17 @@ private:
     std::vector<vector> quadPoints;
 };
 
-class Triangle4: public Face
+class Triangle6: public Face
 {
 public:
     // Constructors - default
-    Triangle4(const fvMesh& mesh, const label& faceI);
+    Triangle6(const fvMesh& mesh, const label& faceI);
 
     // Destructor - default
-    virtual ~Triangle4() {};
+    virtual ~Triangle6() {};
 
     // Member Functions
-    label size() const { return 4; };
+    label size() const { return 6; };
 
     scalar weight(label i) const { return weights[i]; };
     
