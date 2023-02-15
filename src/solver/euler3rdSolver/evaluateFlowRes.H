@@ -60,7 +60,6 @@ void Foam::euler3rdSolver::evaluateFlowRes
             const symmTensorField d2RhoUy_neigh = d2RhoUy_.boundaryField()[patchI].patchNeighbourField();
             const symmTensorField d2RhoUz_neigh = d2RhoUz_.boundaryField()[patchI].patchNeighbourField();
             const symmTensorField d2RhoE_neigh = d2RhoE_.boundaryField()[patchI].patchNeighbourField();
-            std::vector<vector> quadPoints(4, vector::zero);
             forAll(bfaceCells, j)
             {
                 scalar rhoFlux  = 0.0;
@@ -87,7 +86,6 @@ void Foam::euler3rdSolver::evaluateFlowRes
         if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
         {
             const vectorField Cn = mesh_.boundary()[patchI].Cn();
-            std::vector<vector> quadPoints(4, vector::zero);
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
