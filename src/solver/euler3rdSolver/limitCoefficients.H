@@ -31,57 +31,34 @@ void Foam::euler3rdSolver::limitCoefficients()
     if (positive)
     {
         count = 0;
-        volVectorField pGrad = fvc::grad(p_);
         forAll(mesh_.C(), cellI)
         {
-            const scalar p_min   = 0.5*p_[cellI] - cmptSum(cmptMag(cmptDivide(pGrad[cellI], rDeltaXYZ_[cellI])));
-            // if (p_min < 0.0)
-            // {
-            //     count++;
-            //     coefs_[cellI] = Mat9X5::Zero();
-            // }
-            if (p_min < 0.0)
+            vector limiter = vector(1, 1, 1);
+            Col5X1 deltaW = coefs_[cellI].array().abs().matrix().transpose()*polyNorm_[cellI];
+            // Limit rho
+            if (rho_[cellI]-deltaW(0) < 1e-6)
             {
-                count++;
-                Col5X1 deltaW = coefs_[cellI].array().abs().matrix().transpose()*polyNorm_[cellI];
-                // Limit rho
-                scalar limiter = min(1.0, rho_[cellI]/max(deltaW(0), SMALL));
-                coefs_[cellI].col(0) *= limiter;
-                deltaW(0) *= limiter;
-                // Limit rhoE
-                limiter = min(1.0, rhoE_[cellI]/max(deltaW(4), SMALL));
-                coefs_[cellI].col(4) *= limiter;
-                deltaW(4) *= limiter;
-                // Limit rhoU
-                scalar rhoU = sqrt(2.0*(rhoE_[cellI]+deltaW(4))*(rho_[cellI]+deltaW(0)));
-                scalar rhoU_max = mag(cmptMag(rhoU_[cellI]) + vector(deltaW(1),deltaW(2),deltaW(3)));
-                scalar temp = mag(rhoU_[cellI]);
-                limiter = min(1.0, mag(rhoU-temp)/max(rhoU_max-temp, SMALL));
-                coefs_[cellI].block<9,3>(0,1) *= limiter;
+                limiter[0] = rho_[cellI]/deltaW(0);
+                deltaW(0) *= limiter[0];
+                coefs_[cellI].col(0) *= limiter[0];
             }
-        }
-        forAll(mesh_.boundary(), patchI)
-        { 
-            const word type = mesh_.boundary()[patchI].type();
-            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-            if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
+            // Limit rhoE
+            if (rhoE_[cellI]-deltaW(4) < 1e-6)
             {
-                forAll(bfaceCells, faceI)
-                {
-                    const label cellI = bfaceCells[faceI];
-                    Col5X1 deltaW = coefs_[cellI].array().abs().matrix().transpose()*polyNorm_[cellI];
-                    // Limit rhoU
-                    scalar rhoU = sqrt(2.0*(rhoE_[cellI]+deltaW(4))*(rho_[cellI]+deltaW(0)));
-                    scalar rhoU_max = mag(cmptMag(rhoU_[cellI]) + vector(deltaW(1),deltaW(2),deltaW(3)));
-                    scalar temp = mag(rhoU_[cellI]);
-                    scalar limiter = min(1.0, mag(rhoU-temp)/max(rhoU_max-temp, SMALL));
-                    if (limiter < 1.0)
-                    {
-                        count++;
-                        coefs_[cellI].block<9,3>(0,1) *= limiter;
-                    }
-                }
+                limiter[2] = rhoE_[cellI]/deltaW(4);
+                deltaW(4) *= limiter[2];
+                coefs_[cellI].col(4) *= limiter[2];
             }
+            // Limit rhoU
+            scalar rhoU_magTop = sqrt(2.0*(rho_[cellI]-deltaW(0))*(rhoE_[cellI]-deltaW(4))+1e-6);
+            scalar rhoU_magMax = mag(cmptMag(rhoU_[cellI]) + vector(deltaW(1),deltaW(2),deltaW(3)));
+            scalar rhoU_magAvg = mag(rhoU_[cellI]);
+            if (rhoU_magMax >= rhoU_magTop)
+            {
+                limiter[1] = min(1.0, mag(rhoU_magTop-rhoU_magAvg)/max(rhoU_magMax-rhoU_magAvg, SMALL));
+                coefs_[cellI].block<9,3>(0,1) *= limiter[1];
+            }
+            if (cmptMin(limiter) < 1.0)  count++;
         }
         const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
         Info << ", Negative cell [%] = " << percent;
