@@ -158,4 +158,16 @@ void Foam::euler3rdSolver::initVrLinearSystem()
         N_h_[mesh_.owner()[faceI]] += h_k;
         N_h_[mesh_.neighbour()[faceI]] += h_k;
     }
+
+    polyNorm_.reserve(mesh_.nCells());
+    forAll(mesh_.C(), cellI)
+    {
+        polyNorm_[cellI] = Col9X1
+        (
+            1, 1, 1,
+            0.5*(1+mag(basisMean_[cellI].xx())), 1+mag(basisMean_[cellI].xy()),  1+mag(basisMean_[cellI].xz()),
+            0.5*(1+mag(basisMean_[cellI].yy())), 1+mag(basisMean_[cellI].yz()),
+            0.5*(1+mag(basisMean_[cellI].zz()))
+        );
+    }
 }

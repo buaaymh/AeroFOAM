@@ -134,7 +134,7 @@ protected:
     std::map<label, std::vector<Col9X1>> coupledb_;
     //- Quadrature points
     std::vector<std::unique_ptr<Face>> faceQuad_;
-
+    std::vector<Col9X1> polyNorm_;
     //- First polynomial coefficients
     volVectorField d1Rho_;
     volTensorField d1RhoU_;
