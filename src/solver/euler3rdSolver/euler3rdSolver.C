@@ -81,6 +81,7 @@ Foam::euler3rdSolver::euler3rdSolver
     lowerb_(mesh_.nInternalFaces(), Col9X1::Zero()),
     upperb_(mesh_.nInternalFaces(), Col9X1::Zero()),
     B_(mesh_.nInternalFaces(), Mat9X9::Zero()),
+    polyNorm_(mesh_.nCells(), Col9X1::Zero()),
     d1Rho_
     (
         IOobject

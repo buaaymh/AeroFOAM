@@ -159,7 +159,6 @@ void Foam::euler3rdSolver::initVrLinearSystem()
         N_h_[mesh_.neighbour()[faceI]] += h_k;
     }
 
-    polyNorm_.reserve(mesh_.nCells());
     forAll(mesh_.C(), cellI)
     {
         polyNorm_[cellI] = Col9X1
