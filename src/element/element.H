@@ -264,6 +264,14 @@ void gaussTetra4
     std::vector<vector>& quadPoints
 );
 
+void build2ndCell
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    std::vector<scalar>& weights,
+    std::vector<vector>& quadPoints
+);
+
 
 } // End namespace Foam
 

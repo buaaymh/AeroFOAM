@@ -203,6 +203,8 @@ void Foam::gaussHexa8
     std::vector<vector>& quadPoints
 )
 {
+    weight.resize(8);
+    quadPoints.resize(8);
     const UList<label>& cellShapesId = mesh.cellShapes()[cellI];
     Mat8X3 cellShapes
     {
@@ -243,6 +245,8 @@ void Foam::gaussPrism6
     std::vector<vector>& quadPoints
 )
 {
+    weight.resize(6);
+    quadPoints.resize(6);
     const UList<label>& cellShapesId = mesh.cellShapes()[cellI];
     Mat6X3 cellShapes
     {
@@ -288,6 +292,8 @@ void Foam::gaussTetra4
     std::vector<vector>& quadPoints
 )
 {
+    weight.resize(4);
+    quadPoints.resize(4);
     const UList<label>& cellShapesId = mesh.cellShapes()[cellI];
     Mat4X3 cellShapes
     {
@@ -313,4 +319,19 @@ void Foam::gaussTetra4
         Col3X1 coord = cellShapes.transpose()*N;
         quadPoints[i] = vector(coord(0), coord(1), coord(2));
     }
+}
+
+void Foam::build2ndCell
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    std::vector<scalar>& weights,
+    std::vector<vector>& quadPoints
+)
+{
+    const label nNodes = mesh.cellShapes()[cellI].size();
+    if (nNodes == 8) gaussHexa8(mesh, cellI, weights, quadPoints);
+    else if (nNodes == 6) gaussPrism6(mesh, cellI, weights, quadPoints);
+    else if (nNodes == 4) gaussTetra4(mesh, cellI, weights, quadPoints);
+    else Info << "Wrong element type!" << endl;
 }
