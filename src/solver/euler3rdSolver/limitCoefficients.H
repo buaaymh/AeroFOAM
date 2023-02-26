@@ -53,7 +53,12 @@ void Foam::euler3rdSolver::limitCoefficients()
             scalar rhoU_magTop = sqrt(2.0*(rho_[cellI]-deltaW(0))*(rhoE_[cellI]-deltaW(4))+1e-6);
             scalar rhoU_magMax = mag(cmptMag(rhoU_[cellI]) + vector(deltaW(1),deltaW(2),deltaW(3)));
             scalar rhoU_magAvg = mag(rhoU_[cellI]);
-            if (rhoU_magMax >= rhoU_magTop)
+            if (rhoU_magTop < rhoU_magAvg)
+            {
+                limiter[1] = 0;
+                coefs_[cellI].block<9,3>(0,1) *= limiter[1];
+            }
+            else if (rhoU_magMax >= rhoU_magTop)
             {
                 limiter[1] = min(1.0, mag(rhoU_magTop-rhoU_magAvg)/max(rhoU_magMax-rhoU_magAvg, SMALL));
                 coefs_[cellI].block<9,3>(0,1) *= limiter[1];
