@@ -37,17 +37,17 @@ void Foam::euler3rdSolver::limitCoefficients()
             Col5X1 deltaW = coefs_[cellI].array().abs().matrix().transpose()*polyNorm_[cellI];
             // Limit rho
             scalar rho_min = rho_[cellI] - deltaW(0);
-            if (rho_min < 1e-3)
+            if (rho_min < 1e-6)
             {
-                rho_min = max(rho_min, 1e-3);
+                rho_min = max(rho_min, 1e-6);
                 limiter[0] = (rho_[cellI]-rho_min)/max(deltaW(0), SMALL);
                 coefs_[cellI].col(0) *= limiter[0];
             }
             // Limit rhoE
             scalar rhoE_min = rhoE_[cellI]-deltaW(4);
-            if (rhoE_min < 1e-3)
+            if (rhoE_min < 1e-6)
             {
-                rhoE_min = max(rhoE_min, 1e-3);
+                rhoE_min = max(rhoE_min, 1e-6);
                 limiter[2] = (rhoE_[cellI]-rhoE_min)/max(deltaW(4), SMALL);
                 coefs_[cellI].col(4) *= limiter[2];
             }
