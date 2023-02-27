@@ -3,7 +3,8 @@ void Foam::evaluateBasisFunctionConst
     const fvMesh& mesh,
     const label& cellI,
     vector& rDeltaXYZ,
-    symmTensor& basisMean
+    symmTensor& basisMean,
+    Col9X1& polyNorm
 )
 {
     //rDeltaXYZ Initialize
@@ -32,6 +33,15 @@ void Foam::evaluateBasisFunctionConst
         basisMean += weights[i] * temp;
     }
     basisMean /= mesh.V()[cellI];
+    // polyNorm Initialize
+    vector B = cmptMultiply(max(mesh.C()[cellI]-pointMin, pointMax-mesh.C()[cellI]), rDeltaXYZ);
+    polyNorm = Col9X1
+    (
+        B.x(), B.y(), B.z(),
+        0.5*(sqr(B.x())+mag(basisMean.xx())), B.x()*B.y()+mag(basisMean.xy()), B.x()*B.z()+mag(basisMean.xz()),
+        0.5*(sqr(B.y())+mag(basisMean.yy())), B.y()*B.z()+mag(basisMean.yz()),
+        0.5*(sqr(B.z())+mag(basisMean.zz()))
+    );
 }
 
 Col9X1 Foam::polynomialDn0

@@ -183,7 +183,8 @@ void evaluateBasisFunctionConst
     const fvMesh& mesh,
     const label& cellI,
     vector& rDeltaXYZ,
-    symmTensor& basisMean
+    symmTensor& basisMean,
+    Col9X1& polyNorm
 );
 
 

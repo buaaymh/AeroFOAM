@@ -3,7 +3,7 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     //rDeltaXYZ and basisMean Initialize
     forAll(mesh_.C(), cellI)
     {
-        evaluateBasisFunctionConst(mesh_, cellI, rDeltaXYZ_[cellI], basisMean_[cellI]);
+        evaluateBasisFunctionConst(mesh_, cellI, rDeltaXYZ_[cellI], basisMean_[cellI], polyNorm_[cellI]);
     }
     rDeltaXYZ_.correctBoundaryConditions();
     basisMean_.correctBoundaryConditions();
@@ -142,7 +142,6 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     }
     forAll(mesh_.C(), cellI) rA_[cellI] = rA_[cellI].inverse();
 
-    
     // Quadrature points Init
     faceQuad_.reserve(mesh_.nInternalFaces());
     forAll(mesh_.owner(), faceI)
@@ -159,14 +158,4 @@ void Foam::euler3rdSolver::initVrLinearSystem()
         N_h_[mesh_.neighbour()[faceI]] += h_k;
     }
 
-    forAll(mesh_.C(), cellI)
-    {
-        polyNorm_[cellI] = Col9X1
-        (
-            1, 1, 1,
-            0.5*(1+mag(basisMean_[cellI].xx())), 1+mag(basisMean_[cellI].xy()),  1+mag(basisMean_[cellI].xz()),
-            0.5*(1+mag(basisMean_[cellI].yy())), 1+mag(basisMean_[cellI].yz()),
-            0.5*(1+mag(basisMean_[cellI].zz()))
-        );
-    }
 }
