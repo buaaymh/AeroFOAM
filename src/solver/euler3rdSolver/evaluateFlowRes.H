@@ -146,14 +146,6 @@ void Foam::euler3rdSolver::evaluateFlux
     consToPrim(rho_L, rhoU_L, rhoE_L, fluidProps_.gamma, U_L, p_L, T_L);
     consToPrim(rho_R, rhoU_R, rhoE_R, fluidProps_.gamma, U_R, p_R, T_R);
 
-    if (min(p_L, p_R) < 0)
-    {
-        Info << "(rho_L,  rho_R)  = (" << rho_L  << ", " << rho_R  << ")" << endl;
-        Info << "(rhoE_L, rhoE_R) = (" << rhoE_L << ", " << rhoE_R << ")" << endl;
-        Info << "(U_L, U_R) = (" << U_L << ", " << U_R << ")" << endl;
-        Info << "(p_L, p_R) = (" << p_L << ", " << p_R << ")" << endl << endl;
-    }
-
     riemann_->evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
                            rho_L, rho_R, U_L, U_R, p_L, p_R,
                            normal, fluidProps_.gamma);

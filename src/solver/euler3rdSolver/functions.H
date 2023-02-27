@@ -38,9 +38,9 @@ void Foam::evaluateBasisFunctionConst
     polyNorm = Col9X1
     (
         B.x(), B.y(), B.z(),
-        0.5*(sqr(B.x())+mag(basisMean.xx())), B.x()*B.y()+mag(basisMean.xy()), B.x()*B.z()+mag(basisMean.xz()),
-        0.5*(sqr(B.y())+mag(basisMean.yy())), B.y()*B.z()+mag(basisMean.yz()),
-        0.5*(sqr(B.z())+mag(basisMean.zz()))
+        0.5*max(sqr(B.x())-mag(basisMean.xx()), mag(basisMean.xx())), B.x()*B.y()+mag(basisMean.xy()), B.x()*B.z()+mag(basisMean.xz()),
+        0.5*max(sqr(B.y())-mag(basisMean.yy()), mag(basisMean.yy())), B.y()*B.z()+mag(basisMean.yz()),
+        0.5*max(sqr(B.z())-mag(basisMean.zz()), mag(basisMean.zz()))
     );
 }
 

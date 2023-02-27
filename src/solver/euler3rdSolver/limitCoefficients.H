@@ -31,8 +31,10 @@ void Foam::euler3rdSolver::limitCoefficients()
     if (positive)
     {
         count = 0;
+        volVectorField pGrad = fvc::grad(p_);
         forAll(mesh_.C(), cellI)
         {
+            const scalar p_min = 0.5*p_[cellI] - cmptSum(cmptMag(cmptDivide(pGrad[cellI], rDeltaXYZ_[cellI])));
             vector limiter = vector(1, 1, 1);
             Col5X1 deltaW = coefs_[cellI].array().abs().matrix().transpose()*polyNorm_[cellI];
             // Limit rho
@@ -55,7 +57,7 @@ void Foam::euler3rdSolver::limitCoefficients()
             scalar rhoU_top = sqrt(2.0*rho_min*rhoE_min);
             scalar rhoU_max = mag(cmptMag(rhoU_[cellI]) + vector(deltaW(1),deltaW(2),deltaW(3)));
             scalar rhoU_avg = mag(rhoU_[cellI]);
-            if (rhoU_top < rhoU_avg)
+            if (rhoU_top < rhoU_avg && p_min < 0)
             {
                 limiter[1] = 0;
                 limiter[2] = 0;
