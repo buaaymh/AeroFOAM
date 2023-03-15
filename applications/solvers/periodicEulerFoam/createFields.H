@@ -152,10 +152,22 @@ forAll(mesh.C(), cellI)
     rhoExact[cellI] = rhoTemp;
 }
 
-
 rho.correctBoundaryConditions();
 U.correctBoundaryConditions();
 p.correctBoundaryConditions();
+
+volScalarField rhoRef
+(
+    IOobject
+    (
+        "rhoRef",
+        mesh.time().timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    rho
+);
 
 Info << "====================================================" << endl;
 

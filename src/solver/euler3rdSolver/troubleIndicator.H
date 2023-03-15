@@ -15,6 +15,22 @@ if (indicator)
         error[i] += error_ij;
         error[j] += error_ij;
     }
+    forAll(mesh_.boundary(), patchI)
+    {
+        const word type = mesh_.boundary()[patchI].type();
+        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
+        {
+            const vectorField& normal = normal_.boundaryField()[patchI];
+            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                Col3X1 dRhoU_i = coefs_[i].block<9,3>(0,1).transpose()*polynomialDn0(Cf[faceI]-mesh_.C()[i], rDeltaXYZ_[i], basisMean_[i]);
+                error[i] += mag((rhoU_[i]+vector(dRhoU_i(0),dRhoU_i(1),dRhoU_i(2)))&normal[faceI]);
+            }
+        }
+    }
     forAll(mesh_.cells(), cellI)
     {
         IS_[cellI] = error[cellI]/(N_h_[cellI]*rho_max[cellI]);

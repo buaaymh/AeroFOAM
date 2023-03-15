@@ -34,6 +34,7 @@ void Foam::euler3rdSolver::limitCoefficients()
         volVectorField pGrad = fvc::grad(p_);
         forAll(mesh_.C(), cellI)
         {
+            if (!isTrouble[cellI]) continue;
             const scalar p_min = 0.5*p_[cellI] - cmptSum(cmptMag(cmptDivide(pGrad[cellI], rDeltaXYZ_[cellI])));
             vector limiter = vector(1, 1, 1);
             Col5X1 deltaW = coefs_[cellI].array().abs().matrix().transpose()*polyNorm_[cellI];
