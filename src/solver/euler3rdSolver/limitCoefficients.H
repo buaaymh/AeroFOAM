@@ -31,47 +31,17 @@ void Foam::euler3rdSolver::limitCoefficients()
     if (positive)
     {
         count = 0;
-        volVectorField pGrad = fvc::grad(p_);
         forAll(mesh_.C(), cellI)
         {
             if (!isTrouble[cellI]) continue;
-            const scalar p_min = 0.5*p_[cellI] - cmptSum(cmptMag(cmptDivide(pGrad[cellI], rDeltaXYZ_[cellI])));
-            vector limiter = vector(1, 1, 1);
-            Col5X1 deltaW = coefs_[cellI].array().abs().matrix().transpose()*polyNorm_[cellI];
-            // Limit rho
-            scalar rho_min = rho_[cellI] - deltaW(0);
-            if (rho_min < 1e-6)
+            scalar factor = 1.0;
+            scalar delta = coefs_[cellI].col(0).array().abs().matrix().dot(polyNorm_[cellI]);
+            if (rho_[cellI]  < delta) factor = min(factor, rho_[cellI]/delta);
+            delta = coefs_[cellI].col(4).array().abs().matrix().dot(polyNorm_[cellI]);
+            if (rhoE_[cellI] < delta) factor = min(factor, rhoE_[cellI]/delta);
+            if (factor < 1.0)
             {
-                rho_min = max(rho_min, 1e-6);
-                limiter[0] = (rho_[cellI]-rho_min)/max(deltaW(0), SMALL);
-                coefs_[cellI].col(0) *= limiter[0];
-            }
-            // Limit rhoE
-            scalar rhoE_min = rhoE_[cellI]-deltaW(4);
-            if (rhoE_min < 1e-6)
-            {
-                rhoE_min = max(rhoE_min, 1e-6);
-                limiter[2] = (rhoE_[cellI]-rhoE_min)/max(deltaW(4), SMALL);
-                coefs_[cellI].col(4) *= limiter[2];
-            }
-            // Limit rhoU, rhoE
-            scalar rhoU_top = sqrt(2.0*rho_min*rhoE_min);
-            scalar rhoU_max = mag(cmptMag(rhoU_[cellI]) + vector(deltaW(1),deltaW(2),deltaW(3)));
-            scalar rhoU_avg = mag(rhoU_[cellI]);
-            if (rhoU_top < rhoU_avg && p_min < 0)
-            {
-                limiter[1] = 0;
-                limiter[2] = 0;
-                coefs_[cellI].block<9,3>(0,1) *= limiter[1];
-                coefs_[cellI].col(4) *= limiter[2];
-            }
-            else if (rhoU_max >= rhoU_top)
-            {
-                limiter[1] = min(1.0, mag(rhoU_top-rhoU_avg)/max(rhoU_max-rhoU_avg, SMALL));
-                coefs_[cellI].block<9,3>(0,1) *= limiter[1];
-            }
-            if (cmptMin(limiter) < 1.0)
-            {
+                coefs_[cellI] *= factor;
                 count++;
             }
         }

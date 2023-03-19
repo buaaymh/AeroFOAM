@@ -41,7 +41,7 @@ void Foam::solver::solveFlowPseudoTimeSystem
     vectorField dRhoU(mesh_.nCells());
     scalarField dRhoE(mesh_.nCells());
     precondition(alpha, L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
-    resL1 = gSum(mag(dRho));
+    resL1 = gSum(mag(dRho))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
     rho_.primitiveFieldRef()  += dRho;
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;
