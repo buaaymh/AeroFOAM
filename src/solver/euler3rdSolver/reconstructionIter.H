@@ -1,5 +1,23 @@
 void Foam::euler3rdSolver::reconstructionIter()
 {
+    const Switch adaptive = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
+    if (adaptive)
+    {
+        label count = 0;
+        isP1Cell_ = std::vector<bool>(mesh_.nCells(), false);
+        volVectorField rhoGrad = fvc::grad(rhoE_);
+        forAll(mesh_.cells(), cellI)
+        {
+            scalar dRhoE = cmptSum(cmptMag(cmptDivide(rhoGrad[cellI], rDeltaXYZ_[cellI])));
+            if (dRhoE < 1e-6)
+            {
+                isP1Cell_[cellI] = true;
+                count++;
+            }
+        }
+        const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
+        Info << "P1 cell [%] = " << percent << ", ";
+    }
     /* Calculate b of vr linear system */
     std::vector<Mat9X5> bW(mesh_.nCells(), Mat9X5::Zero());
     std::unique_ptr<Face> faceQuad;
@@ -113,6 +131,11 @@ void Foam::euler3rdSolver::reconstructionIter()
     /* Block Gauss–Seidel iteration */
     forAll(mesh_.cells(), cellI)
     {
+        if (isP1Cell_[cellI])
+        {
+            coefs_[cellI] = Mat9X5::Zero();
+            continue;
+        }
         const labelList& cellFaces = mesh_.cells()[cellI];
         forAll(cellFaces, f)
         {

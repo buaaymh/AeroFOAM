@@ -19,14 +19,24 @@ void Foam::euler3rdSolver::evaluateFlowRes
         scalar rhoEFlux = 0.0;
         const label i = mesh_.owner()[faceI];
         const label j = mesh_.neighbour()[faceI];
-        for (label gaussI = 0; gaussI != faceQuad_[faceI]->size(); ++gaussI)
+        if (isP1Cell_[i] && isP1Cell_[j])
         {
-            const vector delta_i = faceQuad_[faceI]->at(gaussI) - mesh_.C()[i];
-            const vector delta_j = faceQuad_[faceI]->at(gaussI) - mesh_.C()[j];
-            evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-            evaluateVars(rho_j, rhoU_j, rhoE_j, rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], delta_j);
+            evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], mesh_.Cf()[faceI]-mesh_.C()[i]);
+            evaluateVars(rho_j, rhoU_j, rhoE_j, rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], mesh_.Cf()[faceI]-mesh_.C()[j]);
             evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
-                         normal_[faceI], faceQuad_[faceI]->weight(gaussI));
+                         normal_[faceI], mesh_.magSf()[faceI]);
+        }
+        else
+        {
+            for (label gaussI = 0; gaussI != faceQuad_[faceI]->size(); ++gaussI)
+            {
+                const vector delta_i = faceQuad_[faceI]->at(gaussI) - mesh_.C()[i];
+                const vector delta_j = faceQuad_[faceI]->at(gaussI) - mesh_.C()[j];
+                evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                evaluateVars(rho_j, rhoU_j, rhoE_j, rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], delta_j);
+                evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
+                             normal_[faceI], faceQuad_[faceI]->weight(gaussI));
+            }
         }
         resRho[i]  -= rhoFlux;
         resRhoU[i] -= rhoUFlux;
@@ -85,17 +95,27 @@ void Foam::euler3rdSolver::evaluateFlowRes
         }
         if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
         {
-            const vectorField Cn = mesh_.boundary()[patchI].Cn();
+            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
+            const vectorField& Sf = mesh_.boundary()[patchI].Sf();
+            const vectorField  Cn = mesh_.boundary()[patchI].Cn();
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
                 vector rhoUFlux = vector::zero;
-                build2ndFace(mesh_, start+faceI, faceQuad);
-                for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
+                if (isP1Cell_[i])
                 {
-                    const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
-                    evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                    rhoUFlux += (rhoE_i-0.5*magSqr(rhoU_i)/rho_i)*(fluidProps_.gamma-1.0)*normal[faceI]*faceQuad->weight(gaussI);
+                    evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], Cf[faceI]-Cn[faceI]);
+                    rhoUFlux = (rhoE_i-0.5*magSqr(rhoU_i)/rho_i)*(fluidProps_.gamma-1.0)*Sf[faceI];
+                }
+                else
+                {
+                    build2ndFace(mesh_, start+faceI, faceQuad);
+                    for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
+                    {
+                        const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
+                        evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                        rhoUFlux += (rhoE_i-0.5*magSqr(rhoU_i)/rho_i)*(fluidProps_.gamma-1.0)*normal[faceI]*faceQuad->weight(gaussI);
+                    }
                 }
                 resRhoU[i] -= rhoUFlux;
             }

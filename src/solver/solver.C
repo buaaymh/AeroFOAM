@@ -71,7 +71,9 @@ Foam::solver::solver
         (
             "rhoE",
             mesh_.time().timeName(),
-            mesh_
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
         ),
         p_/(fluidProps_.gamma-1.0) + 0.5*rho_*magSqr(U_)
     ),

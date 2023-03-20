@@ -117,6 +117,7 @@ private:
 
 protected:
     vector vrWeightSqr_;
+    std::vector<bool> isP1Cell_;
     std::vector<Mat9X5> coefs_;
     //- Mesh data
     volVectorField rDeltaXYZ_;

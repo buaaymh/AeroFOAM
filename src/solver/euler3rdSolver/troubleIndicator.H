@@ -13,6 +13,7 @@ if (indicator)
         rho_max[j] = max(rho_max[j], rho_[i]);
         rhoE_max[i] = max(rhoE_max[i], rhoE_[j]);
         rhoE_max[j] = max(rhoE_max[j], rhoE_[i]);
+        if (isP1Cell_[i] && isP1Cell_[j]) continue;
         Col9X1 u_i = polynomialDn0(mesh_.Cf()[faceI]-mesh_.C()[i], rDeltaXYZ_[i], basisMean_[i]);
         Col9X1 u_j = polynomialDn0(mesh_.Cf()[faceI]-mesh_.C()[j], rDeltaXYZ_[j], basisMean_[j]);
         scalar error_ij = mag(rho_[i] - rho_[j] + coefs_[i].col(0).dot(u_i) - coefs_[j].col(0).dot(u_j));
