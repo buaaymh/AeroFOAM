@@ -30,7 +30,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include <iostream>
-#include "eulerConsVar3rdSolver.H"
+#include "euler3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
