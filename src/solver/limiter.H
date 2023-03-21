@@ -263,7 +263,7 @@ scalar Foam::MinMod
     const scalar& b
 )
 {
-    if (a*b < 0) return 0.0;
+    if (a*b <= 0) return 0.0;
     else
     {
         if (mag(a) < mag(b)) return a;

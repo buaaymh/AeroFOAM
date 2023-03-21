@@ -327,8 +327,8 @@ Mat5X3 Foam::slope1_Limiter
 )
 {
     Mat5X3 d1_limited = d1_Own;
-    Col5X1 pj_Min( GREAT*Col5X1::Ones());
-    Col5X1 pj_Max(-GREAT*Col5X1::Ones());
+    Col5X1 pj_Min(Col5X1::Zero());
+    Col5X1 pj_Max(Col5X1::Zero());
     Col5X1 d0_Min(d0_Own);
     Col5X1 d0_Max(d0_Own);
     for (const auto& delta : deltaList)
