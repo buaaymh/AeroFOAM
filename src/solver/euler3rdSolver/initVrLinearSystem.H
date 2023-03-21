@@ -4,6 +4,7 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     forAll(mesh_.C(), cellI)
     {
         evaluateBasisFunctionConst(mesh_, cellI, rDeltaXYZ_[cellI], basisMean_[cellI], polyNorm_[cellI]);
+        evaluateVertexCells(mesh_, cellI, vertexCells_[cellI]);
     }
     rDeltaXYZ_.correctBoundaryConditions();
     basisMean_.correctBoundaryConditions();

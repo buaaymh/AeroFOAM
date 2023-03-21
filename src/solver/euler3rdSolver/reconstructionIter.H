@@ -1,10 +1,10 @@
 void Foam::euler3rdSolver::reconstructionIter()
 {
     const Switch adaptive = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
+    isP1Cell_ = std::vector<bool>(mesh_.nCells(), false);
     if (adaptive)
     {
         label count = 0;
-        isP1Cell_ = std::vector<bool>(mesh_.nCells(), false);
         volVectorField rhoGrad = fvc::grad(rhoE_);
         forAll(mesh_.cells(), cellI)
         {
@@ -12,6 +12,7 @@ void Foam::euler3rdSolver::reconstructionIter()
             if (dRhoE < 1e-6)
             {
                 isP1Cell_[cellI] = true;
+                coefs_[cellI] = Mat9X5::Zero();
                 count++;
             }
         }
@@ -131,11 +132,7 @@ void Foam::euler3rdSolver::reconstructionIter()
     /* Block Gauss–Seidel iteration */
     forAll(mesh_.cells(), cellI)
     {
-        if (isP1Cell_[cellI])
-        {
-            coefs_[cellI] = Mat9X5::Zero();
-            continue;
-        }
+        if (isP1Cell_[cellI]) continue;
         const labelList& cellFaces = mesh_.cells()[cellI];
         forAll(cellFaces, f)
         {
@@ -180,12 +177,4 @@ void Foam::euler3rdSolver::reconstructionIter()
             }
         }
     }
-    d1Rho_.correctBoundaryConditions();
-    d1RhoU_.correctBoundaryConditions();
-    d1RhoE_.correctBoundaryConditions();
-    d2Rho_.correctBoundaryConditions();
-    d2RhoUx_.correctBoundaryConditions();
-    d2RhoUy_.correctBoundaryConditions();
-    d2RhoUz_.correctBoundaryConditions();
-    d2RhoE_.correctBoundaryConditions();
 }

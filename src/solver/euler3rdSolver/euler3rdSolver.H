@@ -38,6 +38,7 @@ Author
 #include "solver.H"
 #include "element.H"
 #include <map>
+#include <set>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -120,6 +121,7 @@ protected:
     std::vector<bool> isP1Cell_;
     std::vector<Mat9X5> coefs_;
     //- Mesh data
+    labelListList vertexCells_;
     volVectorField rDeltaXYZ_;
     volSymmTensorField basisMean_;
     volScalarField IS_;
@@ -188,6 +190,12 @@ void evaluateBasisFunctionConst
     Col9X1& polyNorm
 );
 
+void evaluateVertexCells
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    labelList& vertexCells
+);
 
 // * * * * * * ** * * * Taylor Basis Functions * * * * * * * * * * * //
 Col9X1 polynomialDn0

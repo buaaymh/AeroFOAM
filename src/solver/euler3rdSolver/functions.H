@@ -44,6 +44,28 @@ void Foam::evaluateBasisFunctionConst
     );
 }
 
+void Foam::evaluateVertexCells
+(
+    const fvMesh& mesh,
+    const label& cellI,
+    labelList& vertexCells
+)
+{
+    std::set<label> vertexCellSet;
+    const UList<label>& cellPoints = mesh.cellPoints()[cellI];
+    forAll(cellPoints, pointI)
+    {
+        const UList<label>& pointCells = mesh.pointCells()[cellPoints[pointI]];
+        forAll(pointCells, cellId) vertexCellSet.insert(pointCells[cellId]);
+    }
+    vertexCells = labelList(vertexCellSet.size()-1);
+    label i = 0;
+    for (const label& cellId : vertexCellSet)
+    {
+        if (cellId != cellI) vertexCells[i++] = cellId;
+    }
+}
+
 Col9X1 Foam::polynomialDn0
 (
     const vector& delta,
