@@ -1,6 +1,6 @@
 forAll(mesh_.cells(), cellI)
 {
-    if (!isTrouble[cellI]) continue;
+    if (!isTrouble_[cellI]) continue;
     isP1Cell_[cellI] = true;
     const labelList& cellFaces = mesh_.cells()[cellI];
     std::vector<vector> normalList;

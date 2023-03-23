@@ -3,7 +3,7 @@ std::vector<Mat6X5> d2CoefsLimited(count);
 count = 0;
 forAll(mesh_.cells(), cellI)
 {
-    if (!isTrouble[cellI]) continue;
+    if (!isTrouble_[cellI]) continue;
     const labelList& cellFaces = mesh_.cells()[cellI];
     std::vector<vector> normalList;
     std::vector<Mat5X6> d2CoefsList;
@@ -34,7 +34,7 @@ forAll(mesh_.cells(), cellI)
 count = 0;
 forAll(mesh_.cells(), cellI)
 {
-    if (isTrouble[cellI])
+    if (isTrouble_[cellI])
     {
         coefs_[cellI].block<6,5>(3,0) = d2CoefsLimited[count++];
     }
@@ -44,7 +44,7 @@ std::vector<Mat3X5> d1CoefsLimited(count);
 count = 0;
 forAll(mesh_.cells(), cellI)
 {
-    if (!isTrouble[cellI]) continue;
+    if (!isTrouble_[cellI]) continue;
     const labelList& cellFaces = mesh_.cells()[cellI];
     std::vector<vector> normalList;
     std::vector<Mat5X3> d1CoefsList;
@@ -80,7 +80,7 @@ forAll(mesh_.cells(), cellI)
 count = 0;
 forAll(mesh_.cells(), cellI)
 {
-    if (isTrouble[cellI])
+    if (isTrouble_[cellI])
     {
         coefs_[cellI].block<3,5>(0,0) = d1CoefsLimited[count++];
     }

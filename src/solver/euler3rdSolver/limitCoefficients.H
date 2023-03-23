@@ -4,7 +4,6 @@ void Foam::euler3rdSolver::limitCoefficients()
     const scalar IS = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("IS", 1.0);
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
-    std::vector<bool> isTrouble(mesh_.nCells(), false); 
     label count = 0;
     #include "troubleIndicator.H"
     const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
@@ -16,10 +15,6 @@ void Foam::euler3rdSolver::limitCoefficients()
     if (limiter == "Slope1")
     {
         #include "slope1Limiter.H"
-    }
-    else if (limiter == "Slope2")
-    {
-        #include "slope2Limiter.H"
     }
     else if (limiter == "WBAP")
     {
@@ -37,7 +32,7 @@ void Foam::euler3rdSolver::limitCoefficients()
         count = 0;
         forAll(mesh_.C(), cellI)
         {
-            if (!isTrouble[cellI]) continue;
+            if (!isTrouble_[cellI]) continue;
             scalar factor = 1.0;
             scalar delta = coefs_[cellI].col(0).array().abs().matrix().dot(polyNorm_[cellI]);
             if (limiter == "Slope1" || limiter == "Slope2") delta *= 2;

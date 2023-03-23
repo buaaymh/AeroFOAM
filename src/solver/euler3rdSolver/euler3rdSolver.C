@@ -39,6 +39,7 @@ Foam::euler3rdSolver::euler3rdSolver
     solver(fluidProps, rho, U, p),
     vrWeightSqr_(vector::zero),
     isP1Cell_(mesh_.nCells(), false),
+    isTrouble_(mesh_.nCells(), false),
     coefs_(mesh_.nCells(), Mat9X5::Zero()),
     vertexCells_(mesh_.nCells()),
     rDeltaXYZ_

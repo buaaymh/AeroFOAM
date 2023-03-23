@@ -119,6 +119,7 @@ private:
 protected:
     vector vrWeightSqr_;
     std::vector<bool> isP1Cell_;
+    std::vector<bool> isTrouble_;
     std::vector<Mat9X5> coefs_;
     //- Mesh data
     labelListList vertexCells_;
@@ -270,8 +271,8 @@ Eigen::Matrix<scalar, 5, cols> WBAP_L2_Limiter
                     temp3 = 0;
                     break;
                 }
-                temp3 += 1.0 / Foam::sqr(theta);
-                temp4 += 1.0 / Foam::pow3(theta);
+                temp3 += 1.0 / Foam::pow3(theta);
+                temp4 += 1.0 / Foam::pow4(theta);
             }
             result(i, j) *= temp3 / temp4;
         }
