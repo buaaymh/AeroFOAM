@@ -292,27 +292,18 @@ Eigen::Matrix<scalar, 5, cols> Eigen_WBAP_L2_Limiter
     const scalar& value
 )
 {
+    // return limited;
     const label n = matList.size();
-    Eigen::Matrix<scalar, 5, cols> limited(matList[0]);
+    std::vector<Eigen::Matrix<scalar, 5, cols>> limited(n-1);
     std::vector<Eigen::Matrix<scalar, 5, cols>> tempList(n);
     Mat5X5 L, R;
-    for (const auto& normal : normalList)
+    for (label j = 0; j < n-1; j++)
     {
-        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
-        for (label i = 0; i < n; i++)
-        {
-            tempList[i] = L*matList[i];
-        }
-        Eigen::Matrix<scalar, 5, cols> temp = R*WBAP_L2_Limiter<cols>(tempList, value);
-        for (label i = 0; i != 5; i++)
-        {
-            for (label j = 0; j != cols; j++)
-            {
-                limited(i,j) = MinMod(limited(i,j), temp(i,j));
-            }
-        }
+        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normalList[j], gamma);
+        for (label i = 0; i < n; i++) tempList[i] = L*matList[i];
+        limited[j] = R*WBAP_L2_Limiter<cols>(tempList, value);
     }
-    return limited;
+    return WBAP_L2_Limiter<cols>(limited, 1);;
 }
 
 Mat5X3 slope1_Limiter
