@@ -49,7 +49,9 @@ int main(int argc, char *argv[])
 
     const scalar k11_22 = (3.0-Foam::sqrt(3.0))/6.0;
     const scalar k21    = 1.0/Foam::sqrt(3.0);
-    
+    scalar step = 0;
+    scalar iterations = 0;
+
     while (runTime.run())
     {
         const label innerIter = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
@@ -58,6 +60,7 @@ int main(int argc, char *argv[])
         const scalar dt = runTime.deltaT().value();
         const scalarField dt_dv(dt/mesh.V().field());
 
+        step += 2;
         runTime++;
         Info<< "Time = " << runTime.value() << " s" << nl;
         solver->correctFields();
@@ -95,6 +98,7 @@ int main(int argc, char *argv[])
                 if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break; 
             }
         }
+        iterations += count;
         Info << "LUSGS 1 converged in " << count << " iterations, and L1(dRho) = " << L1_deltaRho << endl;
 
         // Stage 2
@@ -119,6 +123,7 @@ int main(int argc, char *argv[])
                 if (L1_deltaRho/L1_deltaRho_0 < relTol|| L1_deltaRho < tolerance)  break;
             }
         }
+        iterations += count;
         Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
 
         solver->rho()  = rho_0  + 0.5 * dt_dv * (resRho_1 + resRho_2);
@@ -136,6 +141,8 @@ int main(int argc, char *argv[])
     Info << "log(L1_error) = " << Foam::log10(gSum(mag(rhoExact - solver->rho()))/N) << endl;
     Info << "log(L2_error) = " << Foam::log10(Foam::sqrt(gSumSqr(rhoExact - solver->rho())/N)) << endl;
     Info << "log(L8_error) = " << Foam::log10(gMax(mag(rhoExact - solver->rho()))) << nl << endl;
+
+    Info << "Average iter = " << iterations/step << nl << endl;
 
     Info<< "End\n" << endl;
 
