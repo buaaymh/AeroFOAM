@@ -104,16 +104,19 @@ void Foam::euler3rdSolver::evaluateFlowRes
         if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
         {
             const vectorField& Cf = mesh_.boundary()[patchI].Cf();
-            const vectorField& Sf = mesh_.boundary()[patchI].Sf();
             const vectorField  Cn = mesh_.boundary()[patchI].Cn();
             forAll(bfaceCells, faceI)
             {
-                const label i = bfaceCells[faceI];
+                scalar rhoFlux  = 0.0;
                 vector rhoUFlux = vector::zero;
+                scalar rhoEFlux = 0.0;
+                const label i = bfaceCells[faceI];
                 if (isP1Cell_[i])
                 {
                     evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], Cf[faceI]-Cn[faceI]);
-                    rhoUFlux = (rhoE_i-0.5*magSqr(rhoU_i)/rho_i)*(fluidProps_.gamma-1.0)*Sf[faceI];
+                    rhoU_j = rhoU_i - 2*(rhoU_i&normal[faceI])*normal[faceI];
+                    evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_i, rhoU_i, rhoU_j, rhoE_i, rhoE_i,
+                                 normal[faceI], magSf[faceI]);
                 }
                 else
                 {
@@ -122,10 +125,14 @@ void Foam::euler3rdSolver::evaluateFlowRes
                     {
                         const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
                         evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                        rhoUFlux += (rhoE_i-0.5*magSqr(rhoU_i)/rho_i)*(fluidProps_.gamma-1.0)*normal[faceI]*faceQuad->weight(gaussI);
+                        rhoU_j = rhoU_i - 2*(rhoU_i&normal[faceI])*normal[faceI];
+                        evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_i, rhoU_i, rhoU_j, rhoE_i, rhoE_i,
+                                     normal[faceI], faceQuad->weight(gaussI));
                     }
                 }
+                resRho[i]  -= rhoFlux;
                 resRhoU[i] -= rhoUFlux;
+                resRhoE[i] -= rhoEFlux;
             }
         }
         if (name == "inlet" || name == "outlet" || name == "farField")
