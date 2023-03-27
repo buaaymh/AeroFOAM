@@ -24,25 +24,6 @@ if (indicator)
         rhoE_error[i] += error_ij;
         rhoE_error[j] += error_ij;
     }
-    forAll(mesh_.boundary(), patchI)
-    {
-        const word type = mesh_.boundary()[patchI].type();
-        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
-        {
-            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
-            const vectorField& normal = normal_.boundaryField()[patchI];
-            forAll(bfaceCells, faceI)
-            {
-                const label i = bfaceCells[faceI];
-                Col9X1 u_i = polynomialDn0(Cf[faceI]-mesh_.C()[i], rDeltaXYZ_[i], basisMean_[i]);
-                vector rhoU = rhoU_[i] + vector(coefs_[i].col(1).dot(u_i),
-                                                coefs_[i].col(2).dot(u_i),
-                                                coefs_[i].col(3).dot(u_i));
-                rho_error[i] += mag(rhoU&normal[faceI]);
-            }
-        }
-    }
     forAll(mesh_.cells(), cellI)
     {
         IS_[cellI] = max(rho_error[cellI]/(N_h_[cellI]*rho_max[cellI]),
@@ -87,25 +68,6 @@ else
         rho_error[j]  += mag((d2RhoCoefs_j-(d2RhoCoefs_i.array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
         rhoE_error[i] += mag((d2RhoECoefs_i-(d2RhoECoefs_j.array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
         rhoE_error[j] += mag((d2RhoECoefs_j-(d2RhoECoefs_i.array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
-    }
-    forAll(mesh_.boundary(), patchI)
-    {
-        const word type = mesh_.boundary()[patchI].type();
-        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
-        {
-            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
-            const vectorField& normal = normal_.boundaryField()[patchI];
-            forAll(bfaceCells, faceI)
-            {
-                const label i = bfaceCells[faceI];
-                Col9X1 u_i = polynomialDn0(Cf[faceI]-mesh_.C()[i], rDeltaXYZ_[i], basisMean_[i]);
-                vector rhoU = rhoU_[i] + vector(coefs_[i].col(1).dot(u_i),
-                                                coefs_[i].col(2).dot(u_i),
-                                                coefs_[i].col(3).dot(u_i));
-                rho_error[i] += mag(rhoU&normal[faceI]);
-            }
-        }
     }
     forAll(mesh_.cells(), cellI)
     {

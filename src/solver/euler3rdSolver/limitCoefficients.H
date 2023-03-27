@@ -20,6 +20,10 @@ void Foam::euler3rdSolver::limitCoefficients()
     {
         #include "WBAPLimiter.H"
     }
+    else if (limiter == "New")
+    {
+        #include "NewWBAPLimiter.H"
+    }
     else
     {
         Pout << "# Error in limiter type #" << endl;
@@ -34,11 +38,9 @@ void Foam::euler3rdSolver::limitCoefficients()
         {
             if (!isTrouble_[cellI]) continue;
             scalar factor = 1.0;
-            scalar delta = coefs_[cellI].col(0).array().abs().matrix().dot(polyNorm_[cellI]);
-            if (limiter == "Slope1" || limiter == "Slope2") delta *= 2;
+            scalar delta = 2*coefs_[cellI].col(0).array().abs().matrix().dot(polyNorm_[cellI]);
             if (rho_[cellI]  < delta) factor = min(factor, rho_[cellI]/delta);
-            delta = coefs_[cellI].col(4).array().abs().matrix().dot(polyNorm_[cellI]);
-            if (limiter == "Slope1" || limiter == "Slope2") delta *= 2;
+            delta = 2*coefs_[cellI].col(4).array().abs().matrix().dot(polyNorm_[cellI]);
             if (rhoE_[cellI] < delta) factor = min(factor, rhoE_[cellI]/delta);
             if (factor < 1.0)
             {

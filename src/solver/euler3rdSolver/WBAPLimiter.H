@@ -18,7 +18,7 @@ forAll(mesh_.cells(), cellI)
             label j = owner[faceI];
             if (j == cellI) { j = neighbour[faceI]; }
             normalList.emplace_back(normal_[faceI]);
-            d2CoefsList.emplace_back(transformD2Coefs(coefs_[j].block<6,5>(3,0), rDeltaXYZ_[cellI], rDeltaXYZ_[j]).transpose());
+            d2CoefsList.emplace_back(transformD2Coefs(coefs_[j].block<6,5>(3,0).transpose(), rDeltaXYZ_[cellI], rDeltaXYZ_[j]));
         }
     }
     if (characteristic)
@@ -64,7 +64,7 @@ forAll(mesh_.cells(), cellI)
                 j = neighbour[faceI];
                 d_ij *= -1;
             }
-            d1CoefsList.emplace_back(transformD1Coefs(coefs_[j], d_ij, rDeltaXYZ_[cellI], rDeltaXYZ_[j]).transpose());
+            d1CoefsList.emplace_back(transformD1Coefs(coefs_[j].transpose(), d_ij, rDeltaXYZ_[cellI], rDeltaXYZ_[j]));
         }
     }
     if (characteristic)

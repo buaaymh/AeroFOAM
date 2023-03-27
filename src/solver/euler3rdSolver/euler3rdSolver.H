@@ -121,8 +121,9 @@ protected:
     std::vector<bool> isP1Cell_;
     std::vector<bool> isTrouble_;
     std::vector<Mat9X5> coefs_;
+    std::vector<Mat5X9> limitedCoefs_i_;
+    std::vector<Mat5X9> limitedCoefs_j_;
     //- Mesh data
-    labelListList vertexCells_;
     volVectorField rDeltaXYZ_;
     volSymmTensorField basisMean_;
     volScalarField IS_;
@@ -221,17 +222,17 @@ Col9X1 polynomialDn2
 
 // * * * * * * * * * * * * WBAP Functions * * * * * * * * * * * * //
 
-Mat3X5 transformD1Coefs
+Mat5X3 transformD1Coefs
 (
-    const Mat9X5& coefs,
+    const Mat5X9& coefs,
     const vector& delta,
     const vector& rDeltaXYZ_i,
     const vector& rDeltaXYZ_j
 );
 
-Mat6X5 transformD2Coefs
+Mat5X6 transformD2Coefs
 (
-    const Mat6X5& d2Coefs,
+    const Mat5X6& d2Coefs,
     const vector& rDeltaXYZ_i,
     const vector& rDeltaXYZ_j
 );
@@ -292,7 +293,6 @@ Eigen::Matrix<scalar, 5, cols> Eigen_WBAP_L2_Limiter
     const scalar& value
 )
 {
-    // return limited;
     const label n = matList.size();
     std::vector<Eigen::Matrix<scalar, 5, cols>> limited(n-1);
     std::vector<Eigen::Matrix<scalar, 5, cols>> tempList(n);
@@ -303,8 +303,31 @@ Eigen::Matrix<scalar, 5, cols> Eigen_WBAP_L2_Limiter
         for (label i = 0; i < n; i++) tempList[i] = L*matList[i];
         limited[j] = R*WBAP_L2_Limiter<cols>(tempList, value);
     }
-    return WBAP_L2_Limiter<cols>(limited, 1);;
+    return WBAP_L2_Limiter<cols>(limited, 1);
 }
+
+// Mat9X5 New_Eigen_WBAP_Limiter
+// (
+//     const std::vector<vector>& normalList,
+//     const std::vector<vector>& deltaList,
+//     const std::vector<vector>& rDeltaXYZList,
+//     const std::vector<Mat9X5>& coefsList,
+//     const scalar& rho,
+//     const vector& rhoU,
+//     const scalar& rhoE,
+//     const scalar& gamma,
+//     const scalar& value
+// );
+
+void New_WBAP_Limiter
+(
+    Mat5X9& coefs_i,
+    Mat5X9& coefs_j,
+    const vector& delta,
+    const vector& rDeltaXYZ_i,
+    const vector& rDeltaXYZ_j,
+    const scalar& value
+);
 
 Mat5X3 slope1_Limiter
 (

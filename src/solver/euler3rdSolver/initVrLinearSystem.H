@@ -4,7 +4,6 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     forAll(mesh_.C(), cellI)
     {
         evaluateBasisFunctionConst(mesh_, cellI, rDeltaXYZ_[cellI], basisMean_[cellI], polyNorm_[cellI]);
-        evaluateVertexCells(mesh_, cellI, vertexCells_[cellI]);
     }
     rDeltaXYZ_.correctBoundaryConditions();
     basisMean_.correctBoundaryConditions();
@@ -157,20 +156,5 @@ void Foam::euler3rdSolver::initVrLinearSystem()
         const scalar h_k = pow(d_ij_[faceI], 1.5);
         N_h_[mesh_.owner()[faceI]] += h_k;
         N_h_[mesh_.neighbour()[faceI]] += h_k;
-    }
-    forAll(mesh_.boundary(), patchI)
-    {
-        const word type = mesh_.boundary()[patchI].type();
-        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
-        {
-            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
-            forAll(bfaceCells, faceI)
-            {
-                const label i = bfaceCells[faceI];
-                const scalar h_k = pow(mag(Cf[faceI]-mesh_.C()[i]), 1.5);
-                N_h_[i] += h_k;
-            }
-        }
     }
 }

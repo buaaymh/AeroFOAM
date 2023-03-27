@@ -117,53 +117,41 @@ Col9X1 Foam::polynomialDn2
     );
 }
 
-Mat3X5 Foam::transformD1Coefs
+Mat5X3 Foam::transformD1Coefs
 (
-    const Mat9X5& coefs,
+    const Mat5X9& coefs,
     const vector& delta,
     const vector& rDeltaXYZ_i,
     const vector& rDeltaXYZ_j
 )
 {
     const vector rDeltaXYZ_ij = cmptDivide(rDeltaXYZ_j, rDeltaXYZ_i);
-    const tensor gradTensor = rDeltaXYZ_ij * vector(cmptMultiply(delta, rDeltaXYZ_j));
-    Mat3X5 d1Coefs_ij = coefs.block<3,5>(0,0);
-    d1Coefs_ij.row(0) *= rDeltaXYZ_ij.x();
-    d1Coefs_ij.row(1) *= rDeltaXYZ_ij.y();
-    d1Coefs_ij.row(2) *= rDeltaXYZ_ij.z();
-    d1Coefs_ij.col(0) += Col3X1(gradTensor.x()&vector(coefs(3,0), coefs(4,0), coefs(5,0)),
-                                gradTensor.y()&vector(coefs(4,0), coefs(6,0), coefs(7,0)),
-                                gradTensor.z()&vector(coefs(5,0), coefs(7,0), coefs(8,0)));
-    d1Coefs_ij.col(1) += Col3X1(gradTensor.x()&vector(coefs(3,1), coefs(4,1), coefs(5,1)),
-                                gradTensor.y()&vector(coefs(4,1), coefs(6,1), coefs(7,1)),
-                                gradTensor.z()&vector(coefs(5,1), coefs(7,1), coefs(8,1)));
-    d1Coefs_ij.col(2) += Col3X1(gradTensor.x()&vector(coefs(3,2), coefs(4,2), coefs(5,2)),
-                                gradTensor.y()&vector(coefs(4,2), coefs(6,2), coefs(7,2)),
-                                gradTensor.z()&vector(coefs(5,2), coefs(7,2), coefs(8,2)));
-    d1Coefs_ij.col(3) += Col3X1(gradTensor.x()&vector(coefs(3,3), coefs(4,3), coefs(5,3)),
-                                gradTensor.y()&vector(coefs(4,3), coefs(6,3), coefs(7,3)),
-                                gradTensor.z()&vector(coefs(5,3), coefs(7,3), coefs(8,3)));
-    d1Coefs_ij.col(4) += Col3X1(gradTensor.x()&vector(coefs(3,4), coefs(4,4), coefs(5,4)),
-                                gradTensor.y()&vector(coefs(4,4), coefs(6,4), coefs(7,4)),
-                                gradTensor.z()&vector(coefs(5,4), coefs(7,4), coefs(8,4)));
+    const vector grad = vector(cmptMultiply(delta, rDeltaXYZ_j));
+    Mat5X3 d1Coefs_ij = coefs.block<5,3>(0,0);
+    d1Coefs_ij.col(0) += grad[0]*coefs.col(3) + grad[1]*coefs.col(4) + grad[2]*coefs.col(5);
+    d1Coefs_ij.col(1) += grad[0]*coefs.col(4) + grad[1]*coefs.col(5) + grad[2]*coefs.col(7);
+    d1Coefs_ij.col(2) += grad[0]*coefs.col(5) + grad[1]*coefs.col(7) + grad[2]*coefs.col(8);
+    d1Coefs_ij.col(0) *= rDeltaXYZ_ij.x();
+    d1Coefs_ij.col(1) *= rDeltaXYZ_ij.y();
+    d1Coefs_ij.col(2) *= rDeltaXYZ_ij.z();
     return d1Coefs_ij;
 }
 
-Mat6X5 Foam::transformD2Coefs
+Mat5X6 Foam::transformD2Coefs
 (
-    const Mat6X5& d2Coefs,
+    const Mat5X6& d2Coefs,
     const vector& rDeltaXYZ_i,
     const vector& rDeltaXYZ_j
 )
 {
     const vector rDeltaXYZ_ij = cmptDivide(rDeltaXYZ_j, rDeltaXYZ_i);
-    Mat6X5 d2Coefs_ij = d2Coefs;
-    d2Coefs_ij.row(0) *= sqr(rDeltaXYZ_ij.x());
-    d2Coefs_ij.row(1) *= rDeltaXYZ_ij.x()*rDeltaXYZ_ij.y();
-    d2Coefs_ij.row(2) *= rDeltaXYZ_ij.x()*rDeltaXYZ_ij.z();
-    d2Coefs_ij.row(3) *= sqr(rDeltaXYZ_ij.y());
-    d2Coefs_ij.row(4) *= rDeltaXYZ_ij.y()*rDeltaXYZ_ij.z();
-    d2Coefs_ij.row(5) *= sqr(rDeltaXYZ_ij.z());
+    Mat5X6 d2Coefs_ij = d2Coefs;
+    d2Coefs_ij.col(0) *= sqr(rDeltaXYZ_ij.x());
+    d2Coefs_ij.col(1) *= rDeltaXYZ_ij.x()*rDeltaXYZ_ij.y();
+    d2Coefs_ij.col(2) *= rDeltaXYZ_ij.x()*rDeltaXYZ_ij.z();
+    d2Coefs_ij.col(3) *= sqr(rDeltaXYZ_ij.y());
+    d2Coefs_ij.col(4) *= rDeltaXYZ_ij.y()*rDeltaXYZ_ij.z();
+    d2Coefs_ij.col(5) *= sqr(rDeltaXYZ_ij.z());
     return d2Coefs_ij;
 }
 
@@ -354,4 +342,34 @@ Mat5X3 Foam::slope1_Limiter
         d1_limited.row(i) *= limiter;
     }
     return d1_limited;
+}
+
+void Foam::New_WBAP_Limiter
+(
+    Mat5X9& coefs_i,
+    Mat5X9& coefs_j,
+    const vector& delta,
+    const vector& rDeltaXYZ_i,
+    const vector& rDeltaXYZ_j,
+    const scalar& value
+)
+{   
+    std::vector<Mat5X3> d1tempList(2);
+    std::vector<Mat5X6> d2tempList(2);
+    // limit d2
+    d2tempList[0] = coefs_i.block<5,6>(0,3);
+    d2tempList[1] = transformD2Coefs(coefs_j.block<5,6>(0,3), rDeltaXYZ_i, rDeltaXYZ_j);
+    Mat5X6 d2Temp = WBAP_L2_Limiter<6>(d2tempList, value);
+    d2tempList[0] = coefs_j.block<5,6>(0,3);
+    d2tempList[1] = transformD2Coefs(coefs_i.block<5,6>(0,3), rDeltaXYZ_j, rDeltaXYZ_i);
+    coefs_i.block<5,6>(0,3) = d2Temp;
+    coefs_j.block<5,6>(0,3) = WBAP_L2_Limiter<6>(d2tempList, value);
+    // limit d1
+    d1tempList[0] = coefs_i.block<5,3>(0,0);
+    d1tempList[1] = transformD1Coefs(coefs_j, -delta, rDeltaXYZ_i, rDeltaXYZ_j);
+    Mat5X3 d1Temp = WBAP_L2_Limiter<3>(d1tempList, value);
+    d1tempList[0] = coefs_j.block<5,3>(0,0);
+    d1tempList[1] = transformD1Coefs(coefs_i,  delta, rDeltaXYZ_j, rDeltaXYZ_i);
+    coefs_i.block<5,3>(0,0) = d1Temp;
+    coefs_j.block<5,3>(0,0) = WBAP_L2_Limiter<3>(d1tempList, value);    
 }

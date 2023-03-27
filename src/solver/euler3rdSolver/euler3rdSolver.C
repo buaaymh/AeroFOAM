@@ -41,7 +41,8 @@ Foam::euler3rdSolver::euler3rdSolver
     isP1Cell_(mesh_.nCells(), false),
     isTrouble_(mesh_.nCells(), false),
     coefs_(mesh_.nCells(), Mat9X5::Zero()),
-    vertexCells_(mesh_.nCells()),
+    limitedCoefs_i_(mesh_.nInternalFaces(), Mat5X9::Zero()),
+    limitedCoefs_j_(mesh_.nInternalFaces(), Mat5X9::Zero()),
     rDeltaXYZ_
     (
         IOobject
