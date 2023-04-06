@@ -44,17 +44,15 @@ void Foam::hllcFlux::evaluateFlux
 ) const
 {   
     // left & right state
-    const scalar p_l = max(SMALL, p_L);
-    const scalar p_r = max(SMALL, p_R);
     const vector rhoU_L = rho_L*U_L;
-    const scalar rhoE_L = p_l/(gamma-1) + 0.5*rho_L*magSqr(U_L);
-    const scalar H_L = (rhoE_L + p_l)/rho_L;
-    const scalar a_L = Foam::sqrt(p_l*gamma/rho_L);
+    const scalar rhoE_L = p_L/(gamma-1) + 0.5*rho_L*magSqr(U_L);
+    const scalar H_L = (rhoE_L + p_L)/rho_L;
+    const scalar a_L = Foam::sqrt(p_L*gamma/rho_L);
     
     const vector rhoU_R = rho_R*U_R;
-    const scalar rhoE_R = p_r/(gamma-1) + 0.5*rho_R*magSqr(U_R);
-    const scalar H_R = (rhoE_R + p_r)/rho_R;
-    const scalar a_R = Foam::sqrt(p_r*gamma/rho_R);
+    const scalar rhoE_R = p_R/(gamma-1) + 0.5*rho_R*magSqr(U_R);
+    const scalar H_R = (rhoE_R + p_R)/rho_R;
+    const scalar a_R = Foam::sqrt(p_R*gamma/rho_R);
 
     // Compute qLeft and qRight (q_{l,r} = U_{l,r} \bullet n)
     const scalar qLeft  = (U_L & normal);
@@ -68,19 +66,19 @@ void Foam::hllcFlux::evaluateFlux
     const vector UTilde = (U_L+dd*U_R)*dd1;
     const scalar HTilde = (H_L+dd*H_R)*dd1;
     const scalar contrUTilde  = UTilde & normal;
-    const scalar aTilde = Foam::sqrt(max(0.0, (gamma-1)*(HTilde-0.5*magSqr(UTilde))));
+    const scalar aTilde = Foam::sqrt(max(SMALL, (gamma-1)*(HTilde-0.5*magSqr(UTilde))));
 
     // Step 3: compute signal speeds for face:
     const scalar SLeft  = min(qLeft - a_L, contrUTilde - aTilde);
     const scalar SRight = max(contrUTilde + aTilde, qRight + a_R);
     const scalar SStar = (rho_R*qRight*(SRight-qRight) -
-                          rho_L*qLeft *(SLeft - qLeft) + p_l - p_r )/
+                          rho_L*qLeft *(SLeft - qLeft) + p_L - p_R )/
                          stabilise((rho_R*(SRight-qRight)-rho_L*(SLeft-qLeft)),VSMALL);
     
     // Compute pressure in star region from the right side
-    const scalar pStarRight = rho_R*(qRight-SRight)*(qRight-SStar) + p_r;
+    const scalar pStarRight = rho_R*(qRight-SRight)*(qRight-SStar) + p_R;
     // Should be equal to the left side
-    const scalar pStarLeft  = rho_L*(qLeft - SLeft)*(qLeft -SStar) + p_l;
+    const scalar pStarLeft  = rho_L*(qLeft - SLeft)*(qLeft -SStar) + p_L;
     // Give a warning if this is not the case
     if (mag(pStarRight - pStarLeft) > 1e-6)
     {
@@ -104,7 +102,7 @@ void Foam::hllcFlux::evaluateFlux
         rhoState  = rho_L;
         rhoUState = rhoU_L;
         rhoEState = rhoE_L;
-        pState = p_l;
+        pState = p_L;
     }
     else if (pos(SStar))
     {
@@ -113,8 +111,8 @@ void Foam::hllcFlux::evaluateFlux
         // Compute left star region
         convectionSpeed = SStar;
         rhoState  = omegaLeft*(SLeft - qLeft)*rho_L;
-        rhoUState = omegaLeft*((SLeft - qLeft)*rhoU_L + (pStar - p_l)*normal);
-        rhoEState = omegaLeft*((SLeft - qLeft)*rhoE_L - p_l*qLeft + pStar*SStar);
+        rhoUState = omegaLeft*((SLeft - qLeft)*rhoU_L + (pStar - p_L)*normal);
+        rhoEState = omegaLeft*((SLeft - qLeft)*rhoE_L - p_L*qLeft + pStar*SStar);
         pState = pStar;
     }
     else if (pos(SRight))
@@ -124,8 +122,8 @@ void Foam::hllcFlux::evaluateFlux
         // compute right star region
         convectionSpeed = SStar;
         rhoState  = omegaRight*(SRight - qRight)*rho_R;
-        rhoUState = omegaRight*((SRight - qRight)*rhoU_R + (pStar - p_r)*normal);
-        rhoEState = omegaRight*((SRight - qRight)*rhoE_R - p_r*qRight + pStar*SStar);
+        rhoUState = omegaRight*((SRight - qRight)*rhoU_R + (pStar - p_R)*normal);
+        rhoEState = omegaRight*((SRight - qRight)*rhoE_R - p_R*qRight + pStar*SStar);
         pState = pStar;
     }
     else if (neg(SRight))
@@ -135,7 +133,7 @@ void Foam::hllcFlux::evaluateFlux
         rhoState  = rho_R;
         rhoUState = rhoU_R;
         rhoEState = rhoE_R;
-        pState = p_r;
+        pState = p_R;
     }
     else
     {

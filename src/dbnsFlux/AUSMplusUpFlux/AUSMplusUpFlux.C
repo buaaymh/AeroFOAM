@@ -44,15 +44,13 @@ void Foam::AUSMplusUpFlux::evaluateFlux
 ) const
 {   
     // left & right state
-    const scalar p_l = max(SMALL, p_L);
-    const scalar p_r = max(SMALL, p_R);
     const vector rhoU_L = rho_L*U_L;
-    const scalar rhoE_L = p_l/(gamma-1) + 0.5*rho_L*magSqr(U_L);
-    const scalar H_L = (rhoE_L + max(p_l, SMALL))/rho_L;
+    const scalar rhoE_L = p_L/(gamma-1) + 0.5*rho_L*magSqr(U_L);
+    const scalar H_L = (rhoE_L + p_L)/rho_L;
     
     const vector rhoU_R = rho_R*U_R;
-    const scalar rhoE_R = p_r/(gamma-1) + 0.5*rho_R*magSqr(U_R);
-    const scalar H_R = (rhoE_R + p_r)/rho_R;
+    const scalar rhoE_R = p_R/(gamma-1) + 0.5*rho_R*magSqr(U_R);
+    const scalar H_R = (rhoE_R + p_R)/rho_R;
 
     const scalar qLeft  = (U_L & normal);
     const scalar qRight = (U_R & normal);
@@ -84,7 +82,7 @@ void Foam::AUSMplusUpFlux::evaluateFlux
     const scalar Ma4BetaPlusLeft   = ((magMaRelLeft  >= 1.0) ? Ma1PlusLeft   : (Ma2PlusLeft  *(1.0-16.0*beta_*Ma2MinusLeft)));
     const scalar Ma4BetaMinusRight = ((magMaRelRight >= 1.0) ? Ma1MinusRight : (Ma2MinusRight*(1.0+16.0*beta_*Ma2PlusRight)));
         
-    const scalar Mp = -Kp_/fa_*max(1.0-sigma_*sqrMaDash,0.0)*(p_r-p_l)/(rhoTilde*sqr(aTilde));
+    const scalar Mp = -Kp_/fa_*max(1.0-sigma_*sqrMaDash,0.0)*(p_R-p_L)/(rhoTilde*sqr(aTilde));
 
     const scalar P5alphaPlusLeft   = ((magMaRelLeft  >= 1.0) ?
     (Ma1PlusLeft/MaRelLeft)    : (Ma2PlusLeft  *(( 2.0-MaRelLeft) -16.0*alpha_*MaRelLeft *Ma2MinusLeft )));
@@ -94,7 +92,7 @@ void Foam::AUSMplusUpFlux::evaluateFlux
     const scalar pU = -Ku_*P5alphaPlusLeft*P5alphaMinusRight*(rho_L+rho_R)*(fa_*aTilde)*(qRight-qLeft);
     
     const scalar MaRelTilde = Ma4BetaPlusLeft + Ma4BetaMinusRight + Mp;
-    const scalar pTilde = p_l*P5alphaPlusLeft + p_r*P5alphaMinusRight + pU;
+    const scalar pTilde = p_L*P5alphaPlusLeft + p_R*P5alphaMinusRight + pU;
     
     const scalar URelTilde = MaRelTilde*aTilde;
     const scalar magURelTilde = mag(MaRelTilde)*aTilde;
@@ -102,7 +100,7 @@ void Foam::AUSMplusUpFlux::evaluateFlux
     // refer to the origial Paper from Liou, J. Comp. Physics 129 (1996), Chap4, Eq. 42
     rhoFlux  = 0.5*(URelTilde*(rho_L +rho_R) -magURelTilde*(rho_R -rho_L));
     rhoUFlux = 0.5*(URelTilde*(rhoU_L+rhoU_R)-magURelTilde*(rhoU_R-rhoU_L))+pTilde*normal;
-    rhoEFlux = 0.5*(URelTilde*((rhoE_L+p_l)+(rhoE_R+p_r))-magURelTilde*((rhoE_R+p_r)-(rhoE_L+p_l)));
+    rhoEFlux = 0.5*(URelTilde*((rhoE_L+p_L)+(rhoE_R+p_R))-magURelTilde*((rhoE_R+p_R)-(rhoE_L+p_L)));
 }
 
 // ************************************************************************* //
