@@ -82,7 +82,7 @@ void Foam::euler3rdSolver::reconstructionIter()
                 } * coupledB_[patchI][j]).transpose();
             }
         }
-        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
+        if (type == "symmetryPlane" || type == "symmetry" || (type == "wall" && fluidProps_.simulationType == "Euler"))
         {
             const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
             const scalarField d_ij = mag(mesh_.boundary()[patchI].delta());

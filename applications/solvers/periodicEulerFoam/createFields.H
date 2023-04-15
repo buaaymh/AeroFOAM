@@ -79,26 +79,6 @@ volScalarField p
     mesh
 );
 
-// Initialize Condition
-// rho = 1.0 + 0.2*sin((x+y)*pi)
-// forAll(mesh.C(), cellI)
-// {
-//     std::vector<scalar> weights;
-//     std::vector<vector> quadPoints;
-//     build2ndCell(mesh, cellI, weights, quadPoints);
-//     scalar rhoTemp = 0;
-//     for (label i = 0; i != weights.size(); ++i)
-//     {
-//         scalar x = quadPoints[i].x();
-//         scalar y = quadPoints[i].y();
-//         scalar temp = 1.0 + 0.2*Foam::sin((x+y)*constant::mathematical::pi);
-//         rhoTemp  += temp * weights[i];
-//     }
-//     rhoTemp  /= mesh.V()[cellI];
-//     rho[cellI] = rhoTemp;
-// }
-// scalarField rhoExact(rho.primitiveField());
-
 // vortex evolution problem
 scalar beta = 5.0;
 scalar gamma = fluidProps.gamma;

@@ -12,9 +12,9 @@ void Foam::euler3rdSolver::limitCoefficients()
     /* Limiting d2 coefficients of polynomials */
     const Switch characteristic = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("characteristic", false);
     const word limiter = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<word>("limiter", "Slope1");
-    if (limiter == "Slope1")
+    if (limiter == "Slope")
     {
-        #include "slope1Limiter.H"
+        #include "slopeLimiter.H"
     }
     else if (limiter == "WBAP")
     {
