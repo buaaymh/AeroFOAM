@@ -63,11 +63,11 @@ int main(int argc, char *argv[])
                             << runTime.elapsedCpuTime() << tab
                             << L2Res << endl;
         }
-        if (L2Res < tolerance) break;
 
         solver->solveFlowLinearSystem(resRho, resRhoU, resRhoE);
         solver->correctFields();
-        runTime.write();
+        if (L2Res < tolerance) runTime.writeAndEnd();
+        else runTime.write();
 	
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
