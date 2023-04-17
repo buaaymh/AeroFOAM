@@ -2,15 +2,15 @@ void Foam::solver::correctFields()
 {
     // Internal fields
     U_.ref() = rhoU_ / rho_;
-    p_.ref() = (rhoE_ - 0.5*rho_*magSqr(U_)) * (fluidProps_.gamma-1.0);
+    p_.ref() = (rhoE_ - 0.5*rho_*magSqr(U_)) * (Gamma-1.0);
     const bool rhoBool = Foam::positiveCorrect(rho_);
     const bool pBool   = Foam::positiveCorrect(p_);
     if (rhoBool || pBool)
     {
         rhoU_ = rho_ * U_;
-        rhoE_ = p_/(fluidProps_.gamma-1.0) + 0.5*rho_*magSqr(U_);
+        rhoE_ = p_/(Gamma-1.0) + 0.5*rho_*magSqr(U_);
     }
-    T_.ref() = p_*fluidProps_.gamma/rho_;
+    T_.ref() = p_*Gamma/rho_;
     c_ = sqrt(T_.primitiveField());
     Ma_.primitiveFieldRef() = mag(U_.primitiveFieldRef())/c_;
     // Boundary conditions
@@ -24,7 +24,7 @@ void Foam::solver::correctFields()
     volScalarField::Boundary& rhoEBf = rhoE_.boundaryFieldRef();
     volScalarField::Boundary& MaBf = Ma_.boundaryFieldRef();
     rhoUBf = rhoBf * UBf;
-    rhoEBf = pBf/(fluidProps_.gamma-1.0) + 0.5*rhoBf*magSqr(UBf);
+    rhoEBf = pBf/(Gamma-1.0) + 0.5*rhoBf*magSqr(UBf);
     MaBf = mag(UBf)/sqrt(TBf);
 }
 
@@ -55,17 +55,17 @@ void Foam::solver::correctPrimitiveBoundary
                 {
                     const label i = bfaceCells[faceI];
                     const scalar qn = U[i]&normal[faceI];
-                    const scalar rhoc = c_[i]*rho[i]/fluidProps_.gamma;
+                    const scalar rhoc = c_[i]*rho[i]/Gamma;
                     if (qn < 0.0)
                     {
                         const scalar pB = pBound[faceI];
                         pBound[faceI] = 0.5*(pB+p[i]-rhoc*(normal[faceI]&(UBound[faceI]-U[i])));
-                        rhoBound[faceI] += (pBound[faceI]-pB)*fluidProps_.gamma/sqr(c_[i]);
+                        rhoBound[faceI] += (pBound[faceI]-pB)*Gamma/sqr(c_[i]);
                         UBound[faceI] += normal[faceI]*(pBound[faceI]-pB)/rhoc;
                     }
                     else
                     {
-                        rhoBound[faceI] = rho[i]+(pBound[faceI]-p[i])*fluidProps_.gamma/sqr(c_[i]);
+                        rhoBound[faceI] = rho[i]+(pBound[faceI]-p[i])*Gamma/sqr(c_[i]);
                         UBound[faceI] = U[i]+normal[faceI]*(p[i]-pBound[faceI])/rhoc;
                     }
                 }
@@ -87,16 +87,16 @@ void Foam::solver::correctPrimitiveBoundary
         }
         if (name == "inlet")
         {
-            const scalarField Ma = mag(UBound)/sqrt(pBound*fluidProps_.gamma/rhoBound);
+            const scalarField Ma = mag(UBound)/sqrt(pBound*Gamma/rhoBound);
             forAll(bfaceCells, faceI)
             {
                 if (Ma[faceI] < 1.0)
                 {
                     const label i = bfaceCells[faceI];
-                    const scalar rhoc = rho[i]*c_[i]/fluidProps_.gamma;
+                    const scalar rhoc = rho[i]*c_[i]/Gamma;
                     const scalar pB = pBound[faceI];
                     pBound[faceI] = 0.5*(pB+p[i]-rhoc*(normal[faceI]&(UBound[faceI]-U[i])));
-                    rhoBound[faceI] += (pBound[faceI]-pB)*fluidProps_.gamma/sqr(c_[i]);
+                    rhoBound[faceI] += (pBound[faceI]-pB)*Gamma/sqr(c_[i]);
                     UBound[faceI] += normal[faceI]*(pBound[faceI]-pB)/rhoc;
                 }
             }
@@ -107,14 +107,14 @@ void Foam::solver::correctPrimitiveBoundary
             {
                 const label i = bfaceCells[faceI];
                 const scalar Ma = mag(U[i])/c_[i];
-                const scalar rhoc = rho[i]*c_[i]/fluidProps_.gamma;
+                const scalar rhoc = rho[i]*c_[i]/Gamma;
                 if (Ma >= 1.0)
                 {
                     pBound[faceI]   = p[i];
                 }
                 else
                 {
-                    rhoBound[faceI] = rho[i]+(pBound[faceI]-p[i])*fluidProps_.gamma/sqr(c_[i]);
+                    rhoBound[faceI] = rho[i]+(pBound[faceI]-p[i])*Gamma/sqr(c_[i]);
                     UBound[faceI] = U[i]+normal[faceI]*(p[i]-pBound[faceI])/rhoc;
                     if ((UBound[faceI]&normal[faceI]) < 0.0)
                     {
@@ -125,5 +125,5 @@ void Foam::solver::correctPrimitiveBoundary
             }
         }
     }
-    T.boundaryFieldRef() = p.boundaryFieldRef()*fluidProps_.gamma/rho.boundaryFieldRef();
+    T.boundaryFieldRef() = p.boundaryFieldRef()*Gamma/rho.boundaryFieldRef();
 }

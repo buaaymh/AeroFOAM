@@ -33,33 +33,12 @@ Foam::turb3rdSolver::turb3rdSolver
     const fluidProperties& fluidProps,
     volScalarField& rho,
     volVectorField& U,
-    volScalarField& p,
-    volScalarField& nuTilde
+    volScalarField& p
 )
 :
-    euler3rdSolver(fluidProps, rho, U, p),
-    ST_inf(110.4/fluidProps.T_inf),
-    Ma_Re_inf(fluidProps.Mach_inf/fluidProps.Re_inf),
-    nuTilde_(nuTilde),
-    nuTildeGrad_
-    (
-        IOobject
-        (
-            "nuTildeGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-    laminarViscosity_(scalarField(mesh_.nCells())),
-    eddyViscosity_(scalarField(mesh_.nCells())),
-    nuMax_(scalarField(mesh_.nCells())),
-    delta_(scalarField(mesh_.nCells()))
+    euler3rdSolver(fluidProps, rho, U, p)
 {
-    Info << "Ths solver is 3rd order for Turbulence flow." << nl
-         << "Ths scheme is VR with AV." << nl
-         << "====================================================" << endl << endl;
+    
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -68,32 +47,22 @@ void Foam::turb3rdSolver::correctFields()
 {
     euler3rdSolver::correctFields();
     nuTilde_.correctBoundaryConditions();
-    laminarViscosity_ = pow(T_.primitiveField(), 1.5)*(1.0+ST_inf)/(T_.primitiveField()+ST_inf);
-    forAll(mesh_.cells(), cellI)
-        eddyViscosity_[cellI] = eddyViscosityFunc(nuTilde_[cellI], laminarViscosity_[cellI], rho_[cellI]);
+    laminarViscosity_ = pow(T_.primitiveField(), 1.5)*(1.0+S_T_inf)/(T_.primitiveField()+S_T_inf);
     nuMax_ = max(4.0/3.0, fluidProps_.gamma)*(laminarViscosity_/Pr_Lam + eddyViscosity_/Pr_Turb)/rho_.primitiveField();
-}
-
-void Foam::turb3rdSolver::updateLTS()
-{
-    scalar localCFL = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("LocalCFL", 1.0);
-    scalarField lambdaAc = volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one);
-    scalarField lambdaAv = Ma_Re_inf*magSqr(volProjections_)*nuMax_/mesh_.V();
-    localDtDv_ = localCFL/(lambdaAc+lambdaAv);
 }
 
 #include "functions.H"
 
-#include "evaluateFlux.H"
+// #include "evaluateFlux.H"
 
-#include "evaluateFlowRes.H"
+// #include "evaluateFlowRes.H"
 
-#include "evaluateTurbRes.H"
+// #include "evaluateTurbRes.H"
 
-#include "evaluateTurbSource.H"
+// #include "evaluateTurbSource.H"
 
-#include "evaluateMatrixLDU.H"
+// #include "evaluateMatrixLDU.H"
 
-#include "solveTurbLinearSystem.H"
+// #include "solveTurbLinearSystem.H"
 
 // ************************************************************************* //

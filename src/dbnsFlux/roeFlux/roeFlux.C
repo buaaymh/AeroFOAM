@@ -39,11 +39,10 @@ void Foam::roeFlux::evaluateFlux
     const vector& U_R,
     const scalar& p_L,
     const scalar& p_R,
-    const vector& normal,
-    const scalar& gamma
+    const vector& normal
 ) const
 {   
-    const scalar ggm1  = gamma/(gamma-1);
+    const scalar ggm1  = Gamma/(Gamma-1);
     // left & right state
     const scalar H_L = ggm1*p_L/rho_L + 0.5*magSqr(U_L);
     const scalar H_R = ggm1*p_R/rho_R + 0.5*magSqr(U_R);
@@ -60,7 +59,7 @@ void Foam::roeFlux::evaluateFlux
     const vector U_A   = (U_L+dd*U_R)*dd1;
     const scalar H_A   = (H_L+dd*H_R)*dd1;
     const scalar U2_A  = 0.5*magSqr(U_A);
-    const scalar c2_A  = max(SMALL, (gamma-1)*(H_A-U2_A));
+    const scalar c2_A  = max(SMALL, (Gamma-1)*(H_A-U2_A));
     const scalar c_A   = sqrt(c2_A);
     const scalar Vn_A  = U_A & normal;
     const scalar dU    = (U_R-U_L)&normal;

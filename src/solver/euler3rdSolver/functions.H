@@ -44,28 +44,6 @@ void Foam::evaluateBasisFunctionConst
     );
 }
 
-void Foam::evaluateVertexCells
-(
-    const fvMesh& mesh,
-    const label& cellI,
-    labelList& vertexCells
-)
-{
-    std::set<label> vertexCellSet;
-    const UList<label>& cellPoints = mesh.cellPoints()[cellI];
-    forAll(cellPoints, pointI)
-    {
-        const UList<label>& pointCells = mesh.pointCells()[cellPoints[pointI]];
-        forAll(pointCells, cellId) vertexCellSet.insert(pointCells[cellId]);
-    }
-    vertexCells = labelList(vertexCellSet.size()-1);
-    label i = 0;
-    for (const label& cellId : vertexCellSet)
-    {
-        if (cellId != cellI) vertexCells[i++] = cellId;
-    }
-}
-
 Col9X1 Foam::polynomialDn0
 (
     const vector& delta,
@@ -162,15 +140,14 @@ void Foam::evaluateEigenMatrix
     const scalar& rho,
     const vector& rhoU,
     const scalar& rhoE,
-    const vector& normal,
-    const scalar& gamma
+    const vector& normal
 )
 {
     scalar rRho = 1.0/rho;
     vector U = rhoU*rRho;
     scalar ek = 0.5*magSqr(U);
-    scalar p = (rhoE-rho*ek)*(gamma-1);
-    scalar a = sqrt(p*gamma*rRho);
+    scalar p = (rhoE-rho*ek)*(Gamma-1);
+    scalar a = sqrt(p*Gamma*rRho);
     scalar h = (rhoE+p)*rRho;
     scalar Vn = U&normal;
     // build Mat5x5 R
@@ -179,7 +156,7 @@ void Foam::evaluateEigenMatrix
     R.col(1) << 1, U.x()       , U.y()       , U.z()       , ek;
     R.col(2) << 1, U.x()+an.x(), U.y()+an.y(), U.z()+an.z(), h+a*Vn;
     // build Mat5x5 L
-    scalar b1 = (gamma-1.0)/sqr(a), b2 = b1*ek, ra = 1.0/a;
+    scalar b1 = (Gamma-1.0)/sqr(a), b2 = b1*ek, ra = 1.0/a;
     vector n_a = normal*ra, b1xU = b1*U;
     L.row(0) << (b2+Vn*ra), -(b1xU.x()+n_a.x()), -(b1xU.y()+n_a.y()), -(b1xU.z()+n_a.z()), b1;
     L.row(1) << -b2+1     ,   b1xU.x()         ,   b1xU.y()         ,   b1xU.z()     ,    -b1;
@@ -266,15 +243,14 @@ void Foam::euler3rdSolver::evaluateVars
     rhoE = rhoE_0 + varProj(4);
 }
 
-Mat5X3 Foam::slope1_Limiter
+Mat5X3 Foam::slope_Limiter
 (
     const std::vector<vector>& normalList,
     const std::vector<vector>& deltaList,
     const std::vector<Col5X1>& d0_AdjList,
     const Col5X1& d0_Own,
     const Mat5X3& d1_Own,
-    const vector& rDeltaXYZ,
-    const scalar& gamma
+    const vector& rDeltaXYZ
 )
 {
     Mat5X3 d1_limited(d1_Own);
@@ -284,7 +260,7 @@ Mat5X3 Foam::slope1_Limiter
     const scalar rhoE = d0_Own(4);
     for (const auto& normal : normalList)
     {
-        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal);
         std::vector<Col5X1> d0_AdjListTemp;
         d0_AdjListTemp.reserve(d0_AdjList.size());
         for (const auto& d0_Adj : d0_AdjList)
@@ -293,7 +269,7 @@ Mat5X3 Foam::slope1_Limiter
         }
         const Col5X1 d0_OwnTemp = L*d0_Own;
         const Mat5X3 d1_OwnTemp = L*d1_Own;
-        Mat5X3 d1Temp = R*slope1_Limiter(deltaList, d0_AdjListTemp, d0_OwnTemp, d1_OwnTemp, rDeltaXYZ);
+        Mat5X3 d1Temp = R*slope_Limiter(deltaList, d0_AdjListTemp, d0_OwnTemp, d1_OwnTemp, rDeltaXYZ);
         for (label i = 0; i < 5; i++)
         {
             for (label j = 0; j < 3; j++)
@@ -305,7 +281,7 @@ Mat5X3 Foam::slope1_Limiter
     return d1_limited;
 }
 
-Mat5X3 Foam::slope1_Limiter
+Mat5X3 Foam::slope_Limiter
 (
     const std::vector<vector>& deltaList,
     const std::vector<Col5X1>& d0_AdjList,

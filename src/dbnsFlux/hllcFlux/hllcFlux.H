@@ -80,8 +80,7 @@ public:
         const vector& U_R,
         const scalar& p_L,
         const scalar& p_R,
-        const vector& normal,
-        const scalar& gamma
+        const vector& normal
     ) const;
 };
 

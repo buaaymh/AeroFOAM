@@ -44,7 +44,6 @@ int main(int argc, char *argv[])
     std::unique_ptr<dbnsFlux> hllc = std::make_unique<Foam::hllcFlux>();
     std::unique_ptr<dbnsFlux> AUSMplusUp = std::make_unique<Foam::AUSMplusUpFlux>();
     vector  normal = vector(1.0, 0.0, 0.0);
-    scalar  gamma  = 1.4;
 
     //Flux
     scalar rhoFlux;
@@ -58,19 +57,19 @@ int main(int argc, char *argv[])
     scalar rho_R = 0.125; vector U_R = vector(0.0, 0.0, 0.0); scalar p_R = 0.1;
     // Mid state
     scalar rho_M = 0.426319; vector U_M = vector(0.927453, 0.0, 0.0); scalar p_M = 0.303130;
-    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal);
     Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     roe->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                       rho_L, rho_R, U_L, U_R, p_L, p_R,
-                      normal, gamma);
+                      normal);
     Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     hllc->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                        rho_L, rho_R, U_L, U_R, p_L, p_R,
-                       normal, gamma);
+                       normal);
     Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     AUSMplusUp->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                              rho_L, rho_R, U_L, U_R, p_L, p_R,
-                             normal, gamma);
+                             normal);
     Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     Info << endl;
 
@@ -81,19 +80,19 @@ int main(int argc, char *argv[])
     rho_R = 5.99924; U_R = vector(6.19633, 0.0, 0.0); p_R = 46.0950;
     // Mid state
     rho_M = 5.99924; U_M = vector(19.5975, 0.0, 0.0); p_M = 460.894;
-    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal);
     Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     roe->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                       rho_L, rho_R, U_L, U_R, p_L, p_R,
-                      normal, gamma);
+                      normal);
     Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     hllc->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                        rho_L, rho_R, U_L, U_R, p_L, p_R,
-                       normal, gamma);
+                       normal);
     Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     AUSMplusUp->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                              rho_L, rho_R, U_L, U_R, p_L, p_R,
-                             normal, gamma);
+                             normal);
     Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     Info << endl;
 
@@ -104,19 +103,19 @@ int main(int argc, char *argv[])
     rho_R = 1.0; U_R = vector(0.0, 0.0, 0.0); p_R = 0.01;
     // Mid state
     rho_M = 0.575062; U_M = vector(19.5975, 0.0, 0.0); p_M = 460.8938;
-    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal);
     Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     roe->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                       rho_L, rho_R, U_L, U_R, p_L, p_R,
-                      normal, gamma);
+                      normal);
     Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     hllc->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                        rho_L, rho_R, U_L, U_R, p_L, p_R,
-                       normal, gamma);
+                       normal);
     Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     AUSMplusUp->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                              rho_L, rho_R, U_L, U_R, p_L, p_R,
-                             normal, gamma);
+                             normal);
     Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     Info << endl;
 
@@ -127,19 +126,19 @@ int main(int argc, char *argv[])
     rho_R = 1.0; U_R = vector(0.0, 0.0, 0.0); p_R = 100.0;
     // Mid state
     rho_M = 0.575062; U_M = vector(-6.196328, 0.0, 0.0); p_M = 46.09504;
-    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal);
     Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     roe->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                       rho_L, rho_R, U_L, U_R, p_L, p_R,
-                      normal, gamma);
+                      normal);
     Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     hllc->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                        rho_L, rho_R, U_L, U_R, p_L, p_R,
-                       normal, gamma);
+                       normal);
     Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     AUSMplusUp->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                              rho_L, rho_R, U_L, U_R, p_L, p_R,
-                             normal, gamma);
+                             normal);
     Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     Info << endl;
 
@@ -150,19 +149,19 @@ int main(int argc, char *argv[])
     rho_R = 1.0; U_R = vector(+2.0, 0.0, 0.0); p_R = 0.4;
     // Mid state
     rho_M = 0.21852; U_M = vector(0.0, 0.0, 0.0); p_M = 0.001894;
-    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal);
     Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     roe->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                       rho_L, rho_R, U_L, U_R, p_L, p_R,
-                      normal, gamma);
+                      normal);
     Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     hllc->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                        rho_L, rho_R, U_L, U_R, p_L, p_R,
-                       normal, gamma);
+                       normal);
     Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     AUSMplusUp->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                              rho_L, rho_R, U_L, U_R, p_L, p_R,
-                             normal, gamma);
+                             normal);
     Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     Info << endl;
 
@@ -173,19 +172,19 @@ int main(int argc, char *argv[])
     rho_R = 1.0; U_R = vector(+4.0, 0.0, 0.0); p_R = 0.56;
     // Mid state
     rho_M = 0.0; U_M = vector(0.0, 0.0, 0.0); p_M = 0.0;
-    Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal, gamma);
+    Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_M, U_M, p_M, normal);
     Info << "Exact flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     roe->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                       rho_L, rho_R, U_L, U_R, p_L, p_R,
-                      normal, gamma);
+                      normal);
     Info << "roe   flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     hllc->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                        rho_L, rho_R, U_L, U_R, p_L, p_R,
-                       normal, gamma);
+                       normal);
     Info << "hllc  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     AUSMplusUp->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                              rho_L, rho_R, U_L, U_R, p_L, p_R,
-                             normal, gamma);
+                             normal);
     Info << "AUSM  flux = "  << rhoFlux << rhoUFlux << rhoEFlux << endl;
     Info << endl;
 

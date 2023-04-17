@@ -14,11 +14,8 @@ fluidProperties fluidProps;
 
 testDict.lookup("simulationType") >> fluidProps.simulationType;
 
-fluidProps.gamma = testDict.lookupOrDefault<scalar>("gamma", 1.4);
-
 Info << "=================Fluid Properties===================" << nl
      << "simulationType: "  << fluidProps.simulationType << nl
-     << "gamma:          "  << fluidProps.gamma << nl
      << "====================================================" << endl;
 
 const dictionary& freeStream = testDict.subDict("freeStream");
@@ -78,9 +75,6 @@ volScalarField p
     ),
     mesh
 );
-rho.correctBoundaryConditions();
-U.correctBoundaryConditions();
-p.correctBoundaryConditions();
 
 // File pointer to direct the output to
 autoPtr<OFstream> outputFilePtr;
@@ -103,17 +97,13 @@ label order = mesh.schemesDict().lookup<label>("order");
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
-    else if (order == 3)
-    {
-        solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
-    }
+    else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
 }
 else
 {
     Info << "Error in simulationType!" << endl;
 }
 
-solver->correctFields();
 // Resident
 scalarField resRho(mesh.nCells());
 vectorField resRhoU(mesh.nCells());

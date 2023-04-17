@@ -146,9 +146,9 @@ void Foam::euler3rdSolver::evaluateFlowRes
                 vector rhoUFlux;
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
-                Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                   rhoBound[faceI], UBound[faceI], pBound[faceI],
-                                   normal[faceI], fluidProps_.gamma);
+                Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                             rhoBound[faceI], UBound[faceI], pBound[faceI],
+                                             normal[faceI]);
                 resRho[i]  -= rhoFlux * magSf[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
                 resRhoE[i] -= rhoEFlux * magSf[faceI];
@@ -178,13 +178,13 @@ void Foam::euler3rdSolver::evaluateFlux
 
     scalar p_L, p_R, T_L, T_R;
     vector U_L, U_R;
-    consToPrim(rho_L, rhoU_L, rhoE_L, fluidProps_.gamma, U_L, p_L, T_L);
-    consToPrim(rho_R, rhoU_R, rhoE_R, fluidProps_.gamma, U_R, p_R, T_R);
+    consToPrim(rho_L, rhoU_L, rhoE_L, U_L, p_L, T_L);
+    consToPrim(rho_R, rhoU_R, rhoE_R, U_R, p_R, T_R);
     p_L = max(p_L, SMALL);
     p_R = max(p_R, SMALL);
     riemann_->evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
                            rho_L, rho_R, U_L, U_R, p_L, p_R,
-                           normal, fluidProps_.gamma);
+                           normal);
     rhoFlux  += magSf * rhoFluxTemp;
     rhoUFlux += magSf * rhoUFluxTemp;
     rhoEFlux += magSf * rhoEFluxTemp;

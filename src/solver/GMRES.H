@@ -114,30 +114,3 @@ void Foam::solver::solveFlowLinearSystem
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;
 }
-
-void Foam::givensRotation
-(
-    const scalar& h,
-    const scalar& beta,
-    scalar& c,
-    scalar& s
-)
-{
-    if (beta == 0)
-    {
-        c = 1;
-        s = 0;
-    }
-    else if (mag(beta) > mag(h))
-    {
-        scalar tau = -h/beta;
-        s = 1.0/Foam::sqrt(1.0 + sqr(tau));
-        c = s*tau;
-    }
-    else
-    {
-        scalar tau = -beta/h;
-        c = 1.0/Foam::sqrt(1.0 + sqr(tau));
-        s = c*tau;
-    }
-}

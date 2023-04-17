@@ -53,7 +53,7 @@ Foam::solver::solver
             IOobject::NO_READ,
             IOobject::AUTO_WRITE
         ),
-        p_*fluidProps_.gamma/rho_
+        p_*Gamma/rho_
     ),
     rhoU_
     (
@@ -71,13 +71,10 @@ Foam::solver::solver
         (
             "rhoE",
             mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
+            mesh_
         ),
-        p_/(fluidProps_.gamma-1.0) + 0.5*rho_*magSqr(U_)
+        p_/(Gamma-1.0) + 0.5*rho_*magSqr(U_)
     ),
-    c_(sqrt(T_.primitiveField())),
     Ma_
     (
         IOobject
@@ -90,8 +87,77 @@ Foam::solver::solver
         ),
         mag(U_)/Foam::sqrt(T_)
     ),
+    nuTilde_
+    (
+        IOobject
+        (
+            "nuTilde",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 0)
+    ),
+    laminarViscosity_
+    (
+        IOobject
+        (
+            "laminarViscosity",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 0)
+    ),
+    eddyViscosity_
+    (
+        IOobject
+        (
+            "eddyViscosity",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 0)
+    ),
+    UGrad_
+    (
+        IOobject
+        (
+            "UGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedTensor(dimless/dimLength, tensor::zero)
+    ),
+    TGrad_
+    (
+        IOobject
+        (
+            "TGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless/dimLength, vector::zero)
+    ),
+   nuTildeGrad_
+    (
+        IOobject
+        (
+            "nuTildeGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless/dimLength, vector::zero)
+    ),
+    c_(sqrt(T_.primitiveField())),
     volProjections_(vectorField(mesh_.nCells())),
-    localDtDv_(scalarField(mesh_.nCells()))
+    localDtDv_(scalarField(mesh_.nCells())),
+    nuMax_(scalarField(mesh_.nCells())),
+    deltaDES_(scalarField(mesh_.nCells()))
 {
     Info << "=================Solver Information==================" << endl;
     word flux = mesh_.schemesDict().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");
@@ -108,6 +174,26 @@ Foam::solver::solver
         riemann_ = std::make_unique<roeFlux>();
     }
     volProjectionsInit();
+    if (fluidProps_.simulationType != "Euler")
+    {
+        if (fluidProps_.simulationType == "SATurb")
+        {
+            nuTilde_ = volScalarField
+            (
+                IOobject
+                (
+                    "nuTilde",
+                    mesh_.time().timeName(),
+                    mesh_,
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh_,
+                dimensionedScalar(dimless, 0.01)
+            );
+        }
+    }
+    correctFields();
 }
 
 void Foam::solver::updateLTS()
@@ -143,12 +229,12 @@ void Foam::solver::volProjectionsInit()
 
 #include "correctFields.H"
 
+#include "functions.H"
+
 #include "GMRES.H"
 
 #include "matrixVectorProduct.H"
 
 #include "solveFlowLinearSystem.H"
-
-#include "limiter.H"
 
 // ************************************************************************* //

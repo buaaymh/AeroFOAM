@@ -52,8 +52,6 @@ class euler2ndSolver: public solver
 {
     // Private Data
     volVectorField rhoGrad_;
-    //- Velocity grad
-    volTensorField UGrad_;
     //- temperature grad
     volVectorField pGrad_;
     //- Density limit
@@ -90,23 +88,23 @@ public:
         vectorField& resRhoU,
         scalarField& resRhoE
     );
-
-private:
-
-    void evaluateFlux
+    
+    void deltaMaxMin
     (
-        scalar& rhoFlux,
-        vector& rhoUFlux,
-        scalar& rhoEFlux,
-        const scalar& rho_L,
-        const scalar& rho_R,
-        const vector& U_L,
-        const vector& U_R,
-        const scalar& p_L,
-        const scalar& p_R,
-        const vector& normal,
-        const scalar& magSf
+        const volScalarField& rho,
+        const volVectorField& U,
+        const volScalarField& p,
+        scalarField& rhoMin,
+        scalarField& rhoMax,
+        vectorField& UMin,
+        vectorField& UMax,
+        scalarField& pMin,
+        scalarField& pMax
     ) const;
+
+    void limiterVenkatakrishnan();
+
+    void limiterBarthJespersen();
 
 };
 

@@ -25,11 +25,11 @@ forAll(mesh_.cells(), cellI)
     }
     if (characteristic)
     {
-        coefs_[cellI].block<3,5>(0,0) = slope1_Limiter(normalList, deltaList, d0_AdjList, d0_Own, d1_Own, rDeltaXYZ_[cellI], fluidProps_.gamma).transpose();
+        coefs_[cellI].block<3,5>(0,0) = slope_Limiter(normalList, deltaList, d0_AdjList, d0_Own, d1_Own, rDeltaXYZ_[cellI]).transpose();
     }
     else
     {
-        coefs_[cellI].block<3,5>(0,0) = slope1_Limiter(deltaList, d0_AdjList, d0_Own, d1_Own, rDeltaXYZ_[cellI]).transpose();
+        coefs_[cellI].block<3,5>(0,0) = slope_Limiter(deltaList, d0_AdjList, d0_Own, d1_Own, rDeltaXYZ_[cellI]).transpose();
     }
     coefs_[cellI].block<6,5>(3,0) = Mat6X5::Zero();
 }

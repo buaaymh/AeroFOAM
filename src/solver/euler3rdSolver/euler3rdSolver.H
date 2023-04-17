@@ -192,13 +192,6 @@ void evaluateBasisFunctionConst
     Col9X1& polyNorm
 );
 
-void evaluateVertexCells
-(
-    const fvMesh& mesh,
-    const label& cellI,
-    labelList& vertexCells
-);
-
 // * * * * * * ** * * * Taylor Basis Functions * * * * * * * * * * * //
 Col9X1 polynomialDn0
 (
@@ -244,8 +237,7 @@ void evaluateEigenMatrix
     const scalar& rho,
     const vector& rhoU,
     const scalar& rhoE,
-    const vector& normal,
-    const scalar& gamma
+    const vector& normal
 );
 
 template<int cols>
@@ -289,7 +281,6 @@ Eigen::Matrix<scalar, 5, cols> Eigen_WBAP_L2_Limiter
     const scalar& rho,
     const vector& rhoU,
     const scalar& rhoE,
-    const scalar& gamma,
     const scalar& value
 )
 {
@@ -299,25 +290,12 @@ Eigen::Matrix<scalar, 5, cols> Eigen_WBAP_L2_Limiter
     Mat5X5 L, R;
     for (label j = 0; j < n-1; j++)
     {
-        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normalList[j], gamma);
+        evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normalList[j]);
         for (label i = 0; i < n; i++) tempList[i] = L*matList[i];
         limited[j] = R*WBAP_L2_Limiter<cols>(tempList, value);
     }
     return WBAP_L2_Limiter<cols>(limited, 1);
 }
-
-// Mat9X5 New_Eigen_WBAP_Limiter
-// (
-//     const std::vector<vector>& normalList,
-//     const std::vector<vector>& deltaList,
-//     const std::vector<vector>& rDeltaXYZList,
-//     const std::vector<Mat9X5>& coefsList,
-//     const scalar& rho,
-//     const vector& rhoU,
-//     const scalar& rhoE,
-//     const scalar& gamma,
-//     const scalar& value
-// );
 
 void New_WBAP_Limiter
 (
@@ -329,18 +307,17 @@ void New_WBAP_Limiter
     const scalar& value
 );
 
-Mat5X3 slope1_Limiter
+Mat5X3 slope_Limiter
 (
     const std::vector<vector>& normalList,
     const std::vector<vector>& deltaList,
     const std::vector<Col5X1>& d0_AdjList,
     const Col5X1& d0_Own,
     const Mat5X3& d1_Own,
-    const vector& rDeltaXYZ,
-    const scalar& gamma
+    const vector& rDeltaXYZ
 );
 
-Mat5X3 slope1_Limiter
+Mat5X3 slope_Limiter
 (
     const std::vector<vector>& deltaList,
     const std::vector<Col5X1>& d0_AdjList,

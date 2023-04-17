@@ -47,7 +47,7 @@ void Foam::solver::evaluateFlowRes
         const label j = mesh_.neighbour()[faceI];
         riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                                rho_[i], rho_[j], U_[i], U_[j], p_[i], p_[j],
-                               normal_[faceI], fluidProps_.gamma);
+                               normal_[faceI]);
         resRho[i]  -= rhoFlux*mesh_.magSf()[faceI];
         resRhoU[i] -= rhoUFlux*mesh_.magSf()[faceI];
         resRhoE[i] -= rhoEFlux*mesh_.magSf()[faceI];
@@ -75,7 +75,7 @@ void Foam::solver::evaluateFlowRes
                 const label i = bfaceCells[faceI];
                 riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
                                         rho_[i], rho_neigh[faceI], U_[i], U_neigh[faceI], p_[i], p_neigh[faceI],
-                                        normal[faceI], fluidProps_.gamma);
+                                        normal[faceI]);
                 resRho[i]  -= rhoFlux*magSf[faceI];
                 resRhoU[i] -= rhoUFlux*magSf[faceI];
                 resRhoE[i] -= rhoEFlux*magSf[faceI];
@@ -102,13 +102,29 @@ void Foam::solver::evaluateFlowRes
                 vector rhoUFlux;
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
-                Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                   rhoBound[faceI], UBound[faceI], pBound[faceI],
-                                   normal[faceI], fluidProps_.gamma);
+                Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                            rhoBound[faceI], UBound[faceI], pBound[faceI],
+                                            normal[faceI]);
                 resRho[i]  -= rhoFlux * magSf[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
                 resRhoE[i] -= rhoEFlux * magSf[faceI];
             }
         }
     }
+    if (fluidProps_.simulationType != "Euler")
+    {
+        UGrad_ = fvc::grad(U_);
+        TGrad_ = fvc::grad(T_);
+        solver::evaluateViscousFlowRes(resRho, resRhoU, resRhoE);
+    }
+}
+
+void Foam::solver::evaluateViscousFlowRes
+(
+    scalarField& resRho,
+    vectorField& resRhoU,
+    scalarField& resRhoE
+)
+{
+
 }

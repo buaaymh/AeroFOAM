@@ -36,6 +36,7 @@ Author
 #define dbnsFlux_H
 
 #include "fvCFD.H"
+#include "definitions.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -76,8 +77,7 @@ public:
         const vector& U_R,
         const scalar& p_L,
         const scalar& p_R,
-        const vector& normal,
-        const scalar& gamma
+        const vector& normal
     ) const = 0;
 };
 
@@ -90,13 +90,12 @@ void consToPrim
     const scalar& rho,
     const vector& rhoU,
     const scalar& rhoE,
-    const scalar& gamma,
     vector& U,
     scalar& p,
     scalar& T
 );
 
-void evaluateFlux
+void evaluateConvectiveFlux
 (
     scalar& rhoFlux,
     vector& rhoUFlux,
@@ -104,8 +103,7 @@ void evaluateFlux
     const scalar& rho,
     const vector& U,
     const scalar& p,
-    const vector& normal,
-    const scalar& gamma
+    const vector& normal
 );
 
 scalar entropyCorr

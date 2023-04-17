@@ -48,17 +48,6 @@ Foam::euler2ndSolver::euler2ndSolver
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
     ),
-    UGrad_
-    (
-        IOobject
-        (
-            "UGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedTensor(dimless/dimLength, tensor::zero)
-    ),
     pGrad_
     (
         IOobject
@@ -103,14 +92,12 @@ Foam::euler2ndSolver::euler2ndSolver
         mesh_,
         dimensionedScalar(dimless, 1)
     )
-{
-    Info << "Ths solver is 2nd order for Euler flow." << nl
-         << "Ths limiter is Venkatakrishnan." << nl
-         << "====================================================" << endl << endl;
-}
+{}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 #include "evaluateFlowRes.H"
+
+#include "limiter.H"
 
 // ************************************************************************* //

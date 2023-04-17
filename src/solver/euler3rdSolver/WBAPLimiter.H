@@ -23,7 +23,7 @@ forAll(mesh_.cells(), cellI)
     }
     if (characteristic)
     {
-        d2CoefsLimited[count++] = Eigen_WBAP_L2_Limiter<6>(normalList, d2CoefsList, rho_[cellI], rhoU_[cellI], rhoE_[cellI], fluidProps_.gamma, np).transpose();
+        d2CoefsLimited[count++] = Eigen_WBAP_L2_Limiter<6>(normalList, d2CoefsList, rho_[cellI], rhoU_[cellI], rhoE_[cellI], np).transpose();
     }
     else
     {
@@ -69,7 +69,7 @@ forAll(mesh_.cells(), cellI)
     }
     if (characteristic)
     {
-        d1CoefsLimited[count++] = Eigen_WBAP_L2_Limiter<3>(normalList, d1CoefsList, rho_[cellI], rhoU_[cellI], rhoE_[cellI], fluidProps_.gamma, np).transpose();
+        d1CoefsLimited[count++] = Eigen_WBAP_L2_Limiter<3>(normalList, d1CoefsList, rho_[cellI], rhoU_[cellI], rhoE_[cellI], np).transpose();
     }
     else
     {

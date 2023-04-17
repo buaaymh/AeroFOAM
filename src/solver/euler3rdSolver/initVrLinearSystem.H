@@ -110,7 +110,7 @@ void Foam::euler3rdSolver::initVrLinearSystem()
                 coupledb_[patchI][j] = b_i;
             }
         }
-        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
+        if (type == "symmetryPlane" || type == "symmetry" || (type == "wall" && fluidProps_.simulationType == "Euler"))
         {
             forAll(bfaceCells, faceI)
             {

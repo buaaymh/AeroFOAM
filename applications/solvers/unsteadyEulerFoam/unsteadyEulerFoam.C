@@ -60,7 +60,6 @@ int main(int argc, char *argv[])
 
         runTime++;
         Info<< "Time = " << runTime.value() << " s" << nl;
-        solver->correctFields();
 
         scalarField rho_0(solver->rho());
         vectorField rhoU_0(solver->rhoU());

@@ -14,11 +14,8 @@ fluidProperties fluidProps;
 
 testDict.lookup("simulationType") >> fluidProps.simulationType;
 
-fluidProps.gamma = testDict.lookupOrDefault<scalar>("gamma", 1.4);
-
 Info << "=================Fluid Properties===================" << nl
      << "simulationType: "  << fluidProps.simulationType << nl
-     << "gamma:          "  << fluidProps.gamma << nl
      << "====================================================" << endl;
 
 const dictionary& freeStream = testDict.subDict("freeStream");
@@ -80,24 +77,6 @@ volScalarField p
     mesh
 );
 
-Info<< "Reading field nuTilde" << endl;
-volScalarField nuTilde
-(
-    IOobject
-    (
-        "nuTilde",
-        runTime.timeName(),
-        mesh,
-        IOobject::MUST_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh
-);
-rho.correctBoundaryConditions();
-U.correctBoundaryConditions();
-p.correctBoundaryConditions();
-nuTilde.correctBoundaryConditions();
-
 autoPtr<OFstream> outputFilePtr;
 if (Pstream::master())
 {
@@ -113,21 +92,15 @@ if (Pstream::master())
 
 Info << "====================================================" << endl;
 
-turb3rdSolver solver
+turb2ndSolver solver
 (
     fluidProps,
     rho,
     U,
-    p,
-    nuTilde
+    p
 );
-solver.correctFields();
+
 // Resident
 scalarField resRho(mesh.nCells());
 vectorField resRhoU(mesh.nCells());
 scalarField resRhoE(mesh.nCells());
-scalarField resNuTilde(mesh.nCells());
-// L, U, D
-scalarField L_turb(mesh.nInternalFaces());
-scalarField U_turb(mesh.nInternalFaces());
-scalarField D_turb(mesh.nCells());

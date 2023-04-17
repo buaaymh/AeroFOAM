@@ -39,20 +39,19 @@ void Foam::hllcFlux::evaluateFlux
     const vector& U_R,
     const scalar& p_L,
     const scalar& p_R,
-    const vector& normal,
-    const scalar& gamma
+    const vector& normal
 ) const
 {   
     // left & right state
     const vector rhoU_L = rho_L*U_L;
-    const scalar rhoE_L = p_L/(gamma-1) + 0.5*rho_L*magSqr(U_L);
+    const scalar rhoE_L = p_L/(Gamma-1) + 0.5*rho_L*magSqr(U_L);
     const scalar H_L = (rhoE_L + p_L)/rho_L;
-    const scalar a_L = Foam::sqrt(p_L*gamma/rho_L);
+    const scalar a_L = Foam::sqrt(p_L*Gamma/rho_L);
     
     const vector rhoU_R = rho_R*U_R;
-    const scalar rhoE_R = p_R/(gamma-1) + 0.5*rho_R*magSqr(U_R);
+    const scalar rhoE_R = p_R/(Gamma-1) + 0.5*rho_R*magSqr(U_R);
     const scalar H_R = (rhoE_R + p_R)/rho_R;
-    const scalar a_R = Foam::sqrt(p_R*gamma/rho_R);
+    const scalar a_R = Foam::sqrt(p_R*Gamma/rho_R);
 
     // Compute qLeft and qRight (q_{l,r} = U_{l,r} \bullet n)
     const scalar qLeft  = (U_L & normal);
@@ -66,7 +65,7 @@ void Foam::hllcFlux::evaluateFlux
     const vector UTilde = (U_L+dd*U_R)*dd1;
     const scalar HTilde = (H_L+dd*H_R)*dd1;
     const scalar contrUTilde  = UTilde & normal;
-    const scalar aTilde = Foam::sqrt(max(SMALL, (gamma-1)*(HTilde-0.5*magSqr(UTilde))));
+    const scalar aTilde = Foam::sqrt(max(SMALL, (Gamma-1)*(HTilde-0.5*magSqr(UTilde))));
 
     // Step 3: compute signal speeds for face:
     const scalar SLeft  = min(qLeft - a_L, contrUTilde - aTilde);

@@ -1,3 +1,4 @@
+definitions/definitions.C
 dbnsFlux/dbnsFlux.C
 dbnsFlux/roeFlux/roeFlux.C
 dbnsFlux/hllcFlux/hllcFlux.C

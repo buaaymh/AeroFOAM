@@ -5,14 +5,14 @@ void Foam::turb3rdSolver::evaluateFlowRes
     scalarField& resRhoE
 )
 {   
+    scalar rho_i, rho_j, rhoE_i, rhoE_j;
+    vector rhoU_i, rhoU_j, rhoGrad_i, rhoGrad_j, rhoEGrad_i, rhoEGrad_j;
+    tensor rhoUGrad_i, rhoUGrad_j;
     resRho  = scalarField(mesh_.nCells(), 0.0);
     resRhoU = vectorField(mesh_.nCells(), vector::zero);
     resRhoE = scalarField(mesh_.nCells(), 0.0);
-    rhoGrad_ = fvc::grad(rho_);
-    UGrad_   = fvc::grad(U_);
-    pGrad_   = fvc::grad(p_);
-    updateCoefficients();
-    limitCoefficients();
+    reconstructionIter();
+    std::unique_ptr<Face> faceQuad;
     forAll(mesh_.owner(), faceI)
     {
         scalar rhoFlux = 0.0;
@@ -20,38 +20,23 @@ void Foam::turb3rdSolver::evaluateFlowRes
         scalar rhoEFlux = 0.0;
         const label i = mesh_.owner()[faceI];
         const label j = mesh_.neighbour()[faceI];
-        const scalar dxTilde = min(mesh_.V()[i], mesh_.V()[j])/mesh_.magSf()[faceI];
-        for (label gaussI = 0; gaussI != 4; ++gaussI)
+        const scalar deltaTilde = min(mesh_.V()[i], mesh_.V()[j])/mesh_.magSf()[faceI];
+        if (isP1Cell_[i] && isP1Cell_[j])
         {
-            scalar rhoFluxTemp;
-            vector rhoUFluxTemp = vector::zero;
-            scalar rhoEFluxTemp;
-            const vector delta_i = quad_[faceI][gaussI] - mesh_.C()[i];
-            const vector delta_j = quad_[faceI][gaussI] - mesh_.C()[j];
-            scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rLengthScale_[i], basisConst_[i]);
-            scalar rho_j = rho_[j] + scalarPoly(delta_j, rhoGradLimited_[j], d2RhoLimited_[j], rLengthScale_[j], basisConst_[j]);
-            vector U_i = U_[i] + vectorPoly(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rLengthScale_[i], basisConst_[i]);
-            vector U_j = U_[j] + vectorPoly(delta_j, UGradLimited_[j], d2UxLimited_[j], d2UyLimited_[j], d2UzLimited_[j], rLengthScale_[j], basisConst_[j]);
-            scalar p_i = p_[i] + scalarPoly(delta_i, pGradLimited_[i], d2PLimited_[i], rLengthScale_[i], basisConst_[i]);
-            scalar p_j = p_[j] + scalarPoly(delta_j, pGradLimited_[j], d2PLimited_[j], rLengthScale_[j], basisConst_[j]);
-            const vector rhoGrad_i = scalarPolyGrad(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rLengthScale_[i]);
-            const vector rhoGrad_j = scalarPolyGrad(delta_j, rhoGradLimited_[j], d2RhoLimited_[j], rLengthScale_[j]);
-            const tensor UGrad_i = vectorPolyGrad(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rLengthScale_[i]);
-            const tensor UGrad_j = vectorPolyGrad(delta_j, UGradLimited_[j], d2UxLimited_[j], d2UyLimited_[j], d2UzLimited_[j], rLengthScale_[j]);
-            const vector pGrad_i = scalarPolyGrad(delta_i, pGradLimited_[i], d2PLimited_[i], rLengthScale_[i]);
-            const vector pGrad_j = scalarPolyGrad(delta_j, pGradLimited_[j], d2PLimited_[j], rLengthScale_[j]);
-            evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
-                         rho_i, rho_j, U_i, U_j, p_i, p_j,
-                         rhoGrad_i, rhoGrad_j, UGrad_i, UGrad_j, pGrad_i, pGrad_j, nuTilde_[i], nuTilde_[j],
-                         dxTilde, normal_[faceI]);
-            rhoFlux  += rhoFluxTemp  * Quad4::w[gaussI];
-            rhoUFlux += rhoUFluxTemp * Quad4::w[gaussI];
-            rhoEFlux += rhoEFluxTemp * Quad4::w[gaussI];
         }
-        const scalar temp = 0.25 * mesh_.magSf()[faceI];
-        rhoFlux  *= temp;
-        rhoUFlux *= temp;
-        rhoEFlux *= temp;
+        else
+        {
+            for (label gaussI = 0; gaussI != faceQuad_[faceI]->size(); ++gaussI)
+            {
+                const vector delta_i = faceQuad_[faceI]->at(gaussI) - mesh_.C()[i];
+                const vector delta_j = faceQuad_[faceI]->at(gaussI) - mesh_.C()[j];
+                evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                evaluateVarsAndGrads(rho_j, rhoU_j, rhoE_j, rhoGrad_j, rhoUGrad_j, rhoEGrad_j, rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], delta_j);
+                evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                             rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j, rhoGrad_i, rhoGrad_j, rhoUGrad_i, rhoUGrad_j, rhoEGrad_i, rhoEGrad_j,
+                             deltaTilde, normal_[faceI], faceQuad_[faceI]->weight(gaussI));
+            }
+        }
         resRho[i]  -= rhoFlux;
         resRhoU[i] -= rhoUFlux;
         resRhoE[i] -= rhoEFlux;
@@ -59,6 +44,14 @@ void Foam::turb3rdSolver::evaluateFlowRes
         resRhoU[j] += rhoUFlux;
         resRhoE[j] += rhoEFlux;
     }
+    d1Rho_.correctBoundaryConditions();
+    d1RhoU_.correctBoundaryConditions();
+    d1RhoE_.correctBoundaryConditions();
+    d2Rho_.correctBoundaryConditions();
+    d2RhoUx_.correctBoundaryConditions();
+    d2RhoUy_.correctBoundaryConditions();
+    d2RhoUz_.correctBoundaryConditions();
+    d2RhoE_.correctBoundaryConditions();
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
@@ -67,147 +60,214 @@ void Foam::turb3rdSolver::evaluateFlowRes
         const word name = mesh_.boundary()[patchI].name();
         const word type = mesh_.boundary()[patchI].type();
         const label start = mesh_.boundary()[patchI].start();
-        if (isA<processorFvPatch>(mesh_.boundary()[patchI]))
+        if (mesh_.boundary()[patchI].coupled())
         {
-            
             const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
-            const vectorField neighCn = mesh_.C().boundaryField()[patchI].patchNeighbourField();
-            const vectorField rLengthScale_neigh = rLengthScale_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField basisConst_neigh = basisConst_.boundaryField()[patchI].patchNeighbourField();
-            const scalarField rho_neigh = rho_.boundaryField()[patchI].patchNeighbourField();
-            const vectorField U_neigh   = U_.boundaryField()[patchI].patchNeighbourField();
-            const scalarField p_neigh   = p_.boundaryField()[patchI].patchNeighbourField();
-            const scalarField nuTilde_neigh = nuTilde_.boundaryField()[patchI].patchNeighbourField();
-            const vectorField rhoGrad_neigh = rhoGradLimited_.boundaryField()[patchI].patchNeighbourField();
-            const tensorField UGrad_neigh   = UGradLimited_.boundaryField()[patchI].patchNeighbourField();
-            const vectorField pGrad_neigh   = pGradLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2Rho_neigh = d2RhoLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2Ux_neigh = d2UxLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2Uy_neigh = d2UyLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2Uz_neigh = d2UzLimited_.boundaryField()[patchI].patchNeighbourField();
-            const symmTensorField d2P_neigh = d2PLimited_.boundaryField()[patchI].patchNeighbourField();
-            std::vector<vector> quadPoints(4, vector::zero);
+            const vectorField neighCn = ownerCn + mesh_.boundary()[patchI].delta();
+            const vectorField rDeltaXYZ_neigh = rDeltaXYZ_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField basisMean_neigh = basisMean_.boundaryField()[patchI].patchNeighbourField();
+            const scalarField rho_neigh  = rho_.boundaryField()[patchI].patchNeighbourField();
+            const vectorField rhoU_neigh = rhoU_.boundaryField()[patchI].patchNeighbourField();
+            const scalarField rhoE_neigh = rhoE_.boundaryField()[patchI].patchNeighbourField();
+            const vectorField d1Rho_neigh  = d1Rho_.boundaryField()[patchI].patchNeighbourField();
+            const tensorField d1RhoU_neigh = d1RhoU_.boundaryField()[patchI].patchNeighbourField();
+            const vectorField d1RhoE_neigh = d1RhoE_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2Rho_neigh = d2Rho_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2RhoUx_neigh = d2RhoUx_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2RhoUy_neigh = d2RhoUy_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2RhoUz_neigh = d2RhoUz_.boundaryField()[patchI].patchNeighbourField();
+            const symmTensorField d2RhoE_neigh = d2RhoE_.boundaryField()[patchI].patchNeighbourField();
             forAll(bfaceCells, j)
             {
                 scalar rhoFlux  = 0.0;
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[j];
-                gaussQuad4(start+j, quadPoints);
-                const scalar dxTilde = mesh_.V()[i]/magSf[j];
-                for (label gaussI = 0; gaussI != 4; ++gaussI)
+                const scalar deltaTilde = mesh_.V()[i]/magSf[j];
+                build2ndFace(mesh_, start+j, faceQuad);
+                for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
                 {
-                    scalar rhoFluxTemp;
-                    vector rhoUFluxTemp = vector::zero;
-                    scalar rhoEFluxTemp;
-                    const vector delta_i = quadPoints[gaussI] - ownerCn[j];
-                    const vector delta_j = quadPoints[gaussI] - neighCn[j];
-                    const scalar rho_i = rho_[i]      + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    const scalar rho_j = rho_neigh[j] + scalarPoly(delta_j, rhoGrad_neigh[j], d2Rho_neigh[j], rLengthScale_neigh[j], basisConst_neigh[j]);
-                    const vector U_i = U_[i]      + vectorPoly(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    const vector U_j = U_neigh[j] + vectorPoly(delta_j, UGrad_neigh[j], d2Ux_neigh[j], d2Uy_neigh[j], d2Uz_neigh[j], rLengthScale_neigh[j], basisConst_neigh[j]);
-                    const scalar p_i = p_[i]      + scalarPoly(delta_i, pGradLimited_[i], d2PLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    const scalar p_j = p_neigh[j] + scalarPoly(delta_j, pGrad_neigh[j], d2P_neigh[j], rLengthScale_neigh[j], basisConst_neigh[j]);
-                    
-                    const vector rhoGrad_i = scalarPolyGrad(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rLengthScale_[i]);
-                    const vector rhoGrad_j = scalarPolyGrad(delta_j, rhoGrad_neigh[j], d2Rho_neigh[j], rLengthScale_neigh[j]);
-                    const tensor UGrad_i = vectorPolyGrad(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rLengthScale_[i]);
-                    const tensor UGrad_j = vectorPolyGrad(delta_j, UGrad_neigh[j], d2Ux_neigh[j], d2Uy_neigh[j], d2Uz_neigh[j], rLengthScale_neigh[j]);
-                    const vector pGrad_i = scalarPolyGrad(delta_i, pGradLimited_[i], d2PLimited_[i], rLengthScale_[i]);
-                    const vector pGrad_j = scalarPolyGrad(delta_j, pGrad_neigh[j], d2P_neigh[j], rLengthScale_neigh[j]);
-                    evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
-                                 rho_i, rho_j, U_i, U_j, p_i, p_j, rhoGrad_i, rhoGrad_j, UGrad_i, UGrad_j, pGrad_i, pGrad_j, nuTilde_[i], nuTilde_neigh[j],
-                                 dxTilde, normal[j]);
-                    rhoFlux  += rhoFluxTemp  * Quad4::w[gaussI];
-                    rhoUFlux += rhoUFluxTemp * Quad4::w[gaussI];
-                    rhoEFlux += rhoEFluxTemp * Quad4::w[gaussI];
+                    const vector delta_i = faceQuad->at(gaussI) - ownerCn[j];
+                    const vector delta_j = faceQuad->at(gaussI) - neighCn[j];
+                    evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                         rho_[i], rhoU_[i], rhoE_[i], d1Rho_[i], d1RhoU_[i], d1RhoE_[i],
+                                         d2Rho_[i], d2RhoUx_[i], d2RhoUy_[i], d2RhoUz_[i], d2RhoE_[i],
+                                         basisMean_[i], rDeltaXYZ_[i], delta_i);
+                    evaluateVarsAndGrads(rho_j, rhoU_j, rhoE_j, rhoGrad_j, rhoUGrad_j, rhoEGrad_j,
+                                         rho_neigh[j], rhoU_neigh[j], rhoE_neigh[j], d1Rho_neigh[j], d1RhoU_neigh[j], d1RhoE_neigh[j],
+                                         d2Rho_neigh[j], d2RhoUx_neigh[j], d2RhoUy_neigh[j], d2RhoUz_neigh[j], d2RhoE_neigh[j],
+                                         basisMean_neigh[j], rDeltaXYZ_neigh[j], delta_j);
+                    evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                 rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j, rhoGrad_i, rhoGrad_j, rhoUGrad_i, rhoUGrad_j, rhoEGrad_i, rhoEGrad_j,
+                                 deltaTilde, normal[j], faceQuad->weight(gaussI));
                 }
-                const scalar temp = 0.25 * magSf[j];
-                resRho[i]  -= rhoFlux  * temp;
-                resRhoU[i] -= rhoUFlux * temp;
-                resRhoE[i] -= rhoEFlux * temp;
+                resRho[i]  -= rhoFlux;
+                resRhoU[i] -= rhoUFlux;
+                resRhoE[i] -= rhoEFlux;
             }
         }
         if (type == "symmetryPlane" || type == "symmetry")
         {
-            const vectorField Cn = mesh_.boundary()[patchI].Cn();
-            std::vector<vector> quadPoints(4, vector::zero);
+            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
+            const vectorField  Cn = mesh_.boundary()[patchI].Cn();
             forAll(bfaceCells, faceI)
             {
-                const label i = bfaceCells[faceI];
+                scalar rhoFlux  = 0.0;
                 vector rhoUFlux = vector::zero;
-                gaussQuad4(start+faceI, quadPoints);
-                for (label gaussI = 0; gaussI != 4; ++gaussI)
+                scalar rhoEFlux = 0.0;
+                const label i = bfaceCells[faceI];
+                if (isP1Cell_[i])
                 {
-                    const vector delta_i = quadPoints[gaussI] - Cn[faceI];
-                    const scalar p_i = p_[i] + scalarPoly(delta_i, pGradLimited_[i], d2PLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    rhoUFlux += p_i * normal[faceI] * Quad4::w[gaussI];
+                    evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], Cf[faceI]-Cn[faceI]);
+                    rhoU_j = rhoU_i - 2*(rhoU_i&normal[faceI])*normal[faceI];
+                    evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_i, rhoU_i, rhoU_j, rhoE_i, rhoE_i,
+                                 normal[faceI], magSf[faceI]);
                 }
-                resRhoU[i] -= 0.25 * rhoUFlux * magSf[faceI];
+                else
+                {
+                    build2ndFace(mesh_, start+faceI, faceQuad);
+                    for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
+                    {
+                        const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
+                        evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                        rhoU_j = rhoU_i - 2*(rhoU_i&normal[faceI])*normal[faceI];
+                        evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_i, rhoU_i, rhoU_j, rhoE_i, rhoE_i,
+                                     normal[faceI], faceQuad->weight(gaussI));
+                    }
+                }
+                resRho[i]  -= rhoFlux;
+                resRhoU[i] -= rhoUFlux;
+                resRhoE[i] -= rhoEFlux;
             }
         }
         if (type == "wall")
         {
-            const vectorField Cn = mesh_.boundary()[patchI].Cn();
-            std::vector<vector> quadPoints(4, vector::zero);
+            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
+            const vectorField  Cn = mesh_.boundary()[patchI].Cn();
             forAll(bfaceCells, faceI)
             {
-                const label i = bfaceCells[faceI];
+                scalar rhoFlux  = 0.0;
                 vector rhoUFlux = vector::zero;
-                gaussQuad4(start+faceI, quadPoints);
-                for (label gaussI = 0; gaussI != 4; ++gaussI)
+                scalar rhoEFlux = 0.0;
+                const label i = bfaceCells[faceI];
+                if (isP1Cell_[i])
                 {
-                    vector rhoUFluxTemp = vector::zero;
-                    const vector delta_i = quadPoints[gaussI] - Cn[faceI];
-                    const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    const scalar p_i = p_[i] + scalarPoly(delta_i, pGradLimited_[i], d2PLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    const tensor UGrad_i = vectorPolyGrad(delta_i, UGrad_[i], d2Ux_[i], d2Uy_[i], d2Uz_[i], rLengthScale_[i]);
-                    evaluateWallFlux(rhoUFluxTemp, rho_i, p_i, UGrad_i, normal[faceI]);
-                    rhoUFlux += rhoUFluxTemp * Quad4::w[gaussI];
                 }
-                resRhoU[i] -= 0.25 * rhoUFlux * magSf[faceI];
+                else
+                {
+                    build2ndFace(mesh_, start+faceI, faceQuad);
+                    for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
+                    {
+                        const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
+                        evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                             rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                        evaluateWallFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                         rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                         normal[j], faceQuad->weight(gaussI));
+                        
+                    }
+                }
+                resRho[i]  -= rhoFlux;
+                resRhoU[i] -= rhoUFlux;
+                resRhoE[i] -= rhoEFlux;
             }
         }
         if (name == "inlet" || name == "outlet" || name == "farField")
         {
-            const vectorField Cn = mesh_.boundary()[patchI].Cn();
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];
             const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
-            const fvPatchScalarField& nuTildeBound = nuTilde_.boundaryField()[patchI];
-            std::vector<vector> quadPoints(4, vector::zero);
             forAll(bfaceCells, faceI)
             {
-                const label i = bfaceCells[faceI];
                 scalar rhoFlux  = 0.0;
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux = 0.0;
-                gaussQuad4(start+faceI, quadPoints);
-                for (label gaussI = 0; gaussI != 4; ++gaussI)
+                const label i = bfaceCells[faceI];
+                build2ndFace(mesh_, start+faceI, faceQuad);
+                Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                   rhoBound[faceI], UBound[faceI], pBound[faceI],
+                                   normal[faceI], fluidProps_.gamma);
+                rhoFlux  *= magSf[faceI];
+                rhoUFlux *= magSf[faceI];
+                rhoEFlux *= magSf[faceI];
+                for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
                 {
-                    scalar rhoFluxTemp;
-                    vector rhoUFluxTemp = vector::zero;
-                    scalar rhoEFluxTemp;
-                    const vector delta_i = quadPoints[gaussI] - Cn[faceI];
-                    const scalar rho_i = rho_[i] + scalarPoly(delta_i, rhoGradLimited_[i], d2RhoLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    const vector U_i = U_[i] + vectorPoly(delta_i, UGradLimited_[i], d2UxLimited_[i], d2UyLimited_[i], d2UzLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    const scalar p_i = p_[i] + scalarPoly(delta_i, pGradLimited_[i], d2PLimited_[i], rLengthScale_[i], basisConst_[i]);
-                    const scalar nuTilde = 0.5*(nuTildeBound[faceI]+nuTilde_[i]);
-                    const vector rhoGrad_i = scalarPolyGrad(delta_i, rhoGrad_[i], d2Rho_[i], rLengthScale_[i]);
-                    const tensor UGrad_i = vectorPolyGrad(delta_i, UGrad_[i], d2Ux_[i], d2Uy_[i], d2Uz_[i], rLengthScale_[i]);
-                    const vector pGrad_i = scalarPolyGrad(delta_i, pGrad_[i], d2P_[i], rLengthScale_[i]);
-                    evaluateInletOutletFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
-                                            rho_i, rhoBound[faceI], U_i, UBound[faceI], p_i, pBound[faceI], nuTilde,
-                                            rhoGrad_i, UGrad_i, pGrad_i, normal[faceI]);
-                    rhoFlux  += rhoFluxTemp  * Quad4::w[gaussI];
-                    rhoUFlux += rhoUFluxTemp * Quad4::w[gaussI];
-                    rhoEFlux += rhoEFluxTemp * Quad4::w[gaussI];
+                    const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
+                    evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                         rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                    evaluateInletOutletFlux(rhoFlux, rhoUFlux, rhoEFlux, rhoBound[faceI], UBound[faceI], pBound[faceI],
+                                            rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                            normal[j], faceQuad->weight(gaussI));
+                    
                 }
-                const scalar temp = 0.25 * magSf[faceI];
-                resRho[i]  -= rhoFlux  * temp;
-                resRhoU[i] -= rhoUFlux * temp;
-                resRhoE[i] -= rhoEFlux * temp;
+                resRho[i]  -= rhoFlux;
+                resRhoU[i] -= rhoUFlux;
+                resRhoE[i] -= rhoEFlux;
             }
         }
     }
+}
+
+void Foam::turb3rdSolver::evaluateFlux
+(
+    scalar& rhoFlux,
+    vector& rhoUFlux,
+    scalar& rhoEFlux,
+    const scalar& rho_L,
+    const scalar& rho_R,
+    const vector& rhoU_L,
+    const vector& rhoU_R,
+    const scalar& rhoE_L,
+    const scalar& rhoE_R,
+    const vector& rhoGrad_L,
+    const vector& rhoGrad_R,
+    const tensor& rhoUGrad_L,
+    const tensor& rhoUGrad_R,
+    const vector& rhoEGrad_L,
+    const vector& rhoEGrad_R,
+    const scalar& deltaTilde,
+    const vector& normal,
+    const scalar& magSf
+) const
+{
+
+}
+
+void Foam::turb3rdSolver::evaluateWallFlux
+(
+    scalar& rhoFlux,
+    vector& rhoUFlux,
+    scalar& rhoEFlux,
+    const scalar& rho,
+    const vector& rhoU,
+    const scalar& rhoE,
+    const vector& rhoGrad,
+    const tensor& rhoUGrad,
+    const vector& rhoEGrad,
+    const vector& normal,
+    const scalar& magSf
+) const
+{
+
+}
+
+void Foam::turb3rdSolver::evaluateInletOutletFlux
+(
+    scalar& rhoFlux,
+    vector& rhoUFlux,
+    scalar& rhoEFlux,
+    const scalar& rhoBound,
+    const vector& UBound,
+    const scalar& pBound,
+    const scalar& rho,
+    const vector& rhoU,
+    const scalar& rhoE,
+    const vector& rhoGrad,
+    const tensor& rhoUGrad,
+    const vector& rhoEGrad,
+    const vector& normal,
+    const scalar& magSf
+) const
+{
+
 }

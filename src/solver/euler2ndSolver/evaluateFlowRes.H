@@ -9,15 +9,9 @@ void Foam::euler2ndSolver::evaluateFlowRes
     UGrad_   = fvc::grad(U_);
     pGrad_   = fvc::grad(p_);
     const word limiter = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<word>("Limiter", "Venkat");
-    if (limiter == "Venkat")
-    {
-        const scalar K = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<scalar>("Venkat", 5);
-        limiterVenkatakrishnan(K, rho_, U_, p_, rhoGrad_, UGrad_, pGrad_);
-    }
-    else if (limiter == "Barth")
-    {
-        limiterBarthJespersen(rho_, U_, p_, rhoGrad_, UGrad_, pGrad_);
-    }
+    if (limiter == "Venkat") limiterVenkatakrishnan();
+    else if (limiter == "Barth") limiterBarthJespersen();
+    else Info << "Error in limiter type!" << endl;
     resRho  = scalarField(mesh_.nCells(), 0.0);
     resRhoU = vectorField(mesh_.nCells(), vector::zero);
     resRhoE = scalarField(mesh_.nCells(), 0.0);
@@ -30,21 +24,20 @@ void Foam::euler2ndSolver::evaluateFlowRes
         const label j = mesh_.neighbour()[faceI];
         const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
         const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-        const scalar rho_i = rho_[i] + (rhoGrad_[i]&delta_i);
-        const scalar rho_j = rho_[j] + (rhoGrad_[j]&delta_j);
-        const vector U_i = U_[i] + (UGrad_[i]&delta_i);
-        const vector U_j = U_[j] + (UGrad_[j]&delta_j);
-        const scalar p_i = p_[i] + (pGrad_[i]&delta_i);
-        const scalar p_j = p_[j] + (pGrad_[j]&delta_j);
-        evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                     rho_i, rho_j, U_i, U_j, p_i, p_j,
-                     normal_[faceI], mesh_.magSf()[faceI]);
-        resRho[i]  -= rhoFlux;
-        resRhoU[i] -= rhoUFlux;
-        resRhoE[i] -= rhoEFlux;
-        resRho[j]  += rhoFlux;
-        resRhoU[j] += rhoUFlux;
-        resRhoE[j] += rhoEFlux;
+        const scalar rho_i = rho_[i] + (rhoGrad_[i]&delta_i)*rhoLimit_[i];
+        const scalar rho_j = rho_[j] + (rhoGrad_[j]&delta_j)*rhoLimit_[j];
+        const vector U_i = U_[i] + cmptMultiply(UGrad_[i]&delta_i, ULimit_[i]);;
+        const vector U_j = U_[j] + cmptMultiply(UGrad_[j]&delta_j, ULimit_[j]);;
+        const scalar p_i = p_[i] + (pGrad_[i]&delta_i)*pLimit_[i];
+        const scalar p_j = p_[j] + (pGrad_[j]&delta_j)*pLimit_[j];
+        riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                               rho_i, rho_j, U_i, U_j, p_i, p_j, normal_[faceI]);
+        resRho[i]  -= rhoFlux * mesh_.magSf()[faceI];
+        resRhoU[i] -= rhoUFlux* mesh_.magSf()[faceI];
+        resRhoE[i] -= rhoEFlux* mesh_.magSf()[faceI];
+        resRho[j]  += rhoFlux * mesh_.magSf()[faceI];
+        resRhoU[j] += rhoUFlux* mesh_.magSf()[faceI];
+        resRhoE[j] += rhoEFlux* mesh_.magSf()[faceI];
     }
     forAll(mesh_.boundary(), patchI)
     {
@@ -63,24 +56,26 @@ void Foam::euler2ndSolver::evaluateFlowRes
             const vectorField rhoGrad_neigh = rhoGrad_.boundaryField()[patchI].patchNeighbourField();
             const tensorField UGrad_neigh   = UGrad_.boundaryField()[patchI].patchNeighbourField();
             const vectorField pGrad_neigh   = pGrad_.boundaryField()[patchI].patchNeighbourField();
+            const scalarField rhoLimit_neigh = rhoLimit_.boundaryField()[patchI].patchNeighbourField();
+            const vectorField ULimit_neigh   = ULimit_.boundaryField()[patchI].patchNeighbourField();
+            const scalarField pLimit_neigh   = pLimit_.boundaryField()[patchI].patchNeighbourField();
             forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux;
                 vector rhoUFlux;
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
-                const scalar rho_i = rho_[i] + (rhoGrad_[i]&delta_i[faceI]);
-                const scalar rho_j = rho_neigh[faceI] + (rhoGrad_neigh[faceI]&delta_j[faceI]);
-                const vector U_i = U_[i] + (UGrad_[i]&delta_i[faceI]);
-                const vector U_j = U_neigh[faceI] + (UGrad_neigh[faceI]&delta_j[faceI]);
-                const scalar p_i = p_[i] + (pGrad_[i]&delta_i[faceI]);
-                const scalar p_j = p_neigh[faceI] + (pGrad_neigh[faceI]&delta_j[faceI]);
-                evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                             rho_i, rho_j, U_i, U_j, p_i, p_j,
-                             normal[faceI], magSf[faceI]);
-                resRho[i]  -= rhoFlux;
-                resRhoU[i] -= rhoUFlux;
-                resRhoE[i] -= rhoEFlux;
+                const scalar rho_i = rho_[i] + (rhoGrad_[i]&delta_i[faceI])*rhoLimit_[i];
+                const scalar rho_j = rho_neigh[faceI] + (rhoGrad_neigh[faceI]&delta_j[faceI])*rhoLimit_neigh[faceI];
+                const vector U_i = U_[i] + cmptMultiply(UGrad_[i]&delta_i[faceI], ULimit_[i]);
+                const vector U_j = U_neigh[faceI] + cmptMultiply(UGrad_neigh[faceI]&delta_j[faceI], ULimit_neigh[faceI]);
+                const scalar p_i = p_[i] + (pGrad_[i]&delta_i[faceI])*pLimit_[i];
+                const scalar p_j = p_neigh[faceI] + (pGrad_neigh[faceI]&delta_j[faceI])*pLimit_neigh[faceI];
+                riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                       rho_i, rho_j, U_i, U_j, p_i, p_j, normal[faceI]);
+                resRho[i]  -= rhoFlux *magSf[faceI];
+                resRhoU[i] -= rhoUFlux*magSf[faceI];
+                resRhoE[i] -= rhoEFlux*magSf[faceI];
             }
         }
         if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
@@ -104,36 +99,13 @@ void Foam::euler2ndSolver::evaluateFlowRes
                 vector rhoUFlux;
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
-                Foam::evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                   rhoBound[faceI], UBound[faceI], pBound[faceI],
-                                   normal[faceI], fluidProps_.gamma);
+                Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                             rhoBound[faceI], UBound[faceI], pBound[faceI],
+                                             normal[faceI]);
                 resRho[i]  -= rhoFlux * magSf[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
                 resRhoE[i] -= rhoEFlux * magSf[faceI];
             }
         }
     }
-}
-
-void Foam::euler2ndSolver::evaluateFlux
-(
-    scalar& rhoFlux,
-    vector& rhoUFlux,
-    scalar& rhoEFlux,
-    const scalar& rho_L,
-    const scalar& rho_R,
-    const vector& U_L,
-    const vector& U_R,
-    const scalar& p_L,
-    const scalar& p_R,
-    const vector& normal,
-    const scalar& magSf
-) const
-{
-    riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                           rho_L, rho_R, U_L, U_R, p_L, p_R,
-                           normal, fluidProps_.gamma);
-    rhoFlux *= magSf;
-    rhoUFlux *= magSf;
-    rhoEFlux *= magSf;
 }

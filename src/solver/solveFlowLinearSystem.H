@@ -118,7 +118,7 @@ void Foam::solver::precondition
                     const scalar rho1  = rho_[i]+dRho[i]*h;
                     const vector rhoU1 = rhoU_[i]+dRhoU[i]*h;
                     const scalar rhoE1 = rhoE_[i]+dRhoE[i]*h;
-                    const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(fluidProps_.gamma-1.0);
+                    const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(Gamma-1.0);
                     const scalar phi0 = U_[i]&Sf[faceI];
                     const scalar phi1 = (rhoU1/rho1)&Sf[faceI];
                     rRho  += L[faceI]*dRho[i]  + 0.5*alpha*(rho1*phi1       - rho_[i]*phi0)/h;
@@ -149,7 +149,7 @@ void Foam::solver::precondition
                     const scalar rho1  = rho_[j]+dRho[j]*h;
                     const vector rhoU1 = rhoU_[j]+dRhoU[j]*h;
                     const scalar rhoE1 = rhoE_[j]+dRhoE[j]*h;
-                    const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(fluidProps_.gamma-1.0);
+                    const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(Gamma-1.0);
                     const scalar phi0 = U_[j]&Sf[faceI];
                     const scalar phi1 = (rhoU1/rho1)&Sf[faceI];
                     rRho  += U[faceI]*dRho[j]  - 0.5*alpha*(rho1*phi1       - rho_[j]*phi0)/h;

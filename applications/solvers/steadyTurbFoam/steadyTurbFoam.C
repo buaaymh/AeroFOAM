@@ -54,26 +54,25 @@ int main(int argc, char *argv[])
         Info<< "Time = " << runTime.value() << " s" << nl;
 
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
-        // solver.evaluateTurbRes(resNuTilde, L_turb, U_turb, D_turb);
         const scalar L2ResRho  = Foam::sqrt(gSumSqr(resRho));
         const scalar L2ResRhoU = Foam::sqrt(gSum(magSqr(resRhoU)));
         const scalar L2ResRhoE = Foam::sqrt(gSumSqr(resRhoE));
         Info << "Residual for rho  = " << L2ResRho << endl;
         Info << "Residual for rhoU = " << L2ResRhoU << endl;
         Info << "Residual for rhoE = " << L2ResRhoE << endl;
-
         if (Pstream::master())
         {
             outputFilePtr() << runTime.value() << tab
                             << runTime.elapsedCpuTime() << tab
-                            << resRho << endl;
+                            << L2ResRho << endl;
         }
-        if ((L2ResRho < tolerance) && (L2ResRhoU < tolerance) && (L2ResRhoE < tolerance)) break;
+        if (fluidProps.simulationType == "SATurb") solver.solveTurbulence();
         solver.solveFlowLinearSystem(resRho, resRhoU, resRhoE);
-        // solver.solveTurbLinearSystem(resNuTilde, L_turb, U_turb, D_turb);
         solver.correctFields();
 
-        runTime.write();
+        if ((L2ResRho < tolerance) && (L2ResRhoU < tolerance) && (L2ResRhoE < tolerance)) runTime.writeAndEnd();
+        else runTime.write();
+
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
             << nl << endl;

@@ -31,18 +31,17 @@ void Foam::consToPrim
     const scalar& rho,
     const vector& rhoU,
     const scalar& rhoE,
-    const scalar& gamma,
     vector& U,
     scalar& p,
     scalar& T
 )
 {
     U = rhoU/rho;
-    p = (rhoE-0.5*rho*magSqr(U))*(gamma-1.0);
-    T = p*gamma/rho;
+    p = (rhoE-0.5*rho*magSqr(U))*(Gamma-1.0);
+    T = p*Gamma/rho;
 }
 
-void Foam::evaluateFlux
+void Foam::evaluateConvectiveFlux
 (
     scalar& rhoFlux,
     vector& rhoUFlux,
@@ -50,13 +49,12 @@ void Foam::evaluateFlux
     const scalar& rho,
     const vector& U,
     const scalar& p,
-    const vector& normal,
-    const scalar& gamma
+    const vector& normal
 )
 {
     rhoFlux  = rho*(U&normal);
     rhoUFlux = rhoFlux*U + p*normal;
-    rhoEFlux = rhoFlux * (gamma/(gamma-1)*p/max(rho, SMALL) + 0.5*magSqr(U));
+    rhoEFlux = rhoFlux * (Gamma/(Gamma-1)*p/max(rho, SMALL) + 0.5*magSqr(U));
 }
 
 scalar Foam::entropyCorr

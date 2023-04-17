@@ -39,23 +39,22 @@ void Foam::AUSMplusUpFlux::evaluateFlux
     const vector& U_R,
     const scalar& p_L,
     const scalar& p_R,
-    const vector& normal,
-    const scalar& gamma
+    const vector& normal
 ) const
 {   
     // left & right state
     const vector rhoU_L = rho_L*U_L;
-    const scalar rhoE_L = p_L/(gamma-1) + 0.5*rho_L*magSqr(U_L);
+    const scalar rhoE_L = p_L/(Gamma-1) + 0.5*rho_L*magSqr(U_L);
     const scalar H_L = (rhoE_L + p_L)/rho_L;
     
     const vector rhoU_R = rho_R*U_R;
-    const scalar rhoE_R = p_R/(gamma-1) + 0.5*rho_R*magSqr(U_R);
+    const scalar rhoE_R = p_R/(Gamma-1) + 0.5*rho_R*magSqr(U_R);
     const scalar H_R = (rhoE_R + p_R)/rho_R;
 
     const scalar qLeft  = (U_L & normal);
     const scalar qRight = (U_R & normal);
 
-    scalar temp = 2.0*(gamma-1)/(gamma+1)*0.5*(H_L+H_R);
+    scalar temp = 2.0*(Gamma-1)/(Gamma+1)*0.5*(H_L+H_R);
     const scalar aStar = sqrt(temp);
     const scalar aHatLeft  = temp / max(aStar, qLeft);
     const scalar aHatRight = temp / max(aStar,-qRight);
