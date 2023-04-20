@@ -133,8 +133,8 @@ void Foam::solver::evaluateViscousFlowRes
                 vector rhoUFlux;
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
-                vector TGrad = AverageGrad(T_[i], T_neigh[faceI], TGrad_[i], TGrad_neigh[faceI], delta_[faceI]);
-                tensor UGrad = AverageGrad(U_[i], U_neigh[faceI], UGrad_[i], UGrad_neigh[faceI], delta_[faceI]);
+                vector TGrad = AverageGrad(T_[i], T_neigh[faceI], TGrad_[i], TGrad_neigh[faceI], delta[faceI]);
+                tensor UGrad = AverageGrad(U_[i], U_neigh[faceI], UGrad_[i], UGrad_neigh[faceI], delta[faceI]);
                 evaluateViscousFlux(rhoUFlux, rhoEFlux, 0.5*(U_[i]+U_neigh[faceI]), TGrad, UGrad,
                                     0.5*(laminarViscosity_[i]+laminarViscosity_neigh[faceI]),
                                     0.5*(eddyViscosity_[i]+eddyViscosity_neigh[faceI]), normal[faceI]);
