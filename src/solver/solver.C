@@ -38,6 +38,8 @@ Foam::solver::solver
 )
 :
     fluidProps_(fluidProps),
+    Ma_Re_(fluidProps.Mach_inf/fluidProps.Re_inf),
+    S_T_(110.4/fluidProps.T_inf),
     mesh_(rho.mesh()),
     normal_(mesh_.Sf()/mesh_.magSf()),
     rho_(rho),
@@ -154,12 +156,14 @@ Foam::solver::solver
         dimensionedVector(dimless/dimLength, vector::zero)
     ),
     c_(sqrt(T_.primitiveField())),
+    delta_(mesh_.delta()),
     volProjections_(vectorField(mesh_.nCells())),
     localDtDv_(scalarField(mesh_.nCells())),
-    nuMax_(scalarField(mesh_.nCells())),
+    nuMax_(scalarField(mesh_.nCells(), 0.0)),
     deltaDES_(scalarField(mesh_.nCells()))
 {
     Info << "=================Solver Information==================" << endl;
+    CFL_ = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
     word flux = mesh_.schemesDict().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");
     Info << "The flux scheme is " << flux << endl;
     if (flux == "hllc")
@@ -176,6 +180,19 @@ Foam::solver::solver
     volProjectionsInit();
     if (fluidProps_.simulationType != "Euler")
     {
+        laminarViscosity_ = volScalarField
+        (
+            IOobject
+            (
+                "laminarViscosity",
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::AUTO_WRITE
+            ),
+            mesh_,
+            dimensionedScalar(dimless, 0)
+        );
         if (fluidProps_.simulationType == "SATurb")
         {
             nuTilde_ = volScalarField
@@ -191,15 +208,22 @@ Foam::solver::solver
                 mesh_,
                 dimensionedScalar(dimless, 0.01)
             );
+            eddyViscosity_ = volScalarField
+            (
+                IOobject
+                (
+                    "eddyViscosity",
+                    mesh_.time().timeName(),
+                    mesh_,
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh_,
+                dimensionedScalar(dimless, 0)
+            );
         }
     }
     correctFields();
-}
-
-void Foam::solver::updateLTS()
-{
-    scalar CFL = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
-    localDtDv_ = CFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
 }
 
 void Foam::solver::volProjectionsInit()
@@ -231,9 +255,9 @@ void Foam::solver::volProjectionsInit()
 
 #include "functions.H"
 
-#include "GMRES.H"
+#include "solveTurbulence.H"
 
-#include "matrixVectorProduct.H"
+#include "evaluateFlowRes.H"
 
 #include "solveFlowLinearSystem.H"
 

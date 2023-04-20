@@ -128,7 +128,6 @@ protected:
     volSymmTensorField basisMean_;
     volScalarField IS_;
     scalarField N_h_;
-    vectorField delta_;
     scalarField d_ij_;
     //- Linear system
     std::vector<Mat9X9> rA_;

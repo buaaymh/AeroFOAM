@@ -46,120 +46,118 @@ void Foam::solver::solveFlowPseudoTimeSystem
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;
 }
-
-void Foam::solver::evaluateMatrixLDU
+void Foam::solver::solveFlowLinearSystem
 (
-    const scalar& alpha,
-    scalarField& L,
-    scalarField& U,
-    scalarField& D
-) const
-{
-    // Calculate L, U and D
-    const labelUList& owner = mesh_.owner();
-    const labelUList& neighbour = mesh_.neighbour();
-    const surfaceVectorField& Sf = mesh_.Sf();
-    const surfaceScalarField& magSf = mesh_.magSf();
-    forAll(owner, faceI)
-    {
-        const label i = owner[faceI];
-        const label j = neighbour[faceI];
-        L[faceI] = 0.5*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
-        U[faceI] = 0.5*alpha*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI]);
-        D[i] += L[faceI];
-        D[j] += U[faceI];
-    }
-    forAll(mesh_.boundary(), patchI)
-    {
-        const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-        const vectorField& Sf = mesh_.Sf().boundaryField()[patchI];
-        const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
-        forAll(bfaceCells, faceI)
-        {
-            const label i = bfaceCells[faceI];
-            D[i] += 0.5*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
-        }
-    }
-}
-
-void Foam::solver::precondition
-(
-    const scalar& alpha,
-    const scalarField& L,
-    const scalarField& U,
-    const scalarField& D,
     const scalarField& resRho,
     const vectorField& resRhoU,
-    const scalarField& resRhoE,
-    scalarField& dRho,
-    vectorField& dRhoU,
-    scalarField& dRhoE
-) const
+    const scalarField& resRhoE
+)
 {
-    const labelUList& owner = mesh_.owner();
-    const labelUList& neighbour = mesh_.neighbour();
-    const surfaceVectorField& Sf = mesh_.Sf();
-    const scalar h = 1e-8/Foam::sqrt(gSumSqr(resRho)+gSum(magSqr(resRhoU))+gSumSqr(resRhoE)+1e-16);
-    // Forward Sweep
-    forAll(mesh_.cells(), cellI)
+    // Read settings from dictionary
+    const label nDirs  = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<label>("searchDir", 10);
+    const label innerIter = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<label>("innerIter", 5);
+    const scalar relTol = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.1);
+    // Calculate L, U and D
+    updateLTS();
+    scalarField L(mesh_.nInternalFaces());
+    scalarField U(mesh_.nInternalFaces());
+    scalarField D(1.0/localDtDv_);
+    evaluateMatrixLDU(1.0, L, U, D);
+    scalarField dRho(mesh_.nCells(), 0);
+    vectorField dRhoU(mesh_.nCells(), vector::zero);
+    scalarField dRhoE(mesh_.nCells(), 0);
+
+    scalarField resRho0(mesh_.nCells());
+    vectorField resRhoU0(mesh_.nCells());
+    scalarField resRhoE0(mesh_.nCells());
+    solver::evaluateFlowRes(resRho0, resRhoU0, resRhoE0);
+    // Initialize W
+    List<scalarField> w_Rho(nDirs+1, scalarField(mesh_.nCells()));
+    List<vectorField> w_RhoU(nDirs+1, vectorField(mesh_.nCells()));
+    List<scalarField> w_RhoE(nDirs+1, scalarField(mesh_.nCells()));
+    // Initialize Z
+    List<scalarField> z_Rho(nDirs, scalarField(mesh_.nCells()));
+    List<vectorField> z_RhoU(nDirs, vectorField(mesh_.nCells()));
+    List<scalarField> z_RhoE(nDirs, scalarField(mesh_.nCells()));
+    w_Rho[0]  = resRho;
+    w_RhoU[0] = resRhoU;
+    w_RhoE[0] = resRhoE;
+    scalar beta = Foam::sqrt(gSumSqr(w_Rho[0]) + gSum(magSqr(w_RhoU[0])) + gSumSqr(w_RhoE[0]));
+    scalar initialRes = beta;
+    scalar finalRes = initialRes;
+    label solverIter = 0;
+    while (solverIter < innerIter)
     {
-        const labelList& cellFaces = mesh_.cells()[cellI];
-        scalar rRho = resRho[cellI];
-        vector rRhoU = resRhoU[cellI];
-        scalar rRhoE = resRhoE[cellI];
-        forAll(cellFaces,f)
+        scalarSquareMatrix H(nDirs, 0);
+        scalarField g(nDirs+1, 0);
+        scalarField sn(nDirs, 0);
+        scalarField cs(nDirs, 0);
+        scalarField y(nDirs, 0);
+        g[0] = beta;
+        label i;
+        for (i = 0; i < nDirs; i++)
         {
-            const label faceI = cellFaces[f];
-            if (mesh_.isInternalFace(faceI))
+            if (finalRes < relTol*initialRes) break;
+            w_Rho[i]  /= beta;
+            w_RhoU[i] /= beta;
+            w_RhoE[i] /= beta;
+            precondition(1.0, L, U, D, w_Rho[i], w_RhoU[i], w_RhoE[i], z_Rho[i], z_RhoU[i], z_RhoE[i]);
+            matrixVectorProduct(resRho0, resRhoU0, resRhoE0, z_Rho[i], z_RhoU[i], z_RhoE[i], w_Rho[i+1], w_RhoU[i+1], w_RhoE[i+1]);
+            /*---  Modified Gram-Schmidt orthogonalization ---*/
+            for (label j = 0; j < i+1; j++)
             {
-                const label i = owner[faceI];
-                if (i != cellI) /* L(cellI) < cellI */
-                {
-                    const scalar rho1  = rho_[i]+dRho[i]*h;
-                    const vector rhoU1 = rhoU_[i]+dRhoU[i]*h;
-                    const scalar rhoE1 = rhoE_[i]+dRhoE[i]*h;
-                    const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(Gamma-1.0);
-                    const scalar phi0 = U_[i]&Sf[faceI];
-                    const scalar phi1 = (rhoU1/rho1)&Sf[faceI];
-                    rRho  += L[faceI]*dRho[i]  + 0.5*alpha*(rho1*phi1       - rho_[i]*phi0)/h;
-                    rRhoU += L[faceI]*dRhoU[i] + 0.5*alpha*(rhoU1*phi1      - rhoU_[i]*phi0 + (p1-p_[i])*Sf[faceI])/h;
-                    rRhoE += L[faceI]*dRhoE[i] + 0.5*alpha*((rhoE1+p1)*phi1 - (rhoE_[i]+p_[i])*phi0)/h;
-                }
+                H[j][i] = gSumProd(w_Rho[i+1], w_Rho[j]) + gSumProd(w_RhoU[i+1], w_RhoU[j]) + gSumProd(w_RhoE[i+1], w_RhoE[j]);
+                w_Rho[i+1]  -= H[j][i] * w_Rho[j];
+                w_RhoU[i+1] -= H[j][i] * w_RhoU[j];
+                w_RhoE[i+1] -= H[j][i] * w_RhoE[j];
             }
+            beta = Foam::sqrt(gSumSqr(w_Rho[i+1]) + gSum(magSqr(w_RhoU[i+1])) + gSumSqr(w_RhoE[i+1]));
+            // Apply previous Givens rotations to new column of H.
+            for (label j = 0; j < i; j++)
+            {
+                const scalar Hji = H[j][i];
+                H[j][i]   = cs[j]*Hji - sn[j]*H[j+1][i];
+                H[j+1][i] = sn[j]*Hji + cs[j]*H[j+1][i];
+            }
+            // Apply Givens rotation to current row.
+            givensRotation(H[i][i], beta, cs[i], sn[i]);
+            const scalar gi = g[i];
+            g[i]   = cs[i]*gi - sn[i]*g[i+1];
+            g[i+1] = sn[i]*gi + cs[i]*g[i+1];
+            H[i][i] = cs[i]*H[i][i] - sn[i]*beta;
+
+            finalRes = mag(g[i+1]);
+            solverIter++;
         }
-        dRho[cellI]  = rRho  / D[cellI];
-        dRhoU[cellI] = rRhoU / D[cellI];
-        dRhoE[cellI] = rRhoE / D[cellI];
-    }
-    // Backward Sweep
-    forAllReverse(mesh_.cells(), cellI)
-    {
-        const labelList& cellFaces = mesh_.cells()[cellI];
-        scalar rRho  = 0;
-        vector rRhoU = vector::zero;
-        scalar rRhoE = 0;
-        forAll(cellFaces,f)
+        /*---  Solve the least-squares system  ---*/
+        for (label k = 0; k < i; k++)
+            y[k] = g[k];
+        for (label k = i-1; k >= 0; k--)
         {
-            const label faceI = cellFaces[f];
-            if (mesh_.isInternalFace(faceI))
-            {
-                const label j = neighbour[faceI];
-                if (j != cellI) /* U(cellI) > cellI */
-                {
-                    const scalar rho1  = rho_[j]+dRho[j]*h;
-                    const vector rhoU1 = rhoU_[j]+dRhoU[j]*h;
-                    const scalar rhoE1 = rhoE_[j]+dRhoE[j]*h;
-                    const scalar p1    = (rhoE1-0.5*magSqr(rhoU1)/rho1)*(Gamma-1.0);
-                    const scalar phi0 = U_[j]&Sf[faceI];
-                    const scalar phi1 = (rhoU1/rho1)&Sf[faceI];
-                    rRho  += U[faceI]*dRho[j]  - 0.5*alpha*(rho1*phi1       - rho_[j]*phi0)/h;
-                    rRhoU += U[faceI]*dRhoU[j] - 0.5*alpha*(rhoU1*phi1      - rhoU_[j]*phi0 + (p1-p_[j])*Sf[faceI])/h;
-                    rRhoE += U[faceI]*dRhoE[j] - 0.5*alpha*((rhoE1+p1)*phi1 - (rhoE_[j]+p_[j])*phi0)/h;
-                }
-            }
+            y[k] /= H[k][k];
+            for (label j = k-1; j >= 0; j--)
+                y[j] -= H[j][k]*y[k];
         }
-        dRho[cellI]  += rRho  / D[cellI];
-        dRhoU[cellI] += rRhoU / D[cellI];
-        dRhoE[cellI] += rRhoE / D[cellI];
+        /*---  Update solution ---*/
+        for (label k = 0; k < i; k++)
+        {
+            dRho  += y[k] * z_Rho[k];
+            dRhoU += y[k] * z_RhoU[k];
+            dRhoE += y[k] * z_RhoE[k];
+        }
+        if (finalRes < relTol*initialRes || solverIter >= innerIter)
+        {
+            Info << "# Iteration = " << solverIter << ": |res|/|res0| = " << finalRes/initialRes << "." << endl;
+            break;
+        }
+        // Re-calculate the residual
+        matrixVectorProduct(resRho0, resRhoU0, resRhoE0, dRho, dRhoU, dRhoE, w_Rho[0], w_RhoU[0], w_RhoE[0]);
+        w_Rho[0]  = resRho  - w_Rho[0];
+        w_RhoU[0] = resRhoU - w_RhoU[0];
+        w_RhoE[0] = resRhoE - w_RhoE[0];
+        beta = Foam::sqrt(gSumSqr(w_Rho[0]) + gSum(magSqr(w_RhoU[0])) + gSumSqr(w_RhoE[0]));
     }
+    rho_.primitiveFieldRef()  += dRho;
+    rhoU_.primitiveFieldRef() += dRhoU;
+    rhoE_.primitiveFieldRef() += dRhoE;
 }

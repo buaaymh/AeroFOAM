@@ -108,4 +108,9 @@ void Foam::euler2ndSolver::evaluateFlowRes
             }
         }
     }
+    if (fluidProps_.simulationType != "Euler")
+    {
+        TGrad_ = fvc::grad(T_);
+        solver::evaluateViscousFlowRes(resRho, resRhoU, resRhoE);
+    }
 }

@@ -62,6 +62,11 @@ class solver
 
 protected:
     const fluidProperties& fluidProps_;
+    //- Constant
+    const scalar Ma_Re_;
+    const scalar S_T_;
+    //-  CFL number
+    scalar CFL_;
     //- Riemann solver
     std::unique_ptr<dbnsFlux> riemann_;
     //- Reference to mesh
@@ -96,6 +101,8 @@ protected:
     volVectorField nuTildeGrad_;
     //- Sound speed
     scalarField c_;
+    //- delta between ij
+    vectorField delta_;
     //- Volume projections
     vectorField volProjections_;
     //- Local time steps
@@ -128,6 +135,10 @@ public:
     scalarField& rhoE() { return rhoE_.primitiveFieldRef(); }
     
     const scalarField& LTS() const { return localDtDv_; }
+    
+    void updateCFL(const scalar& CFL) { CFL_ = CFL; }
+
+    void updateLTS(){ localDtDv_ = CFL_/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one)); }
 
     virtual void evaluateFlowRes
     (
@@ -162,8 +173,6 @@ public:
 
     void correctFields();
 
-    void updateLTS();
-
     void solveTurbulence();
 
 protected:
@@ -197,6 +206,8 @@ protected:
         volScalarField& T
     );
 
+    void correctViscousFields();
+
     void precondition
     (
         const scalar& alpha,
@@ -211,11 +222,41 @@ protected:
         scalarField& dRhoE
     ) const;
 
+    void evaluateViscousFlux
+    (
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const vector& U,
+        const vector& TGrad,
+        const tensor& UGrad,
+        const scalar& laminarViscosity,
+        const scalar& eddyViscosity,
+        const vector& normal
+    ) const;
+
 private:
 
     void volProjectionsInit();
 
 };
+
+
+template<class value, class grad>
+grad AverageGrad
+(
+    const value& value_L,
+    const value& value_R,
+    const grad&  grad_L,
+    const grad&  grad_R,
+    const vector& delta
+)
+{
+    const scalar l = mag(delta);
+    const vector t = delta/l;
+    grad averageGrad = 0.5*(grad_L+grad_R);
+    averageGrad -= ((averageGrad&t) - (value_R-value_L)/l)*t;
+    return averageGrad;
+}
 
 } // End namespace Foam
 
