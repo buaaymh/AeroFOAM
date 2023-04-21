@@ -1,6 +1,6 @@
 void Foam::euler3rdSolver::reconstructionIter()
 {
-    const Switch adaptive = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
+    const Switch adaptive = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
     isP1Cell_ = std::vector<bool>(mesh_.nCells(), false);
     if (adaptive)
     {
@@ -110,7 +110,7 @@ void Foam::euler3rdSolver::reconstructionIter()
                     const vector rhoUDn0_j = rhoUDn0_i - 2*(rhoUDn0_i&normal[faceI])*normal[faceI];
                     const scalar dRhoDn0  = dpwTemp[0]*varDn0(0);
                     const vector dRhoUDn0 = dpwTemp[0]*(rhoUDn0_j - rhoU_[i]);
-                    const scalar dRhoEDn0 = dpwTemp[0]*(2*(rhoEBound[faceI]-rhoE_[i]) + varDn0(4));
+                    const scalar dRhoEDn0 = dpwTemp[0]*((rhoEBound[faceI]-rhoE_[i]) + varDn0(4));
                     b += Dn0_i*Col5X1(dRhoDn0, dRhoUDn0[0], dRhoUDn0[1], dRhoUDn0[2], dRhoEDn0).transpose();
                     // Dn1
                     const vector rhoUDn1_i = vector(varDn1(1), varDn1(2), varDn1(3));

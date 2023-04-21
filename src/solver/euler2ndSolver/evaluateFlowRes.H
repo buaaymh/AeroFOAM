@@ -8,7 +8,7 @@ void Foam::euler2ndSolver::evaluateFlowRes
     rhoGrad_ = fvc::grad(rho_);
     UGrad_   = fvc::grad(U_);
     pGrad_   = fvc::grad(p_);
-    const word limiter = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<word>("Limiter", "Venkat");
+    const word limiter = mesh_.schemes().subDict("gradSchemes").lookupOrDefault<word>("Limiter", "Venkat");
     if (limiter == "Venkat") limiterVenkatakrishnan();
     else if (limiter == "Barth") limiterBarthJespersen();
     else Info << "Error in limiter type!" << endl;
@@ -107,10 +107,5 @@ void Foam::euler2ndSolver::evaluateFlowRes
                 resRhoE[i] -= rhoEFlux * magSf[faceI];
             }
         }
-    }
-    if (fluidProps_.simulationType != "Euler")
-    {
-        TGrad_ = fvc::grad(T_);
-        solver::evaluateViscousFlowRes(resRho, resRhoU, resRhoE);
     }
 }

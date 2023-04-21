@@ -80,15 +80,11 @@ volScalarField p
 Info << "====================================================" << endl;
 
 std::unique_ptr<solver> solver;
-label order = mesh.schemesDict().lookup<label>("order");
+label order = mesh.schemes().lookup<label>("order");
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
     else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
-}
-else
-{
-    Info << "Error in simulationType!" << endl;
 }
 // Resident
 scalarField resRho_1(mesh.nCells());

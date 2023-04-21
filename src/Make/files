@@ -8,5 +8,6 @@ bound/boundMinMax.C
 element/element.C
 solver/euler2ndSolver/euler2ndSolver.C
 solver/euler3rdSolver/euler3rdSolver.C
+solver/turb2ndSolver/turb2ndSolver.C
 
 LIB = $(FOAM_USER_LIBBIN)/libAeroFoam

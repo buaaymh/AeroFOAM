@@ -163,8 +163,8 @@ Foam::solver::solver
     deltaDES_(scalarField(mesh_.nCells()))
 {
     Info << "=================Solver Information==================" << endl;
-    CFL_ = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
-    word flux = mesh_.schemesDict().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");
+    CFL_ = mesh_.solution().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
+    word flux = mesh_.schemes().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");
     Info << "The flux scheme is " << flux << endl;
     if (flux == "hllc")
         riemann_ = std::make_unique<hllcFlux>();

@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    euler2ndSolver
+    turb2ndSolver
 
 Description
     2nd order solver for Euler flow.
@@ -32,10 +32,10 @@ Author
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef euler2ndSolver_H
-#define euler2ndSolver_H
+#ifndef turb2ndSolver_H
+#define turb2ndSolver_H
 
-#include "solver.H"
+#include "euler2ndSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -43,34 +43,23 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class euler2ndSolver Declaration
+                           Class turb2ndSolver Declaration
 \*---------------------------------------------------------------------------*/
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-class euler2ndSolver: public solver
+class turb2ndSolver: public euler2ndSolver
 {
-    // Private Data
-    volVectorField rhoGrad_;
-    //- temperature grad
-    volVectorField pGrad_;
-    //- Density limit
-    volScalarField rhoLimit_;
-    //- Velocity limit
-    volVectorField ULimit_;
-    //- pressure limit
-    volScalarField pLimit_;
-
     // Private Member Functions
     //- Disallow default bitwise copy construct
-    euler2ndSolver(const euler2ndSolver&);
+    turb2ndSolver(const turb2ndSolver&);
     //- Disallow default bitwise assignment
-    void operator=(const euler2ndSolver&);
+    void operator=(const turb2ndSolver&);
 
 public:
 
     // Constructors - default
-    euler2ndSolver
+    turb2ndSolver
     (
         const fluidProperties& fluidProps,
         volScalarField& rho,
@@ -79,32 +68,15 @@ public:
     );
 
     // Destructor - default
-    virtual ~euler2ndSolver() {};
+    virtual ~turb2ndSolver() {};
 
     // Member Functions
-    virtual void evaluateFlowRes
+    void evaluateFlowRes
     (
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
     );
-    
-    void deltaMaxMin
-    (
-        const volScalarField& rho,
-        const volVectorField& U,
-        const volScalarField& p,
-        scalarField& rhoMin,
-        scalarField& rhoMax,
-        vectorField& UMin,
-        vectorField& UMax,
-        scalarField& pMin,
-        scalarField& pMax
-    ) const;
-
-    void limiterVenkatakrishnan();
-
-    void limiterBarthJespersen();
 
 };
 

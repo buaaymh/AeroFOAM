@@ -33,6 +33,7 @@ Description
 #include "solver.H"
 #include "euler2ndSolver.H"
 #include "euler3rdSolver.H"
+#include "turb2ndSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -47,30 +48,41 @@ int main(int argc, char *argv[])
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    const scalar tolerance = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
+    const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
+    scalar L2Res_0 = GREAT;
     
     while (runTime.run())
     {
-        runTime++;
-        Info<< "Time = " << runTime.value() << " s" << nl;
-
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
         const scalar L2ResRho  = Foam::sqrt(gSumSqr(resRho));
         const scalar L2ResRhoU = Foam::sqrt(gSum(magSqr(resRhoU)));
         const scalar L2ResRhoE = Foam::sqrt(gSumSqr(resRhoE));
-        Info << "Residual for rho  = " << L2ResRho << endl;
-        Info << "Residual for rhoU = " << L2ResRhoU << endl;
-        Info << "Residual for rhoE = " << L2ResRhoE << endl;
+        const scalar L2Res     = Foam::sqrt(sqr(L2ResRho) + sqr(L2ResRhoU) + sqr(L2ResRhoE));
+        if (runTime.value() == 0) { L2Res_0 = L2Res; }
+        const scalar relRes = L2Res/L2Res_0;
+        
+        runTime++;
+        Info << "Time = " << runTime.value() << " s" << nl;
+        Info << "# FGMRES solving for rho  = " << L2ResRho << endl;
+        Info << "# FGMRES solving for rhoU = " << L2ResRhoU << endl;
+        Info << "# FGMRES solving for rhoE = " << L2ResRhoE << endl;
+        Info << "# Relative residual = " << relRes << endl;
+
+        if (relRes > 1e-2) solver->updateCFL(50);
+        else if ((relRes < 1e-2) && (relRes > 1e-5)) solver->updateCFL(200);
+        else solver->updateCFL(1000);
+
         if (Pstream::master())
         {
             outputFilePtr() << runTime.value() << tab
                             << runTime.elapsedCpuTime() << tab
-                            << L2ResRho << endl;
+                            << relRes << endl;
         }
-
+        if (fluidProps.simulationType == "SATurb") solver->solveTurbulence();
         solver->solveFlowLinearSystem(resRho, resRhoU, resRhoE);
         solver->correctFields();
-        if (L2Res < tolerance) runTime.writeAndEnd();
+
+        if (relRes < tolerance) runTime.writeAndEnd();
         else runTime.write();
 	
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"

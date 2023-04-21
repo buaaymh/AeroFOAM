@@ -1,7 +1,7 @@
 void Foam::euler3rdSolver::limitCoefficients()
 {
     /* Detect trouble cells */
-    const scalar IS = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("IS", 1.0);
+    const scalar IS = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("IS", 1.0);
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
     label count = 0;
@@ -10,8 +10,8 @@ void Foam::euler3rdSolver::limitCoefficients()
     Info << "Trouble cell [%] = " << percent;
 
     /* Limiting d2 coefficients of polynomials */
-    const Switch characteristic = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("characteristic", false);
-    const word limiter = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<word>("limiter", "Slope1");
+    const Switch characteristic = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("characteristic", false);
+    const word limiter = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<word>("limiter", "Slope1");
     if (limiter == "Slope")
     {
         #include "slopeLimiter.H"
@@ -30,7 +30,7 @@ void Foam::euler3rdSolver::limitCoefficients()
     }
 
     /* Preserve positive coefficients of polynomials */
-    const Switch positive = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);
+    const Switch positive = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);
     if (positive)
     {
         count = 0;

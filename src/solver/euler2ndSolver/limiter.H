@@ -65,7 +65,7 @@ void Foam::euler2ndSolver::deltaMaxMin
 void Foam::euler2ndSolver::limiterVenkatakrishnan()
 {
     
-    const scalar K = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<scalar>("Venkat", 1);
+    const scalar K = mesh_.schemes().subDict("gradSchemes").lookupOrDefault<scalar>("Venkat", 1);
     scalarField rhoMin = rho_.field();
     scalarField rhoMax = rho_.field();
     vectorField UMin = U_.field();

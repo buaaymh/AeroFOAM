@@ -8,7 +8,7 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     rDeltaXYZ_.correctBoundaryConditions();
     basisMean_.correctBoundaryConditions();
 
-    const vector vrWeight = mesh_.schemesDict().subDict("vrSchemes").lookup<vector>("weightList");
+    const vector vrWeight = mesh_.schemes().subDict("vrSchemes").lookup<vector>("weightList");
     vrWeightSqr_ = cmptMultiply(vrWeight, vrWeight);
     std::unique_ptr<Face> faceQuad;
     forAll(mesh_.owner(), faceI)

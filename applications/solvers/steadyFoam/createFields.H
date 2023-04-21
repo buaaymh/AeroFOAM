@@ -88,13 +88,13 @@ if (Pstream::master())
     // Open the file in the newly created directory
     outputFilePtr.reset(new OFstream(outputDir/"residuals.dat"));
     outputFilePtr() << "# Residuals" << endl;
-    outputFilePtr() << "# Step" << tab << "CPU" << tab << "L2(resRho)" << endl;
+    outputFilePtr() << "# Step" << tab << "CPU" << tab << "Relative L2(Res)" << endl;
 }
 
 Info << "====================================================" << endl;
 
 std::unique_ptr<solver> solver;
-label order = mesh.schemesDict().lookup<label>("order");
+label order = mesh.schemes().lookup<label>("order");
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
@@ -102,7 +102,7 @@ if (fluidProps.simulationType == "Euler")
 }
 else
 {
-    Info << "Error in simulationType!" << endl;
+    solver = std::make_unique<turb2ndSolver>(fluidProps, rho, U, p);
 }
 
 // Resident

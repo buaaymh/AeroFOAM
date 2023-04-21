@@ -1,4 +1,4 @@
-const scalar np = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("np", 10);
+const scalar np = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("np", 10);
 std::vector<Mat6X5> d2CoefsLimited(count);
 count = 0;
 forAll(mesh_.cells(), cellI)

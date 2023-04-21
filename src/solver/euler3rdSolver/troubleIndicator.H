@@ -1,4 +1,4 @@
-const Switch indicator = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("indicator", false);
+const Switch indicator = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("indicator", false);
 isTrouble_ = std::vector<bool>(mesh_.nCells(), false);
 if (indicator)
 {

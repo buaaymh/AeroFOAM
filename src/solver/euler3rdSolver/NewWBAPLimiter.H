@@ -1,4 +1,4 @@
-const scalar np = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("np", 2);
+const scalar np = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("np", 2);
 const auto& owner = mesh_.owner();
 const auto& neighbour = mesh_.neighbour();
 Mat5X5 L, R;

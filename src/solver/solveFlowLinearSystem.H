@@ -54,9 +54,9 @@ void Foam::solver::solveFlowLinearSystem
 )
 {
     // Read settings from dictionary
-    const label nDirs  = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<label>("searchDir", 10);
-    const label innerIter = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<label>("innerIter", 5);
-    const scalar relTol = mesh_.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.1);
+    const label nDirs  = mesh_.solution().subDict("SOLVER").lookupOrDefault<label>("searchDir", 10);
+    const label innerIter = mesh_.solution().subDict("SOLVER").lookupOrDefault<label>("innerIter", 5);
+    const scalar relTol = mesh_.solution().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.1);
     // Calculate L, U and D
     updateLTS();
     scalarField L(mesh_.nInternalFaces());
