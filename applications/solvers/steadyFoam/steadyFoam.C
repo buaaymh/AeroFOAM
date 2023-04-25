@@ -49,28 +49,29 @@ int main(int argc, char *argv[])
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
-    scalar L2Res_0 = GREAT;
+    scalar L2Res_0 = 0;
     
     while (runTime.run())
     {
+        runTime++;
+        Info << "Time = " << runTime.value() << " s" << nl << endl;;
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
         const scalar L2ResRho  = Foam::sqrt(gSumSqr(resRho));
         const scalar L2ResRhoU = Foam::sqrt(gSum(magSqr(resRhoU)));
         const scalar L2ResRhoE = Foam::sqrt(gSumSqr(resRhoE));
         const scalar L2Res     = Foam::sqrt(sqr(L2ResRho) + sqr(L2ResRhoU) + sqr(L2ResRhoE));
-        if (runTime.value() == 0) { L2Res_0 = L2Res; }
+        if (L2Res_0 < SMALL) { L2Res_0 = L2Res; }
         const scalar relRes = L2Res/L2Res_0;
         
-        runTime++;
-        Info << "Time = " << runTime.value() << " s" << nl;
         Info << "# FGMRES solving for rho  = " << L2ResRho << endl;
         Info << "# FGMRES solving for rhoU = " << L2ResRhoU << endl;
         Info << "# FGMRES solving for rhoE = " << L2ResRhoE << endl;
         Info << "# Relative residual = " << relRes << endl;
 
-        if (relRes > 1e-2) solver->updateCFL(50);
-        else if ((relRes < 1e-2) && (relRes > 1e-5)) solver->updateCFL(200);
-        else solver->updateCFL(1000);
+        if (relRes > 1e-1) solver->updateCFL(20);
+        else if ((relRes < 1e-1) && (relRes > 1e-2)) solver->updateCFL(100);
+        else if ((relRes < 1e-2) && (relRes > 1e-4)) solver->updateCFL(500);
+        else solver->updateCFL(5000);
 
         if (Pstream::master())
         {

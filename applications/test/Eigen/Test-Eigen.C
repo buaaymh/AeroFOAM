@@ -46,21 +46,21 @@ int main(int argc, char *argv[])
     Foam::Mat5X5 I = Foam::Mat5X5::Identity();
     
     vector normal = vector(0.8, 0.6, 0.0);
-    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal);
     Info << "normal = " << normal << endl;
     std::cout << "L = \n" << L << nl << "R = \n" << R << std::endl;
     Info << (L * R - I).cwiseAbs().maxCoeff() << endl;
     Info << (R * L - I).cwiseAbs().maxCoeff() << endl;
 
     normal = vector(-0.6, 0.0, 0.8);
-    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal);
     Info << "normal = " << normal << endl;
     std::cout << "L = \n" << L << nl << "R = \n" << R << std::endl;
     Info << (L * R - I).cwiseAbs().maxCoeff() << endl;
     Info << (R * L - I).cwiseAbs().maxCoeff() << endl;
 
     normal = vector(0.0, 0.8, -0.6);
-    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal, gamma);
+    evaluateEigenMatrix(L, R, rho, rhoU, rhoE, normal);
     Info << "normal = " << normal << endl;
     std::cout << "L = \n" << L << nl << "R = \n" << R << std::endl;
     Info << (L * R - I).cwiseAbs().maxCoeff() << endl;
@@ -80,6 +80,17 @@ int main(int argc, char *argv[])
     Foam::Col5X1 coef(1.0, 2.0, 3.0, 4.0, 5.0);
     std::cout << "eigen coefficient = \n" << (R*limiter*L)*coef << std::endl;
     std::cout << "conse coefficient = \n" <<    coef            << std::endl;
+
+    Eigen::Matrix<scalar, 3, 3> A;
+    Eigen::Matrix<scalar, 3, 1> b;
+    A << 2, 1, 3,
+         1, 1, 1,
+         1, 3, 4;
+    b << 13, 6, 19;
+    Eigen::Matrix<scalar, 3, 1> x = A.colPivHouseholderQr().solve(b);
+    std::cout << "Matrix A = \n" << A << std::endl;
+    std::cout << "Vector b = \n" << b << std::endl;
+    std::cout << "Solution x = \n" << x << std::endl;
     return 0;
 }
 

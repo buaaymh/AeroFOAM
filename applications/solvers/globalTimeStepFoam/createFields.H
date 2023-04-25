@@ -14,17 +14,15 @@ fluidProperties fluidProps;
 
 testDict.lookup("simulationType") >> fluidProps.simulationType;
 
-fluidProps.gamma = testDict.lookupOrDefault<scalar>("gamma", 1.4);
-
 Info << "=================Fluid Properties===================" << nl
      << "simulationType: "  << fluidProps.simulationType << nl
-     << "gamma:          "  << fluidProps.gamma << nl
      << "====================================================" << endl;
 
 const dictionary& freeStream = testDict.subDict("freeStream");
 fluidProps.AOA = freeStream.lookup<scalar>("AOA");
-fluidProps.Mach_inf = freeStream.lookup<scalar>("Mach");
-fluidProps.T_inf = freeStream.lookup<scalar>("T");
+fluidProps.Mach_inf = freeStream.lookupOrDefault<scalar>("Mach", 1.0);
+fluidProps.Re_inf = freeStream.lookupOrDefault<scalar>("Re", 10000);
+fluidProps.T_inf = freeStream.lookupOrDefault<scalar>("T", 288);
 fluidProps.p_inf = freeStream.lookupOrDefault<scalar>("Pressure", 101325.0);
 
 Info << "===============Free-stream Definition================" << nl

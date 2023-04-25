@@ -33,7 +33,6 @@ Description
 #include "solver.H"
 #include "euler2ndSolver.H"
 #include "euler3rdSolver.H"
-#include "turb2ndSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -60,7 +59,7 @@ int main(int argc, char *argv[])
         const scalarField dt_dv(dt/mesh.V().field());
 
         runTime++;
-        Info<< "Time = " << runTime.value() << " s" << nl;
+        Info<< "Time = " << runTime.value() << " s" << nl << endl;
 
         scalarField rho_0(solver->rho());
         vectorField rhoU_0(solver->rhoU());
