@@ -68,10 +68,10 @@ int main(int argc, char *argv[])
         Info << "# FGMRES solving for rhoE = " << L2ResRhoE << endl;
         Info << "# Relative residual = " << relRes << endl;
 
-        if (relRes > 1e-1) solver->updateCFL(20);
-        else if ((relRes < 1e-1) && (relRes > 1e-2)) solver->updateCFL(100);
+        if (relRes > 1e-1) solver->updateCFL(10);
+        else if ((relRes < 1e-1) && (relRes > 1e-2)) solver->updateCFL(50);
         else if ((relRes < 1e-2) && (relRes > 1e-4)) solver->updateCFL(500);
-        else solver->updateCFL(5000);
+        else solver->updateCFL(10000);
 
         if (Pstream::master())
         {

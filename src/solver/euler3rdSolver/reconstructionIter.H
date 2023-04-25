@@ -99,11 +99,7 @@ void Foam::euler3rdSolver::reconstructionIter()
                     const vector delta_i = faceQuad->at(gaussI) - ownerCn[faceI];
                     const vector dpwTemp = faceQuad->weight(gaussI)*dp;
                     Col9X1 Dn0_i = polynomialDn0(delta_i, rDeltaXYZ_[i], basisMean_[i]);
-                    Col9X1 Dn1_i = polynomialDn1(delta_i, rDeltaXYZ_[i], normal[faceI]);
-                    Col9X1 Dn2_i = polynomialDn2(rDeltaXYZ_[i], normal[faceI]);
                     Col5X1 varDn0 = coefs_[i].transpose()*Dn0_i;
-                    Col5X1 varDn1 = coefs_[i].transpose()*Dn1_i;
-                    Col5X1 varDn2 = coefs_[i].transpose()*Dn2_i;
                     // Dn0
                     const vector rhoUDn0_i = rhoU_[i] + vector(varDn0(1), varDn0(2), varDn0(3));
                     const vector rhoUDn0_j = rhoUDn0_i - 2*(rhoUDn0_i&normal[faceI])*normal[faceI];
@@ -111,18 +107,6 @@ void Foam::euler3rdSolver::reconstructionIter()
                     const vector dRhoUDn0 = dpwTemp[0]*(rhoUDn0_j - rhoU_[i]);
                     const scalar dRhoEDn0 = dpwTemp[0]*varDn0(4);
                     b += Dn0_i*Col5X1(dRhoDn0, dRhoUDn0[0], dRhoUDn0[1], dRhoUDn0[2], dRhoEDn0).transpose();
-                    // Dn1
-                    const vector rhoUDn1_i = vector(varDn1(1), varDn1(2), varDn1(3));
-                    const scalar dRhoDn1  = -dpwTemp[1]*varDn1(0);
-                    const vector dRhoUDn1 = -dpwTemp[1]*(rhoUDn1_i-2*(rhoUDn1_i&normal[faceI])*normal[faceI]);
-                    const scalar dRhoEDn1 = -dpwTemp[1]*varDn1(4);
-                    b += Dn1_i*Col5X1(dRhoDn1, dRhoUDn1[0], dRhoUDn1[1], dRhoUDn1[2], dRhoEDn1).transpose();
-                    // Dn2
-                    const vector rhoUDn2_i = vector(varDn2(1), varDn2(2), varDn2(3));
-                    const scalar dRhoDn2  = dpwTemp[2]*varDn2(0);
-                    const vector dRhoUDn2 = dpwTemp[2]*(rhoUDn2_i-2*(rhoUDn2_i&normal[faceI])*normal[faceI]);
-                    const scalar dRhoEDn2 = dpwTemp[2]*varDn2(4);
-                    b += Dn2_i*Col5X1(dRhoDn2, dRhoUDn2[0], dRhoUDn2[1], dRhoUDn2[2], dRhoEDn2).transpose();
                 }
                 bW[i] += b;
             }

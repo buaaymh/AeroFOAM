@@ -125,15 +125,14 @@ void Foam::euler3rdSolver::initVrLinearSystem()
                     const vector delta_i = faceQuad->at(gaussI) - ownerCn[faceI];
                     const vector dpwTemp = faceQuad->weight(gaussI) * dp;
                     Col9X1 Dn0_i = polynomialDn0(delta_i, rDeltaXYZ_[i], basisMean_[i]);
-                    Col9X1 Dn1_i = polynomialDn1(delta_i, rDeltaXYZ_[i], normal[faceI]);
-                    Col9X1 Dn2_i = polynomialDn2(rDeltaXYZ_[i], normal[faceI]);
-                    for (label m = 0; m != 9; ++m) {
+                    for (label m = 0; m != 9; ++m)
+                    {
                         for (label n = 0; n != 9; ++n)
                         {
-                            const vector n_i(Dn0_i[n], Dn1_i[n], Dn2_i[n]);
-                            const vector m_i(Dn0_i[m], Dn1_i[m], Dn2_i[m]);
+                            const vector n_i(Dn0_i[n], 0, 0);
+                            const vector m_i(Dn0_i[m], 0, 0);
                             A_i(m, n) += dpwTemp&vector(cmptMultiply(n_i, m_i));
-                        }    
+                        }
                     }
                 }
                 rA_[i] += A_i;
