@@ -21,7 +21,7 @@ void Foam::evaluateBasisFunctionConst
     std::vector<scalar> weights;
     std::vector<vector> quadPoints;
     build2ndCell(mesh, cellI, weights, quadPoints);
-    for (label i = 0; i != weights.size(); ++i)
+    for (size_t i = 0; i != weights.size(); ++i)
     {
         const vector B = cmptMultiply(quadPoints[i]-mesh.C()[cellI], rDeltaXYZ);
         symmTensor temp

@@ -25,6 +25,17 @@ License
 
 #include "element.H"
 
+Foam::Face::Face
+(
+    const fvMesh& mesh,
+    const label& faceI
+)
+:
+    normal_(mesh.Sf()[faceI]/mesh.magSf()[faceI]),
+    weights(6),
+    quadPoints(6)
+{}
+
 void Foam::Face::GetQuadrangleCoordAndWeight
 (
     const scalar x_local,
@@ -81,9 +92,10 @@ Foam::Triangle3::Triangle3
     const label& faceI
 )
 :
-    weights(3),
-    quadPoints(3)
+    Face(mesh, faceI)
 {
+    weights.resize(3);
+    quadPoints.resize(3);
     const UList<label>& facePointsId = mesh.faces()[faceI];
     Mat3X3 facePoints
     {
@@ -104,9 +116,10 @@ Foam::Triangle6::Triangle6
     const label& faceI
 )
 :
-    weights(6),
-    quadPoints(6)
+    Face(mesh, faceI)
 {
+    weights.resize(6);
+    quadPoints.resize(6);
     const UList<label>& facePointsId = mesh.faces()[faceI];
     Mat3X3 facePoints
     {
@@ -127,9 +140,10 @@ Foam::Quadrangle4::Quadrangle4
     const label& faceI
 )
 :
-    weights(4),
-    quadPoints(4)
+    Face(mesh, faceI)
 {
+    weights.resize(4);
+    quadPoints.resize(4);
     const UList<label>& facePointsId = mesh.faces()[faceI];
     Mat4X3 facePoints
     {
@@ -151,9 +165,10 @@ Foam::Quadrangle9::Quadrangle9
     const label& faceI
 )
 :
-    weights(9), 
-    quadPoints(9)
+    Face(mesh, faceI)
 {
+    weights.resize(9);
+    quadPoints.resize(9);
     const UList<label>& facePointsId = mesh.faces()[faceI];
     Mat4X3 facePoints
     {

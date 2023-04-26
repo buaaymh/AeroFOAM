@@ -38,7 +38,6 @@ void Foam::euler3rdSolver::reconstructionIter()
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-        const vectorField& normal = normal_.boundaryField()[patchI];
         const word type = mesh_.boundary()[patchI].type();
         const label start = mesh_.boundary()[patchI].start();
         if (mesh_.boundary()[patchI].coupled())
@@ -102,7 +101,7 @@ void Foam::euler3rdSolver::reconstructionIter()
                     Col5X1 varDn0 = coefs_[i].transpose()*Dn0_i;
                     // Dn0
                     const vector rhoUDn0_i = rhoU_[i] + vector(varDn0(1), varDn0(2), varDn0(3));
-                    const vector rhoUDn0_j = rhoUDn0_i - 2*(rhoUDn0_i&normal[faceI])*normal[faceI];
+                    const vector rhoUDn0_j = rhoUDn0_i - 2*(rhoUDn0_i&faceQuad->normal(gaussI))*faceQuad->normal(gaussI);
                     const scalar dRhoDn0  = dpwTemp[0]*varDn0(0);
                     const vector dRhoUDn0 = dpwTemp[0]*(rhoUDn0_j - rhoU_[i]);
                     const scalar dRhoEDn0 = dpwTemp[0]*varDn0(4);

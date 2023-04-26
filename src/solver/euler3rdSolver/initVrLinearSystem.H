@@ -32,10 +32,10 @@ void Foam::euler3rdSolver::initVrLinearSystem()
             const vector dpwTemp = faceQuad->weight(gaussI) * dp;
             Col9X1 Dn0_i = polynomialDn0(delta_i, rDeltaXYZ_[i], basisMean_[i]);
             Col9X1 Dn0_j = polynomialDn0(delta_j, rDeltaXYZ_[j], basisMean_[j]);
-            Col9X1 Dn1_i = polynomialDn1(delta_i, rDeltaXYZ_[i], normal_[faceI]);
-            Col9X1 Dn1_j = polynomialDn1(delta_j, rDeltaXYZ_[j], normal_[faceI]);
-            Col9X1 Dn2_i = polynomialDn2(rDeltaXYZ_[i], normal_[faceI]);
-            Col9X1 Dn2_j = polynomialDn2(rDeltaXYZ_[j], normal_[faceI]);
+            Col9X1 Dn1_i = polynomialDn1(delta_i, rDeltaXYZ_[i], faceQuad->normal(gaussI));
+            Col9X1 Dn1_j = polynomialDn1(delta_j, rDeltaXYZ_[j], faceQuad->normal(gaussI));
+            Col9X1 Dn2_i = polynomialDn2(rDeltaXYZ_[i], faceQuad->normal(gaussI));
+            Col9X1 Dn2_j = polynomialDn2(rDeltaXYZ_[j], faceQuad->normal(gaussI));
             for (label m = 0; m != 9; ++m) {
                 for (label n = 0; n != 9; ++n)
                 {
@@ -60,7 +60,6 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-        const vectorField& normal = normal_.boundaryField()[patchI];
         const scalarField d_ij = mag(mesh_.boundary()[patchI].delta());
         const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
         const label start = mesh_.boundary()[patchI].start();
@@ -89,10 +88,10 @@ void Foam::euler3rdSolver::initVrLinearSystem()
                     const vector dpwTemp = faceQuad->weight(gaussI) * dp;
                     Col9X1 Dn0_i = polynomialDn0(delta_i, rDeltaXYZ_[i], basisMean_[i]);
                     Col9X1 Dn0_j = polynomialDn0(delta_j, rDeltaXYZ_neigh[j], basisMean_neigh[j]);
-                    Col9X1 Dn1_i = polynomialDn1(delta_i, rDeltaXYZ_[i], normal[j]);
-                    Col9X1 Dn1_j = polynomialDn1(delta_j, rDeltaXYZ_neigh[j], normal[j]);
-                    Col9X1 Dn2_i = polynomialDn2(rDeltaXYZ_[i], normal[j]);
-                    Col9X1 Dn2_j = polynomialDn2(rDeltaXYZ_neigh[j], normal[j]);
+                    Col9X1 Dn1_i = polynomialDn1(delta_i, rDeltaXYZ_[i], faceQuad->normal(gaussI));
+                    Col9X1 Dn1_j = polynomialDn1(delta_j, rDeltaXYZ_neigh[j], faceQuad->normal(gaussI));
+                    Col9X1 Dn2_i = polynomialDn2(rDeltaXYZ_[i], faceQuad->normal(gaussI));
+                    Col9X1 Dn2_j = polynomialDn2(rDeltaXYZ_neigh[j], faceQuad->normal(gaussI));
                     for (label m = 0; m != 9; ++m) {
                         for (label n = 0; n != 9; ++n)
                         {
@@ -110,7 +109,7 @@ void Foam::euler3rdSolver::initVrLinearSystem()
                 coupledb_[patchI][j] = b_i;
             }
         }
-        if (type == "symmetryPlane" || type == "symmetry" || (type == "wall" && fluidProps_.simulationType == "Euler"))
+        if (type == "symmetryPlane" || type == "symmetry" || type == "wall")
         {
             forAll(bfaceCells, faceI)
             {

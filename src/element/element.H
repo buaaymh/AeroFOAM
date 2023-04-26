@@ -46,6 +46,17 @@ namespace Foam
                            Gauss Namespace  Declaration
 \*---------------------------------------------------------------------------*/
 
+template<int nVertex, int nPoints>
+struct Gauss;
+
+template<>
+struct Gauss<3, 3>
+{
+    static constexpr std::array<scalar, 3> x{0.0, 0.5, 0.5};
+    static constexpr std::array<scalar, 3> y{0.5, 0.0, 0.5};
+    static constexpr std::array<scalar, 3> w{1.0/6.0, 1.0/6.0, 1.0/6.0};
+};
+
 namespace Tria3
 {
     static constexpr std::array<scalar, 3> x{0.0, 0.5, 0.5};
@@ -135,22 +146,33 @@ class Face
 {
 public:
 
+    // Constructors - default
+    Face(const fvMesh& mesh, const label& faceI);
+
     // Destructor - default
     virtual ~Face() {};
 
     // Member Functions
     virtual label size() const = 0;
 
-    virtual scalar weight(label i) const = 0;
+    virtual const vector& normal(label i) const { return normal_; };
+
+    scalar weight(label i) const { return weights[i]; };
     
-    virtual const vector& at(label i) const = 0;
+    const vector& at(label i) const { return quadPoints[i]; };
 
     void GetTriangleCoordAndWeight(const scalar x_local, const scalar y_local, const scalar w_local,
                                    const Mat3X3& facePoints, scalar& weight, vector& quadPoint);
 
     void GetQuadrangleCoordAndWeight(const scalar x_local, const scalar y_local, const scalar w_local,
                                      const Mat4X3& facePoints, scalar& weight, vector& quadPoint);
+
+protected:
+    vector normal_;
+    std::vector<scalar> weights;
+    std::vector<vector> quadPoints;
 };
+
 
 class Triangle3: public Face
 {
@@ -158,19 +180,9 @@ public:
     // Constructors - default
     Triangle3(const fvMesh& mesh, const label& faceI);
 
-    // Destructor - default
-    virtual ~Triangle3() {};
-
     // Member Functions
     label size() const { return 3; };
 
-    scalar weight(label i) const { return weights[i]; };
-    
-    const vector& at(label i) const { return quadPoints[i]; };
-
-private:
-    std::vector<scalar> weights;
-    std::vector<vector> quadPoints;
 };
 
 class Triangle6: public Face
@@ -179,19 +191,9 @@ public:
     // Constructors - default
     Triangle6(const fvMesh& mesh, const label& faceI);
 
-    // Destructor - default
-    virtual ~Triangle6() {};
-
     // Member Functions
     label size() const { return 6; };
 
-    scalar weight(label i) const { return weights[i]; };
-    
-    const vector& at(label i) const { return quadPoints[i]; };
-
-private:
-    std::vector<scalar> weights;
-    std::vector<vector> quadPoints;
 };
 
 class Quadrangle4: public Face
@@ -200,19 +202,9 @@ public:
     // Constructors - default
     Quadrangle4(const fvMesh& mesh, const label& faceI);
 
-    // Destructor - default
-    virtual ~Quadrangle4() {};
-
     // Member Functions
     label size() const { return 4; };
 
-    scalar weight(label i) const { return weights[i]; };
-    
-    const vector& at(label i) const { return quadPoints[i]; };
-
-private:
-    std::vector<scalar> weights;
-    std::vector<vector> quadPoints;
 };
 
 class Quadrangle9: public Face
@@ -221,19 +213,8 @@ public:
     // Constructors - default
     Quadrangle9(const fvMesh& mesh, const label& faceI);
 
-    // Destructor - default
-    virtual ~Quadrangle9() {};
-
     // Member Functions
     label size() const { return 9; };
-
-    scalar weight(label i) const { return weights[i]; };
-    
-    const vector& at(label i) const { return quadPoints[i]; };
-
-private:
-    std::vector<scalar> weights;
-    std::vector<vector> quadPoints;
 };
 
 void build2ndFace(const fvMesh& mesh, const label& faceI, std::unique_ptr<Face>& face);
