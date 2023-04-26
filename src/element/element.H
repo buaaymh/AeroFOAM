@@ -46,57 +46,10 @@ namespace Foam
                            Gauss Namespace  Declaration
 \*---------------------------------------------------------------------------*/
 
-template<int nVertex, int nPoints>
-struct Gauss;
-
-template<>
-struct Gauss<3, 3>
-{
-    static constexpr std::array<scalar, 3> x{0.0, 0.5, 0.5};
-    static constexpr std::array<scalar, 3> y{0.5, 0.0, 0.5};
-    static constexpr std::array<scalar, 3> w{1.0/6.0, 1.0/6.0, 1.0/6.0};
-};
-
-namespace Tria3
-{
-    static constexpr std::array<scalar, 3> x{0.0, 0.5, 0.5};
-    static constexpr std::array<scalar, 3> y{0.5, 0.0, 0.5};
-    static constexpr std::array<scalar, 3> w{1.0/6.0, 1.0/6.0, 1.0/6.0};
-}
-
-namespace Tria6
-{
-    static constexpr std::array<scalar, 6> x{0.8168475729804585, 0.0915762135097708, 0.0915762135097708,
-                                             0.1081030181680702, 0.4459484909159649, 0.4459484909159649};
-    static constexpr std::array<scalar, 6> y{0.0915762135097708, 0.0915762135097708, 0.8168475729804585,
-                                             0.4459484909159649, 0.4459484909159649, 0.1081030181680702};
-    static constexpr std::array<scalar, 6> w{0.054975871827660935, 0.054975871827660935, 0.054975871827660935,
-                                             0.111690794839005740, 0.111690794839005740, 0.111690794839005740};
-}
-
 namespace Quad4
 {
-    static constexpr std::array<scalar, 4> x{-std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0),
-                                             +std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0)};
-    static constexpr std::array<scalar, 4> y{-std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0),
-                                             +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0)};
-    static constexpr std::array<scalar, 4> w{1.0, 1.0, 1.0, 1.0};
-
     static const Arr4X1 x_hexa_i{-1, +1, +1, -1};
     static const Arr4X1 y_hexa_i{-1, -1, +1, +1};
-}
-
-namespace Quad9
-{
-    static constexpr std::array<scalar, 9> x{-std::sqrt(0.6),                0.0, +std::sqrt(0.6),
-                                             -std::sqrt(0.6),                0.0, +std::sqrt(0.6),
-                                             -std::sqrt(0.6),                0.0, +std::sqrt(0.6)};
-    static constexpr std::array<scalar, 9> y{+std::sqrt(0.6), +std::sqrt(0.6), +std::sqrt(0.6),
-                                                         0.0,             0.0,             0.0,
-                                             -std::sqrt(0.6), -std::sqrt(0.6), -std::sqrt(0.6)};
-    static constexpr std::array<scalar, 9> w{25.0/81.0, 40.0/81.0, 25.0/81.0,
-                                             40.0/81.0, 64.0/81.0, 40.0/81.0,
-                                             25.0/81.0, 40.0/81.0, 25.0/81.0};
 }
 
 namespace Hexa8
@@ -146,76 +99,57 @@ class Face
 {
 public:
 
-    // Constructors - default
-    Face(const fvMesh& mesh, const label& faceI);
-
     // Destructor - default
     virtual ~Face() {};
 
     // Member Functions
     virtual label size() const = 0;
 
-    virtual const vector& normal(label i) const { return normal_; };
+    virtual const vector& normal(label i) const = 0;
 
-    scalar weight(label i) const { return weights[i]; };
+    virtual scalar weight(label i) const = 0;
     
-    const vector& at(label i) const { return quadPoints[i]; };
+    virtual const vector& at(label i) const = 0;
+};
 
-    void GetTriangleCoordAndWeight(const scalar x_local, const scalar y_local, const scalar w_local,
-                                   const Mat3X3& facePoints, scalar& weight, vector& quadPoint);
+template<int nVertex, int nPoints>
+class Quadrature: public Face
+{
+public:
+    // Constructors - default
+    Quadrature(const fvMesh& mesh, const label& faceI);
 
-    void GetQuadrangleCoordAndWeight(const scalar x_local, const scalar y_local, const scalar w_local,
-                                     const Mat4X3& facePoints, scalar& weight, vector& quadPoint);
+    // Destructor - default
+    virtual ~Quadrature() {};
+
+    // Member Functions
+    label size() const { return nPoints; };
+
+    const vector& normal(label i) const { return normal_; }
+
+    scalar weight(label i) const { return weights[i]; }
+    
+    const vector& at(label i) const { return quadPoints[i]; }
 
 protected:
+    static std::array<scalar, nPoints> x;
+    static std::array<scalar, nPoints> y;
+    static std::array<scalar, nPoints> w;
     vector normal_;
     std::vector<scalar> weights;
     std::vector<vector> quadPoints;
 };
 
-
-class Triangle3: public Face
-{
-public:
-    // Constructors - default
-    Triangle3(const fvMesh& mesh, const label& faceI);
-
-    // Member Functions
-    label size() const { return 3; };
-
-};
-
-class Triangle6: public Face
-{
-public:
-    // Constructors - default
-    Triangle6(const fvMesh& mesh, const label& faceI);
-
-    // Member Functions
-    label size() const { return 6; };
-
-};
-
-class Quadrangle4: public Face
-{
-public:
-    // Constructors - default
-    Quadrangle4(const fvMesh& mesh, const label& faceI);
-
-    // Member Functions
-    label size() const { return 4; };
-
-};
-
-class Quadrangle9: public Face
-{
-public:
-    // Constructors - default
-    Quadrangle9(const fvMesh& mesh, const label& faceI);
-
-    // Member Functions
-    label size() const { return 9; };
-};
+template<int nVertex>
+void GetCoordAndWeight
+(
+    const scalar x_local,
+    const scalar y_local,
+    const scalar w_local,
+    const Eigen::Matrix<scalar, 3, nVertex>& facePoints,
+    scalar& weight,
+    vector& quadPoint
+);
 
 void build2ndFace(const fvMesh& mesh, const label& faceI, std::unique_ptr<Face>& face);
 

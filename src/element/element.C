@@ -25,48 +25,80 @@ License
 
 #include "element.H"
 
-Foam::Face::Face
+template<>
+std::array<scalar, 3> Foam::Quadrature<3, 3>::x{0.0, 0.5, 0.5};
+template<>
+std::array<scalar, 3> Foam::Quadrature<3, 3>::y{0.5, 0.0, 0.5};
+template<>
+std::array<scalar, 3> Foam::Quadrature<3, 3>::w = {1.0/6.0, 1.0/6.0, 1.0/6.0};
+
+
+template<>
+std::array<scalar, 6> Foam::Quadrature<3, 6>::x{0.8168475729804585, 0.0915762135097708, 0.0915762135097708,
+                                                0.1081030181680702, 0.4459484909159649, 0.4459484909159649};
+template<>
+std::array<scalar, 6> Foam::Quadrature<3, 6>::y{0.0915762135097708, 0.0915762135097708, 0.8168475729804585,
+                                                0.4459484909159649, 0.4459484909159649, 0.1081030181680702};
+template<>
+std::array<scalar, 6> Foam::Quadrature<3, 6>::w{0.054975871827660935, 0.054975871827660935, 0.054975871827660935,
+                                                0.111690794839005740, 0.111690794839005740, 0.111690794839005740};
+
+template<>
+std::array<scalar, 4> Foam::Quadrature<4, 4>::x{-std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0),
+                                                +std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0)};
+template<>
+std::array<scalar, 4> Foam::Quadrature<4, 4>::y{-std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0),
+                                                +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0)};
+template<>
+std::array<scalar, 4> Foam::Quadrature<4, 4>::w{1.0, 1.0, 1.0, 1.0};
+
+template<>
+std::array<scalar, 9> Foam::Quadrature<4, 9>::x{-std::sqrt(0.6),                0.0, +std::sqrt(0.6),
+                                                -std::sqrt(0.6),                0.0, +std::sqrt(0.6),
+                                                -std::sqrt(0.6),                0.0, +std::sqrt(0.6)};
+template<>
+std::array<scalar, 9> Foam::Quadrature<4, 9>::y{+std::sqrt(0.6), +std::sqrt(0.6), +std::sqrt(0.6),
+                                                            0.0,             0.0,             0.0,
+                                                -std::sqrt(0.6), -std::sqrt(0.6), -std::sqrt(0.6)};
+template<>
+std::array<scalar, 9> Foam::Quadrature<4, 9>::w{25.0/81.0, 40.0/81.0, 25.0/81.0,
+                                                40.0/81.0, 64.0/81.0, 40.0/81.0,
+                                                25.0/81.0, 40.0/81.0, 25.0/81.0};
+
+
+template<int nVertex, int nPoints>
+Foam::Quadrature<nVertex, nPoints>::Quadrature
 (
     const fvMesh& mesh,
     const label& faceI
 )
 :
     normal_(mesh.Sf()[faceI]/mesh.magSf()[faceI]),
-    weights(6),
-    quadPoints(6)
-{}
-
-void Foam::Face::GetQuadrangleCoordAndWeight
-(
-    const scalar x_local,
-    const scalar y_local,
-    const scalar w_local,
-    const Mat4X3& facePoints,
-    scalar& weight,
-    vector& quadPoint
-)
+    weights(nPoints),
+    quadPoints(nPoints)
 {
-    // weight
-    Mat4X2 dn;
-    Arr4X1 factor_x = Quad4::x_hexa_i * x_local; factor_x += 1;
-    Arr4X1 factor_y = Quad4::y_hexa_i * y_local; factor_y += 1;
-    dn.col(0) << Quad4::x_hexa_i * factor_y;
-    dn.col(1) << Quad4::y_hexa_i * factor_x;
-    dn *= 0.25;
-    Mat3X2 dr = facePoints.transpose()*dn;
-    weight = w_local* sqrt((dr.transpose() * dr).determinant());
-    // coord
-    Arr4X1 N = 0.25*(1+Quad4::x_hexa_i*x_local)*(1+Quad4::y_hexa_i*y_local);
-    Col3X1 coord = facePoints.transpose()*N.matrix();
-    quadPoint = vector(coord(0), coord(1), coord(2));
+    const UList<label>& facePointsId = mesh.faces()[faceI];
+    Eigen::Matrix<scalar, 3, nVertex> facePoints;
+    for (int i = 0; i != nVertex; i++)
+    {
+        facePoints.col(i) = Col3X1{mesh.points()[facePointsId[i]][0],
+                                   mesh.points()[facePointsId[i]][1],
+                                   mesh.points()[facePointsId[i]][2]};
+    }
+    for (label i = 0; i != nPoints; ++i)
+    {
+        GetCoordAndWeight<nVertex>(x[i], y[i], w[i], facePoints, weights[i], quadPoints[i]);
+    }
 }
 
-void Foam::Face::GetTriangleCoordAndWeight
+
+template<>
+void Foam::GetCoordAndWeight<3>
 (
     const scalar x_local,
     const scalar y_local,
     const scalar w_local,
-    const Mat3X3& facePoints,
+    const Eigen::Matrix<scalar, 3, 3>& facePoints,
     scalar& weight,
     vector& quadPoint
 )
@@ -78,110 +110,39 @@ void Foam::Face::GetTriangleCoordAndWeight
         { 0,  1},
         {-1, -1}
     };
-    Mat3X2 dr = facePoints.transpose()*dn;
+    Mat3X2 dr = facePoints*dn;
     weight = w_local* sqrt((dr.transpose() * dr).determinant());
     // coord
     Col3X1 N{x_local, y_local, 1-x_local-y_local};
-    Col3X1 coord = facePoints.transpose()*N;
+    Col3X1 coord = facePoints*N;
     quadPoint = vector(coord(0), coord(1), coord(2));
 }
 
-Foam::Triangle3::Triangle3
-(
-    const fvMesh& mesh,
-    const label& faceI
-)
-:
-    Face(mesh, faceI)
-{
-    weights.resize(3);
-    quadPoints.resize(3);
-    const UList<label>& facePointsId = mesh.faces()[faceI];
-    Mat3X3 facePoints
-    {
-        {mesh.points()[facePointsId[0]][0], mesh.points()[facePointsId[0]][1], mesh.points()[facePointsId[0]][2]},
-        {mesh.points()[facePointsId[1]][0], mesh.points()[facePointsId[1]][1], mesh.points()[facePointsId[1]][2]},
-        {mesh.points()[facePointsId[2]][0], mesh.points()[facePointsId[2]][1], mesh.points()[facePointsId[2]][2]}
-    };
-    for (label i = 0; i != 3; ++i)
-    {
-        GetTriangleCoordAndWeight(Tria3::x[i], Tria3::y[i], Tria3::w[i], facePoints,
-                                  weights[i], quadPoints[i]);
-    }
-}
 
-Foam::Triangle6::Triangle6
+template<>
+void Foam::GetCoordAndWeight<4>
 (
-    const fvMesh& mesh,
-    const label& faceI
+    const scalar x_local,
+    const scalar y_local,
+    const scalar w_local,
+    const Eigen::Matrix<scalar, 3, 4>& facePoints,
+    scalar& weight,
+    vector& quadPoint
 )
-:
-    Face(mesh, faceI)
 {
-    weights.resize(6);
-    quadPoints.resize(6);
-    const UList<label>& facePointsId = mesh.faces()[faceI];
-    Mat3X3 facePoints
-    {
-        {mesh.points()[facePointsId[0]][0], mesh.points()[facePointsId[0]][1], mesh.points()[facePointsId[0]][2]},
-        {mesh.points()[facePointsId[1]][0], mesh.points()[facePointsId[1]][1], mesh.points()[facePointsId[1]][2]},
-        {mesh.points()[facePointsId[2]][0], mesh.points()[facePointsId[2]][1], mesh.points()[facePointsId[2]][2]}
-    };
-    for (label i = 0; i != 6; ++i)
-    {
-        GetTriangleCoordAndWeight(Tria6::x[i], Tria6::y[i], Tria6::w[i], facePoints,
-                                  weights[i], quadPoints[i]);
-    }
-}
-
-Foam::Quadrangle4::Quadrangle4
-(
-    const fvMesh& mesh,
-    const label& faceI
-)
-:
-    Face(mesh, faceI)
-{
-    weights.resize(4);
-    quadPoints.resize(4);
-    const UList<label>& facePointsId = mesh.faces()[faceI];
-    Mat4X3 facePoints
-    {
-        {mesh.points()[facePointsId[0]][0], mesh.points()[facePointsId[0]][1], mesh.points()[facePointsId[0]][2]},
-        {mesh.points()[facePointsId[1]][0], mesh.points()[facePointsId[1]][1], mesh.points()[facePointsId[1]][2]},
-        {mesh.points()[facePointsId[2]][0], mesh.points()[facePointsId[2]][1], mesh.points()[facePointsId[2]][2]},
-        {mesh.points()[facePointsId[3]][0], mesh.points()[facePointsId[3]][1], mesh.points()[facePointsId[3]][2]}
-    };
-    for (label i = 0; i != 4; ++i)
-    {
-        GetQuadrangleCoordAndWeight(Quad4::x[i], Quad4::y[i], Quad4::w[i], facePoints,
-                                    weights[i], quadPoints[i]);
-    }
-}
-
-Foam::Quadrangle9::Quadrangle9
-(
-    const fvMesh& mesh,
-    const label& faceI
-)
-:
-    Face(mesh, faceI)
-{
-    weights.resize(9);
-    quadPoints.resize(9);
-    const UList<label>& facePointsId = mesh.faces()[faceI];
-    Mat4X3 facePoints
-    {
-        {mesh.points()[facePointsId[0]][0], mesh.points()[facePointsId[0]][1], mesh.points()[facePointsId[0]][2]},
-        {mesh.points()[facePointsId[1]][0], mesh.points()[facePointsId[1]][1], mesh.points()[facePointsId[1]][2]},
-        {mesh.points()[facePointsId[2]][0], mesh.points()[facePointsId[2]][1], mesh.points()[facePointsId[2]][2]},
-        {mesh.points()[facePointsId[3]][0], mesh.points()[facePointsId[3]][1], mesh.points()[facePointsId[3]][2]}
-    };
-    for (label i = 0; i != 9; ++i)
-    {
-        GetQuadrangleCoordAndWeight(Quad9::x[i], Quad9::y[i], Quad9::w[i], facePoints,
-                                    weights[i], quadPoints[i]);
-    }
+    // weight
+    Mat4X2 dn;
+    Arr4X1 factor_x = Quad4::x_hexa_i * x_local; factor_x += 1;
+    Arr4X1 factor_y = Quad4::y_hexa_i * y_local; factor_y += 1;
+    dn.col(0) << Quad4::x_hexa_i * factor_y;
+    dn.col(1) << Quad4::y_hexa_i * factor_x;
+    dn *= 0.25;
+    Mat3X2 dr = facePoints*dn;
+    weight = w_local* sqrt((dr.transpose() * dr).determinant());
+    // coord
+    Arr4X1 N = 0.25*(1+Quad4::x_hexa_i*x_local)*(1+Quad4::y_hexa_i*y_local);
+    Col3X1 coord = facePoints*N.matrix();
+    quadPoint = vector(coord(0), coord(1), coord(2));
 }
 
 void Foam::build2ndFace
@@ -193,8 +154,8 @@ void Foam::build2ndFace
 {
     const UList<label>& facePointsId = mesh.faces()[faceI];
     const label nNodes = facePointsId.size();
-    if (nNodes == 3) face.reset(new Triangle3(mesh, faceI));
-    if (nNodes == 4) face.reset(new Quadrangle4(mesh, faceI));
+    if (nNodes == 3) face.reset(new Quadrature<3,3>(mesh, faceI));
+    if (nNodes == 4) face.reset(new Quadrature<4,4>(mesh, faceI));
 }
 
 void Foam::build4stFace
@@ -206,8 +167,8 @@ void Foam::build4stFace
 {
     const UList<label>& facePointsId = mesh.faces()[faceI];
     const label nNodes = facePointsId.size();
-    if (nNodes == 3) face.reset(new Triangle6(mesh, faceI));
-    if (nNodes == 4) face.reset(new Quadrangle9(mesh, faceI));
+    if (nNodes == 3) face.reset(new Quadrature<3,6>(mesh, faceI));
+    if (nNodes == 4) face.reset(new Quadrature<4,9>(mesh, faceI));
 }
 
 void Foam::gaussHexa8
