@@ -25,47 +25,6 @@ License
 
 #include "element.H"
 
-template<>
-std::array<scalar, 3> Foam::Quadrature<3, 3>::x{0.0, 0.5, 0.5};
-template<>
-std::array<scalar, 3> Foam::Quadrature<3, 3>::y{0.5, 0.0, 0.5};
-template<>
-std::array<scalar, 3> Foam::Quadrature<3, 3>::w = {1.0/6.0, 1.0/6.0, 1.0/6.0};
-
-
-template<>
-std::array<scalar, 6> Foam::Quadrature<3, 6>::x{0.8168475729804585, 0.0915762135097708, 0.0915762135097708,
-                                                0.1081030181680702, 0.4459484909159649, 0.4459484909159649};
-template<>
-std::array<scalar, 6> Foam::Quadrature<3, 6>::y{0.0915762135097708, 0.0915762135097708, 0.8168475729804585,
-                                                0.4459484909159649, 0.4459484909159649, 0.1081030181680702};
-template<>
-std::array<scalar, 6> Foam::Quadrature<3, 6>::w{0.054975871827660935, 0.054975871827660935, 0.054975871827660935,
-                                                0.111690794839005740, 0.111690794839005740, 0.111690794839005740};
-
-template<>
-std::array<scalar, 4> Foam::Quadrature<4, 4>::x{-std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0),
-                                                +std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0)};
-template<>
-std::array<scalar, 4> Foam::Quadrature<4, 4>::y{-std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0),
-                                                +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0)};
-template<>
-std::array<scalar, 4> Foam::Quadrature<4, 4>::w{1.0, 1.0, 1.0, 1.0};
-
-template<>
-std::array<scalar, 9> Foam::Quadrature<4, 9>::x{-std::sqrt(0.6),                0.0, +std::sqrt(0.6),
-                                                -std::sqrt(0.6),                0.0, +std::sqrt(0.6),
-                                                -std::sqrt(0.6),                0.0, +std::sqrt(0.6)};
-template<>
-std::array<scalar, 9> Foam::Quadrature<4, 9>::y{+std::sqrt(0.6), +std::sqrt(0.6), +std::sqrt(0.6),
-                                                            0.0,             0.0,             0.0,
-                                                -std::sqrt(0.6), -std::sqrt(0.6), -std::sqrt(0.6)};
-template<>
-std::array<scalar, 9> Foam::Quadrature<4, 9>::w{25.0/81.0, 40.0/81.0, 25.0/81.0,
-                                                40.0/81.0, 64.0/81.0, 40.0/81.0,
-                                                25.0/81.0, 40.0/81.0, 25.0/81.0};
-
-
 template<int nVertex, int nPoints>
 Foam::Quadrature<nVertex, nPoints>::Quadrature
 (
@@ -87,7 +46,8 @@ Foam::Quadrature<nVertex, nPoints>::Quadrature
     }
     for (label i = 0; i != nPoints; ++i)
     {
-        GetCoordAndWeight<nVertex>(x[i], y[i], w[i], facePoints, weights[i], quadPoints[i]);
+        GetCoordAndWeight<nVertex>(local_x_[i], local_y_[i], local_w_[i],
+                                   facePoints, weights[i], quadPoints[i]);
     }
 }
 

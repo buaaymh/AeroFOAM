@@ -43,8 +43,82 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Gauss Namespace  Declaration
+                           Gauss Class Declaration
 \*---------------------------------------------------------------------------*/
+
+template<int nVertex, int nPoints>
+class Gauss;
+
+template<>
+class Gauss<3, 3>
+{
+public:
+    static constexpr auto buildLocalXCoords() { return std::array<scalar, 3>{0.0, 0.5, 0.5}; }
+    static constexpr auto buildLocalYCoords() { return std::array<scalar, 3>{0.5, 0.0, 0.5}; }
+    static constexpr auto buildLocalWeights() { return std::array<scalar, 3>{1.0/6.0, 1.0/6.0, 1.0/6.0}; }
+};
+
+template<>
+class Gauss<3, 6>
+{
+public:
+    static constexpr auto buildLocalXCoords()
+    { 
+        return std::array<scalar, 6>{0.8168475729804585, 0.0915762135097708, 0.0915762135097708,
+                                     0.1081030181680702, 0.4459484909159649, 0.4459484909159649};
+    }
+    static constexpr auto buildLocalYCoords()
+    { 
+        return std::array<scalar, 6>{0.0915762135097708, 0.0915762135097708, 0.8168475729804585,
+                                     0.4459484909159649, 0.4459484909159649, 0.1081030181680702};
+    }
+    static constexpr auto buildLocalWeights()
+    { 
+        return std::array<scalar, 6>{0.054975871827660935, 0.054975871827660935, 0.054975871827660935,
+                                     0.111690794839005740, 0.111690794839005740, 0.111690794839005740};
+    }
+};
+
+template<>
+class Gauss<4, 4>
+{
+public:
+    static constexpr auto buildLocalXCoords()
+    {
+        return std::array<scalar, 4>{-std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0),
+                                     +std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0)};
+    }
+    static constexpr auto buildLocalYCoords()
+    {
+        return std::array<scalar, 4>{-std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0),
+                                     +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0)};
+    }
+    static constexpr auto buildLocalWeights() { return std::array<scalar, 4>{1.0, 1.0, 1.0, 1.0}; }
+};
+
+template<>
+class Gauss<4, 9>
+{
+public:
+    static constexpr auto buildLocalXCoords()
+    { 
+        return std::array<scalar, 9>{-std::sqrt(0.6),             0.0, +std::sqrt(0.6),
+                                     -std::sqrt(0.6),             0.0, +std::sqrt(0.6),
+                                     -std::sqrt(0.6),             0.0, +std::sqrt(0.6)};
+    }
+    static constexpr auto buildLocalYCoords()
+    { 
+        return std::array<scalar, 9>{+std::sqrt(0.6), +std::sqrt(0.6), +std::sqrt(0.6),
+                                                0.0 ,            0.0 ,            0.0 ,
+                                     -std::sqrt(0.6), -std::sqrt(0.6), -std::sqrt(0.6)};
+    }
+    static constexpr auto buildLocalWeights()
+    { 
+        return std::array<scalar, 9>{25.0/81.0, 40.0/81.0, 25.0/81.0,
+                                     40.0/81.0, 64.0/81.0, 40.0/81.0,
+                                     25.0/81.0, 40.0/81.0, 25.0/81.0};
+    }
+};
 
 namespace Quad4
 {
@@ -132,13 +206,25 @@ public:
     const vector& at(label i) const { return quadPoints[i]; }
 
 protected:
-    static std::array<scalar, nPoints> x;
-    static std::array<scalar, nPoints> y;
-    static std::array<scalar, nPoints> w;
+    static const std::array<scalar, nPoints> local_x_;
+    static const std::array<scalar, nPoints> local_y_;
+    static const std::array<scalar, nPoints> local_w_;
     vector normal_;
     std::vector<scalar> weights;
     std::vector<vector> quadPoints;
 };
+
+template<int nVertex, int nPoints>
+const std::array<scalar, nPoints> Quadrature<nVertex, nPoints>::local_x_
+    = Gauss<nVertex, nPoints>::buildLocalXCoords();
+
+template<int nVertex, int nPoints>
+const std::array<scalar, nPoints> Quadrature<nVertex, nPoints>::local_y_
+    = Gauss<nVertex, nPoints>::buildLocalYCoords();
+
+template<int nVertex, int nPoints>
+const std::array<scalar, nPoints> Quadrature<nVertex, nPoints>::local_w_
+    = Gauss<nVertex, nPoints>::buildLocalWeights();
 
 template<int nVertex>
 void GetCoordAndWeight
