@@ -92,15 +92,15 @@ void Foam::GetCoordAndWeight<4>
 {
     // weight
     Mat4X2 dn;
-    Arr4X1 factor_x = Quad4::x_hexa_i * x_local; factor_x += 1;
-    Arr4X1 factor_y = Quad4::y_hexa_i * y_local; factor_y += 1;
-    dn.col(0) << Quad4::x_hexa_i * factor_y;
-    dn.col(1) << Quad4::y_hexa_i * factor_x;
+    Arr4X1 factor_x = Local::x_quad_i * x_local; factor_x += 1;
+    Arr4X1 factor_y = Local::y_quad_i * y_local; factor_y += 1;
+    dn.col(0) << Local::x_quad_i * factor_y;
+    dn.col(1) << Local::y_quad_i * factor_x;
     dn *= 0.25;
     Mat3X2 dr = facePoints*dn;
     weight = w_local* sqrt((dr.transpose() * dr).determinant());
     // coord
-    Arr4X1 N = 0.25*(1+Quad4::x_hexa_i*x_local)*(1+Quad4::y_hexa_i*y_local);
+    Arr4X1 N = 0.25*(1+Local::x_quad_i*x_local)*(1+Local::y_quad_i*y_local);
     Col3X1 coord = facePoints*N.matrix();
     quadPoint = vector(coord(0), coord(1), coord(2));
 }
@@ -157,17 +157,17 @@ void Foam::gaussHexa8
     {
         // weight
         Mat8X3 dn;
-        Arr8X1 factor_x = Hexa8::x_hexa_i * Hexa8::x[i]; factor_x += 1;
-        Arr8X1 factor_y = Hexa8::y_hexa_i * Hexa8::y[i]; factor_y += 1;
-        Arr8X1 factor_z = Hexa8::z_hexa_i * Hexa8::z[i]; factor_z += 1;
-        dn.col(0) << Hexa8::x_hexa_i * factor_y * factor_z;
-        dn.col(1) << Hexa8::y_hexa_i * factor_x * factor_z;
-        dn.col(2) << Hexa8::z_hexa_i * factor_x * factor_y;
+        Arr8X1 factor_x = Local::x_hexa_i * Hexa8::x[i]; factor_x += 1;
+        Arr8X1 factor_y = Local::y_hexa_i * Hexa8::y[i]; factor_y += 1;
+        Arr8X1 factor_z = Local::z_hexa_i * Hexa8::z[i]; factor_z += 1;
+        dn.col(0) << Local::x_hexa_i * factor_y * factor_z;
+        dn.col(1) << Local::y_hexa_i * factor_x * factor_z;
+        dn.col(2) << Local::z_hexa_i * factor_x * factor_y;
         dn *= 0.125;
         Mat3X3 dr = cellShapes.transpose()*dn;
         weight[i] = Hexa8::w[i] * mag(dr.determinant());
         // coord
-        Arr8X1 N = 0.125*(1+Hexa8::x_hexa_i*Hexa8::x[i])*(1+Hexa8::y_hexa_i*Hexa8::y[i])*(1+Hexa8::z_hexa_i*Hexa8::z[i]);
+        Arr8X1 N = 0.125*(1+Local::x_hexa_i*Hexa8::x[i])*(1+Local::y_hexa_i*Hexa8::y[i])*(1+Local::z_hexa_i*Hexa8::z[i]);
         Col3X1 coord = cellShapes.transpose()*N.matrix();
         quadPoints[i] = vector(coord(0), coord(1), coord(2));
     }

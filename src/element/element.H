@@ -120,10 +120,14 @@ public:
     }
 };
 
-namespace Quad4
+namespace Local
 {
-    static const Arr4X1 x_hexa_i{-1, +1, +1, -1};
-    static const Arr4X1 y_hexa_i{-1, -1, +1, +1};
+    static const Arr4X1 x_quad_i{-1, +1, +1, -1};
+    static const Arr4X1 y_quad_i{-1, -1, +1, +1};
+    
+    static const Arr8X1 x_hexa_i{-1, +1, +1, -1, -1, +1, +1, -1};
+    static const Arr8X1 y_hexa_i{-1, -1, +1, +1, -1, -1, +1, +1};
+    static const Arr8X1 z_hexa_i{-1, -1, -1, -1, +1, +1, +1, +1};
 }
 
 namespace Hexa8
@@ -135,10 +139,6 @@ namespace Hexa8
     static constexpr std::array<scalar, 8> z{-std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0), -std::sqrt(1.0/3.0),
                                              +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0), +std::sqrt(1.0/3.0)};
     static constexpr std::array<scalar, 8> w{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-
-    static const Arr8X1 x_hexa_i{-1, +1, +1, -1, -1, +1, +1, -1};
-    static const Arr8X1 y_hexa_i{-1, -1, +1, +1, -1, -1, +1, +1};
-    static const Arr8X1 z_hexa_i{-1, -1, -1, -1, +1, +1, +1, +1};
 }
 
 namespace Prism6
