@@ -126,13 +126,6 @@ void Foam::euler3rdSolver::evaluateFlowRes
                         rhoU_j = rhoU_i - 2*(rhoU_i&boundaryQuad[faceI]->normal(gaussI))*boundaryQuad[faceI]->normal(gaussI);
                         evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_i, rhoU_i, rhoU_j, rhoE_i, rhoE_i,
                                      boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
-                        // * * * * * * * * //
-                        // vector N = vector(-boundaryQuad[faceI]->at(gaussI)[0], -boundaryQuad[faceI]->at(gaussI)[1], 0);
-                        // N /= mag(N);
-                        // rhoU_j = rhoU_i - 2*(rhoU_i&N)*N;
-                        // evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_i, rhoU_i, rhoU_j, rhoE_i, rhoE_i,
-                        //              N, boundaryQuad[faceI]->weight(gaussI));
-                        // * * * * * * * * //
                     }
                 }
                 resRho[i]  -= rhoFlux;

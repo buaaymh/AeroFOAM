@@ -101,11 +101,6 @@ void Foam::euler3rdSolver::reconstructionIter()
                     const vector rhoUDn0_i = rhoU_[i] + vector(varDn0(1), varDn0(2), varDn0(3));
                     const vector rhoUDn0_j = rhoUDn0_i - 2*(rhoUDn0_i&boundaryQuad[faceI]->normal(gaussI))
                                            * boundaryQuad[faceI]->normal(gaussI);
-                    // * * * * * * * * //
-                    // vector N = vector(-boundaryQuad[faceI]->at(gaussI)[0], -boundaryQuad[faceI]->at(gaussI)[1], 0);
-                    // N /= mag(N);
-                    // const vector rhoUDn0_j = rhoUDn0_i - 2*(rhoUDn0_i&N)*N;
-                    // * * * * * * * * //
                     const scalar dRhoDn0  = dpwTemp[0]*varDn0(0);
                     const vector dRhoUDn0 = dpwTemp[0]*(rhoUDn0_j - rhoU_[i]);
                     const scalar dRhoEDn0 = dpwTemp[0]*varDn0(4);
