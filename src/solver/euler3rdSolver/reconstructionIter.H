@@ -21,7 +21,6 @@ void Foam::euler3rdSolver::reconstructionIter()
     }
     /* Calculate b of vr linear system */
     std::vector<Mat9X5> bW(mesh_.nCells(), Mat9X5::Zero());
-    std::unique_ptr<Face> faceQuad;
     const auto& owner = mesh_.owner();
     const auto& neighbour = mesh_.neighbour();
     forAll(owner, faceI)
@@ -39,7 +38,6 @@ void Foam::euler3rdSolver::reconstructionIter()
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
         const word type = mesh_.boundary()[patchI].type();
-        const label start = mesh_.boundary()[patchI].start();
         if (mesh_.boundary()[patchI].coupled())
         {
             const scalarField rho_neigh  = rho_.boundaryField()[patchI].patchNeighbourField();
@@ -85,23 +83,29 @@ void Foam::euler3rdSolver::reconstructionIter()
         {
             const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
             const scalarField d_ij = mag(mesh_.boundary()[patchI].delta());
+            const std::vector<std::unique_ptr<Face>>& boundaryQuad = patch4stQuad_[patchI];
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                build4stFace(mesh_, start+faceI, faceQuad);
                 const vector dp = vector(vrWeightSqr_[0]/d_ij[faceI],
                                          vrWeightSqr_[1]*d_ij[faceI],
                                          vrWeightSqr_[2]*pow3(d_ij[faceI]));
                 Mat9X5 b = Mat9X5::Zero();
-                for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
+                for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
-                    const vector delta_i = faceQuad->at(gaussI) - ownerCn[faceI];
-                    const vector dpwTemp = faceQuad->weight(gaussI)*dp;
+                    const vector delta_i = boundaryQuad[faceI]->at(gaussI) - ownerCn[faceI];
+                    const vector dpwTemp = boundaryQuad[faceI]->weight(gaussI)*dp;
                     Col9X1 Dn0_i = polynomialDn0(delta_i, rDeltaXYZ_[i], basisMean_[i]);
                     Col5X1 varDn0 = coefs_[i].transpose()*Dn0_i;
                     // Dn0
                     const vector rhoUDn0_i = rhoU_[i] + vector(varDn0(1), varDn0(2), varDn0(3));
-                    const vector rhoUDn0_j = rhoUDn0_i - 2*(rhoUDn0_i&faceQuad->normal(gaussI))*faceQuad->normal(gaussI);
+                    const vector rhoUDn0_j = rhoUDn0_i - 2*(rhoUDn0_i&boundaryQuad[faceI]->normal(gaussI))
+                                           * boundaryQuad[faceI]->normal(gaussI);
+                    // * * * * * * * * //
+                    // vector N = vector(-boundaryQuad[faceI]->at(gaussI)[0], -boundaryQuad[faceI]->at(gaussI)[1], 0);
+                    // N /= mag(N);
+                    // const vector rhoUDn0_j = rhoUDn0_i - 2*(rhoUDn0_i&N)*N;
+                    // * * * * * * * * //
                     const scalar dRhoDn0  = dpwTemp[0]*varDn0(0);
                     const vector dRhoUDn0 = dpwTemp[0]*(rhoUDn0_j - rhoU_[i]);
                     const scalar dRhoEDn0 = dpwTemp[0]*varDn0(4);

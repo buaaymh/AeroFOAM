@@ -120,6 +120,10 @@ public:
     }
 };
 
+/*---------------------------------------------------------------------------*\
+                           namespace Declaration
+\*---------------------------------------------------------------------------*/
+
 namespace Local
 {
     static const Arr4X1 x_quad_i{-1, +1, +1, -1};
@@ -164,10 +168,177 @@ namespace Tetra4
 }
 
 /*---------------------------------------------------------------------------*\
-                           Class Face Declaration
+                           Class Surface Declaration
 \*---------------------------------------------------------------------------*/
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+template<int nVertex>
+class Surface;
+
+template<>
+class Surface<3>
+{
+public:
+
+    static void GetCoordAndWeight
+    (
+        const scalar& x_local,
+        const scalar& y_local,
+        const scalar& w_local,
+        const Eigen::Matrix<scalar, 3, 3>& facePoints,
+        scalar& weight,
+        vector& quadPoint
+    )
+    {
+        // weight
+        Mat3X2 dr = Jacobian(x_local, y_local, facePoints);
+        weight = w_local* sqrt((dr.transpose() * dr).determinant());
+        // coord
+        Col3X1 N{x_local, y_local, 1-x_local-y_local};
+        Col3X1 coord = facePoints*N;
+        quadPoint = vector(coord(0), coord(1), coord(2));
+    }
+
+    static const Mat3X2 Jacobian
+    (
+        const scalar& x_local,
+        const scalar& y_local,
+        const Eigen::Matrix<scalar, 3, 3>& facePoints
+    )
+    {
+        return facePoints*Mat3X2{{ 1, 0}, { 0, 1}, {-1,-1}};
+    }
+
+    static const auto PolyArray(const scalar& x, const scalar& y)
+    {
+        return Eigen::Matrix<scalar, 9, 1>{1, x, y, x*x, x*y, y*y, x*x*x, x*x*y, y*y*y};
+    }
+
+    static const auto PolyArrayDx(const scalar& x, const scalar& y)
+    {
+        return Eigen::Matrix<scalar, 9, 1>{0, 1, 0, 2*x, y, 0, 3*x*x, 2*x*y, 0};
+    }
+
+    static const auto PolyArrayDy(const scalar& x, const scalar& y)
+    {
+        return Eigen::Matrix<scalar, 9, 1>{0, 0, 1, 0, x, 2*y, 0, x*x, 3*y*y};
+    }
+
+    static const auto buildMatrixAForCurve()
+    {
+        Eigen::Matrix<scalar, 9, 9> A = Eigen::Matrix<scalar, 9, 9>::Zero();
+        A.col(0) -= PolyArray(1, 0); A.col(1) -= PolyArrayDx(1, 0); A.col(2) -= PolyArrayDy(1, 0);
+        A.col(3) -= PolyArray(0, 1); A.col(4) -= PolyArrayDx(0, 1); A.col(5) -= PolyArrayDy(0, 1);
+        A.col(6) -= PolyArray(0, 0); A.col(7) -= PolyArrayDx(0, 0); A.col(8) -= PolyArrayDy(0, 0);
+        A.transposeInPlace();
+        return A;
+    }
+
+    static const auto buildColumebForCurve
+    (
+        const Col3X1& faceNormal,
+        const Eigen::Matrix<scalar, 3, 3>& faceVertexes,
+        const Eigen::Matrix<scalar, 3, 3>& vertexNormal
+    )
+    {
+        Eigen::Matrix<scalar, 9, 1> b = Eigen::Matrix<scalar, 9, 1>::Zero();
+        Mat3X2 jacobian = Jacobian(0, 0, faceVertexes);
+        for (int i = 0; i != 3; i++)
+        {
+            Col3X1 F_xyz = vertexNormal.col(i)/(vertexNormal.col(i).dot(faceNormal));
+            b.block<2,1>(i*3+1,0) = jacobian.transpose()*F_xyz;
+        }
+        return b;
+    }
+};
+
+template<>
+class Surface<4>
+{
+public:
+
+    static void GetCoordAndWeight
+    (
+        const scalar& x_local,
+        const scalar& y_local,
+        const scalar& w_local,
+        const Eigen::Matrix<scalar, 3, 4>& facePoints,
+        scalar& weight,
+        vector& quadPoint
+    )
+    {
+        // weight
+        Mat3X2 dr = Jacobian(x_local, y_local, facePoints);
+        weight = w_local* sqrt((dr.transpose() * dr).determinant());
+        // coord
+        Arr4X1 N = 0.25*(1+Local::x_quad_i*x_local)*(1+Local::y_quad_i*y_local);
+        Col3X1 coord = facePoints*N.matrix();
+        quadPoint = vector(coord(0), coord(1), coord(2));
+    }
+
+    static const Mat3X2 Jacobian
+    (
+        const scalar& x_local,
+        const scalar& y_local,
+        const Eigen::Matrix<scalar, 3, 4>& facePoints
+    )
+    {
+        // weight
+        Mat4X2 dn;
+        Arr4X1 factor_x = Local::x_quad_i * x_local; factor_x += 1;
+        Arr4X1 factor_y = Local::y_quad_i * y_local; factor_y += 1;
+        dn.col(0) << Local::x_quad_i * factor_y;
+        dn.col(1) << Local::y_quad_i * factor_x;
+        dn *= 0.25;
+        return facePoints*dn;
+    }
+
+    static const auto PolyArray(const scalar& x, const scalar& y)
+    {
+        return Eigen::Matrix<scalar, 12, 1>{1, x, y, x*x, x*y, y*y, x*x*x, x*x*y, x*y*y, y*y*y, x*x*x*x, y*y*y*y};
+    }
+
+    static const auto PolyArrayDx(const scalar& x, const scalar& y)
+    {
+        return Eigen::Matrix<scalar, 12, 1>{0, 1, 0, 2*x, y, 0, 3*x*x, 2*x*y, y*y, 0, 4*x*x*x, 0};
+    }
+
+    static const auto PolyArrayDy(const scalar& x, const scalar& y)
+    {
+        return Eigen::Matrix<scalar, 12, 1>{0, 0, 1, 0, x, 2*y, 0, x*x, 2*x*y, 3*y*y, 0, 4*y*y*y};
+    }
+
+    static const auto buildMatrixAForCurve()
+    {
+        Eigen::Matrix<scalar, 12, 12> A = Eigen::Matrix<scalar, 12, 12>::Zero();
+        A.col(0) -= PolyArray(-1, -1); A.col(1) -= PolyArrayDx(-1, -1); A.col(2) -= PolyArrayDy(-1, -1);
+        A.col(3) -= PolyArray( 1, -1); A.col(4) -= PolyArrayDx( 1, -1); A.col(5) -= PolyArrayDy( 1, -1);
+        A.col(6) -= PolyArray( 1,  1); A.col(7) -= PolyArrayDx( 1,  1); A.col(8) -= PolyArrayDy( 1,  1);
+        A.col(9) -= PolyArray(-1,  1); A.col(10)-= PolyArrayDx(-1,  1); A.col(11)-= PolyArrayDy(-1,  1);
+        A.transposeInPlace();
+        return A;
+    }
+
+    static const auto buildColumebForCurve
+    (
+        const Col3X1& faceNormal,
+        const Eigen::Matrix<scalar, 3, 4>& faceVertexes,
+        const Eigen::Matrix<scalar, 3, 4>& vertexNormal
+    )
+    {
+        Eigen::Matrix<scalar, 12, 1> b = Eigen::Matrix<scalar, 12, 1>::Zero();
+        for (int i = 0; i != 4; i++)
+        {
+            Mat3X2 jacobian = Jacobian(Local::x_quad_i(i), Local::y_quad_i(i), faceVertexes);
+            Col3X1 F_xyz = vertexNormal.col(i)/(vertexNormal.col(i).dot(faceNormal));
+            b.block<2,1>(i*3+1,0) = jacobian.transpose()*F_xyz;
+        }
+        return b;
+    }
+};
+
+/*---------------------------------------------------------------------------*\
+                           Class Face Declaration
+\*---------------------------------------------------------------------------*/
 
 class Face
 {
@@ -186,11 +357,17 @@ public:
     virtual const vector& at(label i) const = 0;
 };
 
+/*---------------------------------------------------------------------------*\
+                           Class Quadrature Declaration
+\*---------------------------------------------------------------------------*/
+
 template<int nVertex, int nPoints>
 class Quadrature: public Face
 {
 public:
     // Constructors - default
+    Quadrature() = default;
+
     Quadrature(const fvMesh& mesh, const label& faceI);
 
     // Destructor - default
@@ -199,19 +376,18 @@ public:
     // Member Functions
     label size() const { return nPoints; };
 
-    const vector& normal(label i) const { return normal_; }
+    virtual const vector& normal(label i) const { return normal_; }
 
     scalar weight(label i) const { return weights[i]; }
     
     const vector& at(label i) const { return quadPoints[i]; }
 
-protected:
     static const std::array<scalar, nPoints> local_x_;
     static const std::array<scalar, nPoints> local_y_;
     static const std::array<scalar, nPoints> local_w_;
     vector normal_;
-    std::vector<scalar> weights;
-    std::vector<vector> quadPoints;
+    std::array<scalar, nPoints> weights;
+    std::array<vector, nPoints> quadPoints;
 };
 
 template<int nVertex, int nPoints>
@@ -226,20 +402,44 @@ template<int nVertex, int nPoints>
 const std::array<scalar, nPoints> Quadrature<nVertex, nPoints>::local_w_
     = Gauss<nVertex, nPoints>::buildLocalWeights();
 
-template<int nVertex>
-void GetCoordAndWeight
-(
-    const scalar x_local,
-    const scalar y_local,
-    const scalar w_local,
-    const Eigen::Matrix<scalar, 3, nVertex>& facePoints,
-    scalar& weight,
-    vector& quadPoint
-);
+/*---------------------------------------------------------------------------*\
+                           Class CurvedQuadrature Declaration
+\*---------------------------------------------------------------------------*/
 
-void build2ndFace(const fvMesh& mesh, const label& faceI, std::unique_ptr<Face>& face);
+template<int nVertex, int nPoints>
+class CurvedQuadrature: public Quadrature<nVertex, nPoints>
+{
+public:
+    using Base = Quadrature<nVertex, nPoints>;
+    using Col = Eigen::Matrix<scalar, nVertex*3, 1>;
+    using Mat = Eigen::Matrix<scalar, nVertex*3, nVertex*3>;
+    // Constructors - default
+    CurvedQuadrature(const fvMesh& mesh, const label& patchI, const label& faceI);
 
-void build4stFace(const fvMesh& mesh, const label& faceI, std::unique_ptr<Face>& face);
+    // Destructor - default
+    virtual ~CurvedQuadrature() {};
+    
+    const vector& normal(label i) const { return normalList_[i]; }
+
+    void solveCurvedFace
+    (
+        const Eigen::Matrix<scalar, 3, nVertex>& faceVertexes,
+        const Eigen::Matrix<scalar, 3, nVertex>& vertexNormal
+    );
+
+private:
+    static const Mat A_;
+    std::array<vector, nPoints> normalList_;
+};
+
+template<int nVertex, int nPoints>
+typename CurvedQuadrature<nVertex, nPoints>::Mat
+const CurvedQuadrature<nVertex, nPoints>::A_
+    = Surface<nVertex>::buildMatrixAForCurve();
+
+/*---------------------------------------------------------------------------*\
+                           Methods Declaration
+\*---------------------------------------------------------------------------*/
 
 void gaussHexa8
 (
@@ -264,6 +464,14 @@ void gaussTetra4
     std::vector<scalar>& weight,
     std::vector<vector>& quadPoints
 );
+
+void build2ndFace(const fvMesh& mesh, const label& faceI, std::unique_ptr<Face>& face);
+
+void build4stFace(const fvMesh& mesh, const label& faceI, std::unique_ptr<Face>& face);
+
+void build2ndCurvedBoundary(const fvMesh& mesh, const label& patchI, const label& faceI, std::unique_ptr<Face>& face);
+
+void build4stCurvedBoundary(const fvMesh& mesh, const label& patchI, const label& faceI, std::unique_ptr<Face>& face);
 
 void build2ndCell
 (

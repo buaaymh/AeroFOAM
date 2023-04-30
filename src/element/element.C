@@ -32,103 +32,93 @@ Foam::Quadrature<nVertex, nPoints>::Quadrature
     const label& faceI
 )
 :
-    normal_(mesh.Sf()[faceI]/mesh.magSf()[faceI]),
-    weights(nPoints),
-    quadPoints(nPoints)
+    normal_(mesh.Sf()[faceI]/mesh.magSf()[faceI])
 {
     const UList<label>& facePointsId = mesh.faces()[faceI];
     Eigen::Matrix<scalar, 3, nVertex> facePoints;
-    for (int i = 0; i != nVertex; i++)
+    forAll(facePointsId, vertexI)
     {
-        facePoints.col(i) = Col3X1{mesh.points()[facePointsId[i]][0],
-                                   mesh.points()[facePointsId[i]][1],
-                                   mesh.points()[facePointsId[i]][2]};
+        facePoints.col(vertexI) = Col3X1{mesh.points()[facePointsId[vertexI]][0],
+                                         mesh.points()[facePointsId[vertexI]][1],
+                                         mesh.points()[facePointsId[vertexI]][2]};
     }
-    for (label i = 0; i != nPoints; ++i)
+    for (int i = 0; i != nPoints; ++i)
     {
-        GetCoordAndWeight<nVertex>(local_x_[i], local_y_[i], local_w_[i],
-                                   facePoints, weights[i], quadPoints[i]);
+        Surface<nVertex>::GetCoordAndWeight(local_x_[i], local_y_[i], local_w_[i],
+                                            facePoints, weights[i], quadPoints[i]);
     }
 }
 
-
-template<>
-void Foam::GetCoordAndWeight<3>
+template<int nVertex, int nPoints>
+Foam::CurvedQuadrature<nVertex, nPoints>::CurvedQuadrature
 (
-    const scalar x_local,
-    const scalar y_local,
-    const scalar w_local,
-    const Eigen::Matrix<scalar, 3, 3>& facePoints,
-    scalar& weight,
-    vector& quadPoint
+    const fvMesh& mesh,
+    const label& patchI,
+    const label& faceI
 )
+:
+    Quadrature<nVertex, nPoints>()
 {
-    // weight
-    Mat3X2 dn
+    Base::normal_ = mesh.Sf()[faceI]/mesh.magSf()[faceI];
+    const label start = mesh.boundary()[patchI].start();
+    const UList<label>& facePointsId = mesh.faces()[faceI];
+    Eigen::Matrix<scalar, 3, nVertex> faceVertexes;
+    Eigen::Matrix<scalar, 3, nVertex> vertexNormal;
+    forAll(facePointsId, vertexI)
     {
-        { 1,  0},
-        { 0,  1},
-        {-1, -1}
-    };
-    Mat3X2 dr = facePoints*dn;
-    weight = w_local* sqrt((dr.transpose() * dr).determinant());
-    // coord
-    Col3X1 N{x_local, y_local, 1-x_local-y_local};
-    Col3X1 coord = facePoints*N;
-    quadPoint = vector(coord(0), coord(1), coord(2));
+        faceVertexes.col(vertexI) = Col3X1{mesh.points()[facePointsId[vertexI]][0],
+                                           mesh.points()[facePointsId[vertexI]][1],
+                                           mesh.points()[facePointsId[vertexI]][2]};
+        const UList<label>& faceList = mesh.pointFaces()[facePointsId[vertexI]];
+        vector tempVector = vector::zero;
+        scalar tempScalar = 0;
+        forAll(faceList, f)
+        {
+            if ((faceList[f] >= start) && (faceList[f] < start+mesh.boundary()[patchI].size()))
+            {
+                tempVector += mesh.Sf()[faceList[f]];
+                tempScalar += mesh.magSf()[faceList[f]];
+            }
+        }
+        tempVector /= tempScalar;
+        vertexNormal.col(vertexI) = Col3X1{tempVector[0], tempVector[1], tempVector[2]};
+    }
+    solveCurvedFace(faceVertexes, vertexNormal);
 }
 
 
-template<>
-void Foam::GetCoordAndWeight<4>
+template<int nVertex, int nPoints>
+void Foam::CurvedQuadrature<nVertex, nPoints>::solveCurvedFace
 (
-    const scalar x_local,
-    const scalar y_local,
-    const scalar w_local,
-    const Eigen::Matrix<scalar, 3, 4>& facePoints,
-    scalar& weight,
-    vector& quadPoint
+    const Eigen::Matrix<scalar, 3, nVertex>& faceVertexes,
+    const Eigen::Matrix<scalar, 3, nVertex>& vertexNormal
 )
 {
-    // weight
-    Mat4X2 dn;
-    Arr4X1 factor_x = Local::x_quad_i * x_local; factor_x += 1;
-    Arr4X1 factor_y = Local::y_quad_i * y_local; factor_y += 1;
-    dn.col(0) << Local::x_quad_i * factor_y;
-    dn.col(1) << Local::y_quad_i * factor_x;
-    dn *= 0.25;
-    Mat3X2 dr = facePoints*dn;
-    weight = w_local* sqrt((dr.transpose() * dr).determinant());
-    // coord
-    Arr4X1 N = 0.25*(1+Local::x_quad_i*x_local)*(1+Local::y_quad_i*y_local);
-    Col3X1 coord = facePoints*N.matrix();
-    quadPoint = vector(coord(0), coord(1), coord(2));
-}
-
-void Foam::build2ndFace
-(
-  const fvMesh& mesh,
-  const label& faceI,
-  std::unique_ptr<Face>& face
-)
-{
-    const UList<label>& facePointsId = mesh.faces()[faceI];
-    const label nNodes = facePointsId.size();
-    if (nNodes == 3) face.reset(new Quadrature<3,3>(mesh, faceI));
-    if (nNodes == 4) face.reset(new Quadrature<4,4>(mesh, faceI));
-}
-
-void Foam::build4stFace
-(
-  const fvMesh& mesh,
-  const label& faceI,
-  std::unique_ptr<Face>& face
-)
-{
-    const UList<label>& facePointsId = mesh.faces()[faceI];
-    const label nNodes = facePointsId.size();
-    if (nNodes == 3) face.reset(new Quadrature<3,6>(mesh, faceI));
-    if (nNodes == 4) face.reset(new Quadrature<4,9>(mesh, faceI));
+    // Solving coefficients of the polynomials
+    Col3X1 faceNormal{Base::normal_[0], Base::normal_[1], Base::normal_[2]};
+    Col b = Surface<nVertex>::buildColumebForCurve(faceNormal, faceVertexes, vertexNormal);
+    Col coefList = A_.colPivHouseholderQr().solve(b);
+    for (int i = 0; i != nPoints; ++i)
+    {
+        // Solving quadrature points and weights for linear face
+        Surface<nVertex>::GetCoordAndWeight(Base::local_x_[i], Base::local_y_[i], Base::local_w_[i],
+                                            faceVertexes, Base::weights[i], Base::quadPoints[i]);
+        // Solving new quadrature points
+        const scalar h = Surface<nVertex>::PolyArray(Base::local_x_[i], Base::local_y_[i]).dot(coefList);
+        Base::quadPoints[i] += Base::normal_*h;
+        // Solving new quadrature normals
+        Mat3X3 quadA;
+        quadA.block<3,2>(0,0) = Surface<nVertex>::Jacobian(Base::local_x_[i], Base::local_y_[i], faceVertexes);
+        quadA.col(2) = faceNormal;
+        quadA.transposeInPlace();
+        Col3X1 quadb{-Surface<nVertex>::PolyArrayDx(Base::local_x_[i], Base::local_y_[i]).dot(coefList),
+                     -Surface<nVertex>::PolyArrayDy(Base::local_x_[i], Base::local_y_[i]).dot(coefList), 1};
+        Col3X1 quadNormal = quadA.colPivHouseholderQr().solve(quadb);
+        quadNormal /= Foam::sqrt(quadNormal.dot(quadNormal));
+        normalList_[i] = vector(quadNormal(0), quadNormal(1), quadNormal(2));
+        // Solving new quadrature weights
+        Base::weights[i] /= (quadNormal.dot(faceNormal));
+    }
 }
 
 void Foam::gaussHexa8
@@ -255,6 +245,56 @@ void Foam::gaussTetra4
         Col3X1 coord = cellShapes.transpose()*N;
         quadPoints[i] = vector(coord(0), coord(1), coord(2));
     }
+}
+
+void Foam::build2ndFace
+(
+  const fvMesh& mesh,
+  const label& faceI,
+  std::unique_ptr<Face>& face
+)
+{
+    const label nNodes = mesh.faces()[faceI].size();
+    if (nNodes == 3) face.reset(new Quadrature<3,3>(mesh, faceI));
+    if (nNodes == 4) face.reset(new Quadrature<4,4>(mesh, faceI));
+}
+
+void Foam::build4stFace
+(
+  const fvMesh& mesh,
+  const label& faceI,
+  std::unique_ptr<Face>& face
+)
+{
+    const label nNodes = mesh.faces()[faceI].size();
+    if (nNodes == 3) face.reset(new Quadrature<3,6>(mesh, faceI));
+    if (nNodes == 4) face.reset(new Quadrature<4,9>(mesh, faceI));
+}
+
+void Foam::build2ndCurvedBoundary
+(
+  const fvMesh& mesh,
+  const label& patchI,
+  const label& faceI,
+  std::unique_ptr<Face>& face
+)
+{
+    const label nNodes = mesh.faces()[faceI].size();
+    if (nNodes == 3) face.reset(new CurvedQuadrature<3,3>(mesh, patchI, faceI));
+    if (nNodes == 4) face.reset(new CurvedQuadrature<4,4>(mesh, patchI, faceI));
+}
+
+void Foam::build4stCurvedBoundary
+(
+  const fvMesh& mesh,
+  const label& patchI,
+  const label& faceI,
+  std::unique_ptr<Face>& face
+)
+{
+    const label nNodes = mesh.faces()[faceI].size();
+    if (nNodes == 3) face.reset(new CurvedQuadrature<3,6>(mesh, patchI, faceI));
+    if (nNodes == 4) face.reset(new CurvedQuadrature<4,9>(mesh, patchI, faceI));
 }
 
 void Foam::build2ndCell

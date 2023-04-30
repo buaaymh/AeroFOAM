@@ -137,7 +137,8 @@ protected:
     std::map<label, std::vector<Mat9X9>> coupledB_;
     std::map<label, std::vector<Col9X1>> coupledb_;
     //- Quadrature points
-    std::map<label, std::unique_ptr<Face>> patchQuad_;
+    std::map<label, std::vector<std::unique_ptr<Face>>> patch2ndQuad_;
+    std::map<label, std::vector<std::unique_ptr<Face>>> patch4stQuad_;
     std::vector<std::unique_ptr<Face>> faceQuad_;
     std::vector<Col9X1> polyNorm_;
     //- First polynomial coefficients

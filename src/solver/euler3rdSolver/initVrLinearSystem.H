@@ -7,10 +7,65 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     }
     rDeltaXYZ_.correctBoundaryConditions();
     basisMean_.correctBoundaryConditions();
+    
+    std::unique_ptr<Face> faceQuad;
+    // Interior face quadrature points Init
+    faceQuad_.reserve(mesh_.nInternalFaces());
+    forAll(mesh_.owner(), faceI)
+    {
+        build2ndFace(mesh_, faceI, faceQuad);
+        faceQuad_.emplace_back(std::move(faceQuad));
+    }
+    // Boundary face quadrature points Init
+    const Switch curvedWall = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("curvedWall", false);
+    forAll(mesh_.boundary(), patchI)
+    {
+        const vectorField& normal = normal_.boundaryField()[patchI];
+        const label start = mesh_.boundary()[patchI].start();
+        const word type = mesh_.boundary()[patchI].type();
+        if (mesh_.boundary()[patchI].coupled())
+        {
+            patch2ndQuad_[patchI] = std::vector<std::unique_ptr<Face>>();
+            patch2ndQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
+            forAll(normal, faceI)
+            {
+                build2ndFace(mesh_, start+faceI, faceQuad);
+                patch2ndQuad_[patchI].emplace_back(std::move(faceQuad));
+            }
+        }
+        if (type == "symmetryPlane" || type == "symmetry" || (type == "wall" && !curvedWall))
+        {
+            patch2ndQuad_[patchI] = std::vector<std::unique_ptr<Face>>();
+            patch4stQuad_[patchI] = std::vector<std::unique_ptr<Face>>();
+            patch2ndQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
+            patch4stQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
+            forAll(normal, faceI)
+            {
+                build2ndFace(mesh_, start+faceI, faceQuad);
+                patch2ndQuad_[patchI].emplace_back(std::move(faceQuad));
+                build4stFace(mesh_, start+faceI, faceQuad);
+                patch4stQuad_[patchI].emplace_back(std::move(faceQuad));
+            }
+        }
+        if (type == "wall" && curvedWall)
+        {
+            patch2ndQuad_[patchI] = std::vector<std::unique_ptr<Face>>();
+            patch4stQuad_[patchI] = std::vector<std::unique_ptr<Face>>();
+            patch2ndQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
+            patch4stQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
+            forAll(normal, faceI)
+            {
+
+                build2ndCurvedBoundary(mesh_, patchI, start+faceI, faceQuad);
+                patch2ndQuad_[patchI].emplace_back(std::move(faceQuad));
+                build4stCurvedBoundary(mesh_, patchI, start+faceI, faceQuad);
+                patch4stQuad_[patchI].emplace_back(std::move(faceQuad));
+            }
+        }
+    }
 
     const vector vrWeight = mesh_.schemes().subDict("vrSchemes").lookup<vector>("weightList");
     vrWeightSqr_ = cmptMultiply(vrWeight, vrWeight);
-    std::unique_ptr<Face> faceQuad;
     forAll(mesh_.owner(), faceI)
     {
         // rA, B, b Initialize
@@ -111,18 +166,18 @@ void Foam::euler3rdSolver::initVrLinearSystem()
         }
         if (type == "symmetryPlane" || type == "symmetry" || type == "wall")
         {
+            const std::vector<std::unique_ptr<Face>>& boundaryQuad = patch4stQuad_[patchI];
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                build4stFace(mesh_, start+faceI, faceQuad);
                 Mat9X9 A_i = Mat9X9::Zero();
                 const vector dp = vector(vrWeightSqr_[0]/d_ij[faceI],
                                          vrWeightSqr_[1]*d_ij[faceI],
                                          vrWeightSqr_[2]*pow3(d_ij[faceI]));
-                for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
+                for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
-                    const vector delta_i = faceQuad->at(gaussI) - ownerCn[faceI];
-                    const vector dpwTemp = faceQuad->weight(gaussI) * dp;
+                    const vector delta_i = boundaryQuad[faceI]->at(gaussI) - ownerCn[faceI];
+                    const vector dpwTemp = boundaryQuad[faceI]->weight(gaussI) * dp;
                     Col9X1 Dn0_i = polynomialDn0(delta_i, rDeltaXYZ_[i], basisMean_[i]);
                     for (label m = 0; m != 9; ++m)
                     {
@@ -139,14 +194,6 @@ void Foam::euler3rdSolver::initVrLinearSystem()
         }
     }
     forAll(mesh_.C(), cellI) rA_[cellI] = rA_[cellI].inverse();
-
-    // Quadrature points Init
-    faceQuad_.reserve(mesh_.nInternalFaces());
-    forAll(mesh_.owner(), faceI)
-    {
-        build2ndFace(mesh_, faceI, faceQuad);
-        faceQuad_.emplace_back(std::move(faceQuad));
-    }
 
     // Initialize N*h^((k+1)/2)
     forAll(mesh_.owner(), faceI)
