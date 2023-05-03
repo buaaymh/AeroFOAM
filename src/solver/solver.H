@@ -65,8 +65,6 @@ protected:
     //- Constant
     const scalar Ma_Re_;
     const scalar S_T_;
-    //-  CFL number
-    scalar CFL_;
     //- Riemann solver
     std::unique_ptr<dbnsFlux> riemann_;
     //- Reference to mesh
@@ -135,10 +133,12 @@ public:
     scalarField& rhoE() { return rhoE_.primitiveFieldRef(); }
     
     const scalarField& LTS() const { return localDtDv_; }
-    
-    void updateCFL(const scalar& CFL) { CFL_ = CFL; }
 
-    void updateLTS(){ localDtDv_ = CFL_/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one)); }
+    void updateLTS()
+    {
+        scalar CFL = mesh_.solution().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
+        localDtDv_ = CFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
+    }
 
     virtual void evaluateFlowRes
     (
@@ -154,11 +154,20 @@ public:
         scalarField& resRhoE
     );
 
-    void solveFlowLinearSystem
+    void solveFlowLinearSystemByLUSGS
     (
         const scalarField& resRho,
         const vectorField& resRhoU,
-        const scalarField& resRhoE
+        const scalarField& resRhoE,
+        scalar& resL2
+    );
+
+    void solveFlowLinearSystemByGMRES
+    (
+        const scalarField& resRho,
+        const vectorField& resRhoU,
+        const scalarField& resRhoE,
+        scalar& resL2
     );
 
     void solveFlowPseudoTimeSystem

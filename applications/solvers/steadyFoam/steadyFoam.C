@@ -49,45 +49,41 @@ int main(int argc, char *argv[])
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
-    scalar L2Res_0 = 0;
-    
+    scalar L2ResRho = GREAT;
+
     while (runTime.run())
     {
         runTime++;
-        Info << "Time = " << runTime.value() << " s" << nl << endl;;
+        Info << "========================================" << nl;
+        Info << "# Iteration step    = " << runTime.value() << endl;
+        Info << "========================================" << nl;
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
-        const scalar L2ResRho  = Foam::sqrt(gSumSqr(resRho));
-        const scalar L2ResRhoU = Foam::sqrt(gSum(magSqr(resRhoU)));
-        const scalar L2ResRhoE = Foam::sqrt(gSumSqr(resRhoE));
-        const scalar L2Res     = Foam::sqrt(sqr(L2ResRho) + sqr(L2ResRhoU) + sqr(L2ResRhoE));
-        if (L2Res_0 < SMALL) { L2Res_0 = L2Res; }
-        const scalar relRes = L2Res/L2Res_0;
+        if (fluidProps.simulationType == "SATurb") solver->solveTurbulence();
+        if (L2ResRho > 1)
+        {
+            Info << "# Impilict method   = LUSGS" << endl;
+            solver->solveFlowLinearSystemByLUSGS(resRho, resRhoU, resRhoE, L2ResRho);
+            Info << "# L2 rho residual   = " << L2ResRho << endl;
+        }
+        else
+        {
+            Info << "# Impilict method   = GMRES" << endl;
+            solver->solveFlowLinearSystemByGMRES(resRho, resRhoU, resRhoE, L2ResRho);
+            Info << "# L2 rho residual   = " << L2ResRho << endl;
+        }
+        solver->correctFields();
         
-        Info << "# FGMRES solving for rho  = " << L2ResRho << endl;
-        Info << "# FGMRES solving for rhoU = " << L2ResRhoU << endl;
-        Info << "# FGMRES solving for rhoE = " << L2ResRhoE << endl;
-        Info << "# Relative residual = " << relRes << endl;
-
-        if (relRes > 1e-1) solver->updateCFL(10);
-        else if ((relRes < 1e-1) && (relRes > 1e-2)) solver->updateCFL(50);
-        else if ((relRes < 1e-2) && (relRes > 1e-4)) solver->updateCFL(500);
-        else solver->updateCFL(10000);
-
         if (Pstream::master())
         {
             outputFilePtr() << runTime.value() << tab
                             << runTime.elapsedCpuTime() << tab
-                            << relRes << endl;
+                            << L2ResRho << endl;
         }
-        if (fluidProps.simulationType == "SATurb") solver->solveTurbulence();
-        solver->solveFlowLinearSystem(resRho, resRhoU, resRhoE);
-        solver->correctFields();
-
-        if (relRes < tolerance) runTime.writeAndEnd();
+        if (L2ResRho < tolerance) runTime.writeAndEnd();
         else runTime.write();
 	
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
+        Info<< "# ExecutionTime     = " << runTime.elapsedCpuTime() << " s" << nl
+            << "# ClockTime         = " << runTime.elapsedClockTime() << " s"
             << nl << endl;
     }
 

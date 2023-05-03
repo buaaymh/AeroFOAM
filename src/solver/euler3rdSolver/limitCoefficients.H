@@ -7,7 +7,7 @@ void Foam::euler3rdSolver::limitCoefficients()
     label count = 0;
     #include "troubleIndicator.H"
     const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-    Info << "Trouble cell [%] = " << percent;
+    Info << "# Troubled cell [%] = " << percent << endl;
 
     /* Limiting d2 coefficients of polynomials */
     const Switch characteristic = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("characteristic", false);
@@ -49,7 +49,6 @@ void Foam::euler3rdSolver::limitCoefficients()
             }
         }
         const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-        Info << ", Negative cell [%] = " << percent;
+        Info << "# Negative cell [%] = " << percent << endl;
     }
-    Info << endl;
 }

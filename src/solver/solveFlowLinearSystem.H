@@ -1,24 +1,26 @@
-// void Foam::solver::solveFlowLinearSystem
-// (
-//     const scalarField& resRho,
-//     const vectorField& resRhoU,
-//     const scalarField& resRhoE
-// )
-// {
-//     updateLTS();
-//     scalarField L(mesh_.nInternalFaces());
-//     scalarField U(mesh_.nInternalFaces());
-//     scalarField D(1.0/localDtDv_);
-//     evaluateMatrixLDU(1.0, L, U, D);
-//     // Preconditioning step
-//     scalarField dRho(mesh_.nCells());
-//     vectorField dRhoU(mesh_.nCells());
-//     scalarField dRhoE(mesh_.nCells());
-//     precondition(1.0, L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
-//     rho_.primitiveFieldRef()  += dRho;
-//     rhoU_.primitiveFieldRef() += dRhoU;
-//     rhoE_.primitiveFieldRef() += dRhoE;
-// }
+void Foam::solver::solveFlowLinearSystemByLUSGS
+(
+    const scalarField& resRho,
+    const vectorField& resRhoU,
+    const scalarField& resRhoE,
+    scalar& resL2
+)
+{
+    updateLTS();
+    scalarField L(mesh_.nInternalFaces());
+    scalarField U(mesh_.nInternalFaces());
+    scalarField D(1.0/localDtDv_);
+    evaluateMatrixLDU(1.0, L, U, D);
+    // Preconditioning step
+    scalarField dRho(mesh_.nCells());
+    vectorField dRhoU(mesh_.nCells());
+    scalarField dRhoE(mesh_.nCells());
+    precondition(1.0, L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
+    rho_.primitiveFieldRef()  += dRho;
+    rhoU_.primitiveFieldRef() += dRhoU;
+    rhoE_.primitiveFieldRef() += dRhoE;
+    resL2 = Foam::sqrt(gSumSqr(dRho));
+}
 
 void Foam::solver::solveFlowPseudoTimeSystem
 (
@@ -46,11 +48,13 @@ void Foam::solver::solveFlowPseudoTimeSystem
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;
 }
-void Foam::solver::solveFlowLinearSystem
+
+void Foam::solver::solveFlowLinearSystemByGMRES
 (
     const scalarField& resRho,
     const vectorField& resRhoU,
-    const scalarField& resRhoE
+    const scalarField& resRhoE,
+    scalar& resL2
 )
 {
     // Read settings from dictionary
@@ -147,7 +151,8 @@ void Foam::solver::solveFlowLinearSystem
         }
         if (finalRes < relTol*initialRes || solverIter >= innerIter)
         {
-            Info << "# Iteration = " << solverIter << ": |res|/|res0| = " << finalRes/initialRes << "." << endl;
+            Info << "# Newton iteraions  = " << solverIter << nl
+                 << "# |res|/|res0|      = " << finalRes/initialRes << endl;
             break;
         }
         // Re-calculate the residual
@@ -160,4 +165,5 @@ void Foam::solver::solveFlowLinearSystem
     rho_.primitiveFieldRef()  += dRho;
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;
+    resL2 = Foam::sqrt(gSumSqr(dRho));
 }
