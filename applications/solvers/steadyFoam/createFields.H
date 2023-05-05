@@ -87,8 +87,10 @@ if (Pstream::master())
     mkDir(outputDir);
     // Open the file in the newly created directory
     outputFilePtr.reset(new OFstream(outputDir/"residuals.dat"));
-    outputFilePtr() << "# Residuals" << endl;
-    outputFilePtr() << "# Step" << tab << "CPU" << tab << "Relative L2(Res)" << endl;
+    outputFilePtr() << "# Step" << tab << "CPU" << tab
+                    << "Continuity" << tab
+                    << "Momentum" << tab
+                    << "Energy" << endl;
 }
 
 Info << "====================================================" << endl;

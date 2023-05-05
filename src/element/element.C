@@ -76,6 +76,7 @@ Foam::CurvedQuadrature<nVertex, nPoints>::CurvedQuadrature
         {
             if ((faceList[f] >= start) && (faceList[f] < start+mesh.boundary()[patchI].size()))
             {
+                if ((Base::normal_&mesh.Sf()[faceList[f]]) <= 0) continue;
                 tempVector += mesh.Sf()[faceList[f]];
                 tempScalar += mesh.magSf()[faceList[f]];
             }

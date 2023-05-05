@@ -2,8 +2,7 @@ void Foam::solver::solveFlowLinearSystemByLUSGS
 (
     const scalarField& resRho,
     const vectorField& resRhoU,
-    const scalarField& resRhoE,
-    scalar& resL2
+    const scalarField& resRhoE
 )
 {
     updateLTS();
@@ -19,7 +18,6 @@ void Foam::solver::solveFlowLinearSystemByLUSGS
     rho_.primitiveFieldRef()  += dRho;
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;
-    resL2 = Foam::sqrt(gSumSqr(dRho));
 }
 
 void Foam::solver::solveFlowPseudoTimeSystem
@@ -53,8 +51,7 @@ void Foam::solver::solveFlowLinearSystemByGMRES
 (
     const scalarField& resRho,
     const vectorField& resRhoU,
-    const scalarField& resRhoE,
-    scalar& resL2
+    const scalarField& resRhoE
 )
 {
     // Read settings from dictionary
@@ -151,8 +148,8 @@ void Foam::solver::solveFlowLinearSystemByGMRES
         }
         if (finalRes < relTol*initialRes || solverIter >= innerIter)
         {
-            Info << "# Newton iteraions  = " << solverIter << nl
-                 << "# |res|/|res0|      = " << finalRes/initialRes << endl;
+            Info << "# Newton innerIter       [-] = " << solverIter << nl
+                 << "# |res|/|res0|           [-] = " << finalRes/initialRes << endl;
             break;
         }
         // Re-calculate the residual
@@ -165,5 +162,4 @@ void Foam::solver::solveFlowLinearSystemByGMRES
     rho_.primitiveFieldRef()  += dRho;
     rhoU_.primitiveFieldRef() += dRhoU;
     rhoE_.primitiveFieldRef() += dRhoE;
-    resL2 = Foam::sqrt(gSumSqr(dRho));
 }

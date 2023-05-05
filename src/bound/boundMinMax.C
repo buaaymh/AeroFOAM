@@ -41,15 +41,11 @@ bool Foam::positiveCorrect
 
     if (minVsf < vsf0.value())
     {
-        Info<< "bounding " << vsf.name()
-            << ", min: " << minVsf
-            << " max: " << maxVsf
-            << " average: " << gAverage(vsf.internalField())
-            << endl;
-    }
-
-    if (minVsf < vsf0.value())
-    {
+        Info << "# Bounding field         [-] = " << vsf.name() << nl
+             << "# Min value              [-] = " << minVsf << nl
+             << "# Max value              [-] = " << maxVsf << nl
+             << "# Avg value              [-] = " << gAverage(vsf.internalField())
+             << endl;
         vsf.primitiveFieldRef() = max
         (
             max
@@ -60,9 +56,10 @@ bool Foam::positiveCorrect
             ),
             vsf0.value()
         );
-        Info<< "new min: " << gMin(vsf.internalField()) << endl;
+        Info << "# New Min value          [-] = " << gMin(vsf.internalField()) << endl;
         vsf.correctBoundaryConditions();
         changed = true;
+        Info << "----------------------------------------" << nl;
     }
     return changed;
 }

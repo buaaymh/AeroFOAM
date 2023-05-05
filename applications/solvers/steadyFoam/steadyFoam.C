@@ -49,42 +49,59 @@ int main(int argc, char *argv[])
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
-    scalar L2ResRho = GREAT;
+    const scalar nCells    = scalar(returnReduce(mesh.nCells(), sumOp<label>()));
+    scalar initialResRho  = SMALL;
+    scalar initialResRhoU = SMALL;
+    scalar initialResRhoE = SMALL;
 
     while (runTime.run())
     {
+        const word method = mesh.solution().subDict("SOLVER").lookupOrDefault<word>("method", "LUSGS");
+        const scalar CFL  = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
         runTime++;
         Info << "========================================" << nl;
-        Info << "# Iteration step    = " << runTime.value() << endl;
+        Info << "# " << method << " # Iteration Step = " << runTime.value() << endl;
         Info << "========================================" << nl;
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
+        Info << "# Local Courant          [-] = " << CFL << endl;
+        Info << "----------------------------------------" << nl;
+        scalar absoluteResRho  = Foam::sqrt(gSumSqr(resRho/mesh.V())/nCells);
+        scalar absoluteResRhoU = Foam::sqrt(gSum(magSqr(resRhoU)/mesh.V())/nCells);
+        scalar absoluteResRhoE = Foam::sqrt(gSumSqr(resRhoE/mesh.V())/nCells);
+
+        if (runTime.value() <= 5)
+        {
+            initialResRho  = max(initialResRho,  absoluteResRho);
+            initialResRhoU = max(initialResRhoU, absoluteResRhoU);
+            initialResRhoE = max(initialResRhoE, absoluteResRhoE);
+        }
+        scalar relativeResRho  = absoluteResRho/initialResRho;
+        scalar relativeResRhoU = absoluteResRhoU/initialResRhoU;
+        scalar relativeResRhoE = absoluteResRhoE/initialResRhoE;
+        Info << "# Continuity relativeRes [-] = " << relativeResRho  << endl;
+        Info << "# Momentum   relativeRes [-] = " << relativeResRhoU << endl;
+        Info << "# Energy     relativeRes [-] = " << relativeResRhoE << endl;
         if (fluidProps.simulationType == "SATurb") solver->solveTurbulence();
-        if (L2ResRho > 1)
-        {
-            Info << "# Impilict method   = LUSGS" << endl;
-            solver->solveFlowLinearSystemByLUSGS(resRho, resRhoU, resRhoE, L2ResRho);
-            Info << "# L2 rho residual   = " << L2ResRho << endl;
-        }
-        else
-        {
-            Info << "# Impilict method   = GMRES" << endl;
-            solver->solveFlowLinearSystemByGMRES(resRho, resRhoU, resRhoE, L2ResRho);
-            Info << "# L2 rho residual   = " << L2ResRho << endl;
-        }
+        Info << "----------------------------------------" << nl;
+
+        if (method == "LUSGS") solver->solveFlowLinearSystemByLUSGS(resRho, resRhoU, resRhoE);
+        else solver->solveFlowLinearSystemByGMRES(resRho, resRhoU, resRhoE);
         solver->correctFields();
         
         if (Pstream::master())
         {
             outputFilePtr() << runTime.value() << tab
                             << runTime.elapsedCpuTime() << tab
-                            << L2ResRho << endl;
+                            << relativeResRho << tab
+                            << relativeResRhoU << tab
+                            << relativeResRhoE << endl;
         }
-        if (L2ResRho < tolerance) runTime.writeAndEnd();
+        if (relativeResRho < tolerance) runTime.writeAndEnd();
         else runTime.write();
 	
-        Info<< "# ExecutionTime     = " << runTime.elapsedCpuTime() << " s" << nl
-            << "# ClockTime         = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
+        Info << "# ExecutionTime          [s] = " << runTime.elapsedCpuTime()  << nl
+             << "# ClockTime              [s] = " << runTime.elapsedClockTime() << nl
+             << "----------------------------------------" << nl << endl;
     }
 
     Info<< "End\n" << endl;

@@ -158,16 +158,14 @@ public:
     (
         const scalarField& resRho,
         const vectorField& resRhoU,
-        const scalarField& resRhoE,
-        scalar& resL2
+        const scalarField& resRhoE
     );
 
     void solveFlowLinearSystemByGMRES
     (
         const scalarField& resRho,
         const vectorField& resRhoU,
-        const scalarField& resRhoE,
-        scalar& resL2
+        const scalarField& resRhoE
     );
 
     void solveFlowPseudoTimeSystem
