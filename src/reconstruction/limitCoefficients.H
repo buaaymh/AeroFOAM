@@ -1,7 +1,9 @@
-void Foam::euler3rdSolver::limitCoefficients()
+void Foam::Reconstruction::limitCoefficients()
 {
     /* Detect trouble cells */
     const scalar IS = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("IS", 1.0);
+    surfaceVectorField normal(mesh_.Sf()/mesh_.magSf());
+    vectorField delta_(mesh_.delta());
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
     label count = 0;

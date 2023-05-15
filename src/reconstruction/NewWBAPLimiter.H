@@ -7,7 +7,7 @@ forAll(owner, faceI)
     const label i = owner[faceI];
     const label j = neighbour[faceI];
     if(!(isTrouble_[i] || isTrouble_[j])) continue;
-    evaluateEigenMatrix(L, R, 0.5*(rho_[i]+rho_[j]), 0.5*(rhoU_[i]+rhoU_[j]), 0.5*(rhoE_[i]+rhoE_[j]), normal_[faceI]);
+    evaluateEigenMatrix(L, R, 0.5*(rho_[i]+rho_[j]), 0.5*(rhoU_[i]+rhoU_[j]), 0.5*(rhoE_[i]+rhoE_[j]), normal[faceI]);
     limitedCoefs_i_[faceI] = L*(coefs_[i].transpose());
     limitedCoefs_j_[faceI] = L*(coefs_[j].transpose());
     New_WBAP_Limiter(limitedCoefs_i_[faceI], limitedCoefs_j_[faceI], delta_[faceI], rDeltaXYZ_[i], rDeltaXYZ_[j], np);

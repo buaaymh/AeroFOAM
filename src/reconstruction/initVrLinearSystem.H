@@ -1,4 +1,4 @@
-void Foam::euler3rdSolver::initVrLinearSystem()
+void Foam::Reconstruction::initVrLinearSystem()
 {
     //rDeltaXYZ and basisMean Initialize
     forAll(mesh_.C(), cellI)
@@ -20,14 +20,13 @@ void Foam::euler3rdSolver::initVrLinearSystem()
     const Switch curvedWall = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("curvedWall", false);
     forAll(mesh_.boundary(), patchI)
     {
-        const vectorField& normal = normal_.boundaryField()[patchI];
         const label start = mesh_.boundary()[patchI].start();
         const word type = mesh_.boundary()[patchI].type();
         if (mesh_.boundary()[patchI].coupled())
         {
             patch2ndQuad_[patchI] = std::vector<std::unique_ptr<Face>>();
             patch2ndQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
-            forAll(normal, faceI)
+            forAll(mesh_.boundary()[patchI], faceI)
             {
                 build2ndFace(mesh_, start+faceI, faceQuad);
                 patch2ndQuad_[patchI].emplace_back(std::move(faceQuad));
@@ -39,7 +38,7 @@ void Foam::euler3rdSolver::initVrLinearSystem()
             patch4stQuad_[patchI] = std::vector<std::unique_ptr<Face>>();
             patch2ndQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
             patch4stQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
-            forAll(normal, faceI)
+            forAll(mesh_.boundary()[patchI], faceI)
             {
                 build2ndFace(mesh_, start+faceI, faceQuad);
                 patch2ndQuad_[patchI].emplace_back(std::move(faceQuad));
@@ -53,7 +52,7 @@ void Foam::euler3rdSolver::initVrLinearSystem()
             patch4stQuad_[patchI] = std::vector<std::unique_ptr<Face>>();
             patch2ndQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
             patch4stQuad_[patchI].reserve(mesh_.boundary()[patchI].size());
-            forAll(normal, faceI)
+            forAll(mesh_.boundary()[patchI], faceI)
             {
 
                 build2ndCurvedBoundary(mesh_, patchI, start+faceI, faceQuad);

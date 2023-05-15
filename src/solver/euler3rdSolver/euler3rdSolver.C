@@ -37,155 +37,97 @@ Foam::euler3rdSolver::euler3rdSolver
 )
 :
     solver(fluidProps, rho, U, p),
-    vrWeightSqr_(vector::zero),
-    isP1Cell_(mesh_.nCells(), false),
-    isTrouble_(mesh_.nCells(), false),
-    coefs_(mesh_.nCells(), Mat9X5::Zero()),
-    limitedCoefs_i_(mesh_.nInternalFaces(), Mat5X9::Zero()),
-    limitedCoefs_j_(mesh_.nInternalFaces(), Mat5X9::Zero()),
-    rDeltaXYZ_
-    (
-        IOobject
-        (
-            "rDeltaXYZ",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless, vector::zero)
-    ),
-    basisMean_
-    (
-        IOobject
-        (
-            "basisMean",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    IS_
-    (
-        IOobject
-        (
-            "IS",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 0.0)
-    ),
-    N_h_(mesh_.nCells(), 0.0),
-    d_ij_(mag(mesh_.delta())),
-    rA_(mesh_.nCells(), Mat9X9::Zero()),
-    lowerb_(mesh_.nInternalFaces(), Col9X1::Zero()),
-    upperb_(mesh_.nInternalFaces(), Col9X1::Zero()),
-    B_(mesh_.nInternalFaces(), Mat9X9::Zero()),
-    polyNorm_(mesh_.nCells(), Col9X1::Zero()),
-    d1Rho_
-    (
-        IOobject
-        (
-            "d1Rho",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-    d1RhoU_
-    (
-        IOobject
-        (
-            "d1RhoU",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedTensor(dimless/dimLength, tensor::zero)
-    ),
-    d1RhoE_
-    (
-        IOobject
-        (
-            "d1RhoE",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-    d2Rho_
-    (
-        IOobject
-        (
-            "d2Rho",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2RhoUx_
-    (
-        IOobject
-        (
-            "d2RhoUx",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2RhoUy_
-    (
-        IOobject
-        (
-            "d2RhoUy",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2RhoUz_
-    (
-        IOobject
-        (
-            "d2RhoUz",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    ),
-    d2RhoE_
-    (
-        IOobject
-        (
-            "d2RhoE",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedSymmTensor(dimless, symmTensor::zero)
-    )
-{
-    initVrLinearSystem();
-}
+    Reconstruction(fluidProps, rho, solver::rhoU_, solver::rhoE_)
+{}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-#include "functions.H"
+void Foam::euler3rdSolver::evaluateFlux
+(
+    scalar& rhoFlux,
+    vector& rhoUFlux,
+    scalar& rhoEFlux,
+    const scalar& rho_L,
+    const scalar& rho_R,
+    const vector& rhoU_L,
+    const vector& rhoU_R,
+    const scalar& rhoE_L,
+    const scalar& rhoE_R,
+    const vector& normal,
+    const scalar& magSf
+) const
+{
+    scalar rhoFluxTemp;
+    vector rhoUFluxTemp;
+    scalar rhoEFluxTemp;
 
-#include "initVrLinearSystem.H"
+    scalar p_L, p_R, T_L, T_R;
+    vector U_L, U_R;
+    consToPrim(rho_L, rhoU_L, rhoE_L, U_L, p_L, T_L);
+    consToPrim(rho_R, rhoU_R, rhoE_R, U_R, p_R, T_R);
+    p_L = max(p_L, SMALL);
+    p_R = max(p_R, SMALL);
+    riemann_->evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
+                           rho_L, rho_R, U_L, U_R, p_L, p_R,
+                           normal);
+    rhoFlux  += magSf * rhoFluxTemp;
+    rhoUFlux += magSf * rhoUFluxTemp;
+    rhoEFlux += magSf * rhoEFluxTemp;
+}
 
-#include "limitCoefficients.H"
+void Foam::euler3rdSolver::evaluateVars
+(
+    scalar& rho,
+    vector& rhoU,
+    scalar& rhoE,
+    const scalar& rho_0,
+    const vector& rhoU_0,
+    const scalar& rhoE_0,
+    const Mat9X5& coefs,
+    const symmTensor& basisMean,
+    const vector& rDeltaXYZ,
+    const vector& delta
+) const
+{
+    Col5X1 varProj = coefs.transpose()*polynomialDn0(delta, rDeltaXYZ, basisMean);
+    rho  = rho_0  + varProj(0);
+    rhoU = rhoU_0 + vector(varProj(1), varProj(2), varProj(3));
+    rhoE = rhoE_0 + varProj(4);
+}
 
-#include "reconstructionIter.H"
+void Foam::euler3rdSolver::evaluateVars
+(
+    scalar& rho,
+    vector& rhoU,
+    scalar& rhoE,
+    const scalar& rho_0,
+    const vector& rhoU_0,
+    const scalar& rhoE_0,
+    const vector& d1Rho,
+    const tensor& d1RhoU,
+    const vector& d1RhoE,
+    const symmTensor& d2Rho,
+    const symmTensor& d2RhoUx,
+    const symmTensor& d2RhoUy,
+    const symmTensor& d2RhoUz,
+    const symmTensor& d2RhoE,
+    const symmTensor& basisMean,
+    const vector& rDeltaXYZ,
+    const vector& delta
+) const
+{
+    Col5X1 varProj = Mat5X9
+    {
+        {d1Rho[0],  d1Rho[1],  d1Rho[2],  d2Rho[0],   d2Rho[1],   d2Rho[2],   d2Rho[3],   d2Rho[4],   d2Rho[5]},
+        {d1RhoU[0], d1RhoU[1], d1RhoU[2], d2RhoUx[0], d2RhoUx[1], d2RhoUx[2], d2RhoUx[3], d2RhoUx[4], d2RhoUx[5]},
+        {d1RhoU[3], d1RhoU[4], d1RhoU[5], d2RhoUy[0], d2RhoUy[1], d2RhoUy[2], d2RhoUy[3], d2RhoUy[4], d2RhoUy[5]},
+        {d1RhoU[6], d1RhoU[7], d1RhoU[8], d2RhoUz[0], d2RhoUz[1], d2RhoUz[2], d2RhoUz[3], d2RhoUz[4], d2RhoUz[5]},
+        {d1RhoE[0], d1RhoE[1], d1RhoE[2], d2RhoE[0],  d2RhoE[1],  d2RhoE[2],  d2RhoE[3],  d2RhoE[4],  d2RhoE[5]}
+    } * polynomialDn0(delta, rDeltaXYZ, basisMean);
+    rho  = rho_0  + varProj(0);
+    rhoU = rhoU_0 + vector(varProj(1), varProj(2), varProj(3));
+    rhoE = rhoE_0 + varProj(4);
+}
 
 #include "evaluateFlowRes.H"
 

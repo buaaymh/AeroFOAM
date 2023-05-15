@@ -17,7 +17,7 @@ forAll(mesh_.cells(), cellI)
         {
             label j = owner[faceI];
             if (j == cellI) { j = neighbour[faceI]; }
-            normalList.emplace_back(normal_[faceI]);
+            normalList.emplace_back(normal[faceI]);
             d2CoefsList.emplace_back(transformD2Coefs(coefs_[j].block<6,5>(3,0).transpose(), rDeltaXYZ_[cellI], rDeltaXYZ_[j]));
         }
     }
@@ -56,7 +56,7 @@ forAll(mesh_.cells(), cellI)
         const label faceI = cellFaces[f];
         if (mesh_.isInternalFace(faceI))
         {
-            normalList.emplace_back(normal_[faceI]);
+            normalList.emplace_back(normal[faceI]);
             label j = owner[faceI];
             vector d_ij = delta_[faceI];
             if (j == cellI)

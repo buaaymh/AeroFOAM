@@ -10,7 +10,7 @@ void Foam::euler3rdSolver::evaluateFlowRes
     resRho  = scalarField(mesh_.nCells(), 0.0);
     resRhoU = vectorField(mesh_.nCells(), vector::zero);
     resRhoE = scalarField(mesh_.nCells(), 0.0);
-    reconstructionIter();
+    iterationStep();
     forAll(mesh_.owner(), faceI)
     {
         scalar rhoFlux = 0.0;
@@ -153,37 +153,4 @@ void Foam::euler3rdSolver::evaluateFlowRes
             }
         }
     }
-}
-
-void Foam::euler3rdSolver::evaluateFlux
-(
-    scalar& rhoFlux,
-    vector& rhoUFlux,
-    scalar& rhoEFlux,
-    const scalar& rho_L,
-    const scalar& rho_R,
-    const vector& rhoU_L,
-    const vector& rhoU_R,
-    const scalar& rhoE_L,
-    const scalar& rhoE_R,
-    const vector& normal,
-    const scalar& magSf
-) const
-{
-    scalar rhoFluxTemp;
-    vector rhoUFluxTemp;
-    scalar rhoEFluxTemp;
-
-    scalar p_L, p_R, T_L, T_R;
-    vector U_L, U_R;
-    consToPrim(rho_L, rhoU_L, rhoE_L, U_L, p_L, T_L);
-    consToPrim(rho_R, rhoU_R, rhoE_R, U_R, p_R, T_R);
-    p_L = max(p_L, SMALL);
-    p_R = max(p_R, SMALL);
-    riemann_->evaluateFlux(rhoFluxTemp, rhoUFluxTemp, rhoEFluxTemp,
-                           rho_L, rho_R, U_L, U_R, p_L, p_R,
-                           normal);
-    rhoFlux  += magSf * rhoFluxTemp;
-    rhoUFlux += magSf * rhoUFluxTemp;
-    rhoEFlux += magSf * rhoEFluxTemp;
 }

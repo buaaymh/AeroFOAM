@@ -1,4 +1,4 @@
-void Foam::euler3rdSolver::reconstructionIter()
+void Foam::Reconstruction::iterationStep()
 {
     const Switch adaptive = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
     isP1Cell_ = std::vector<bool>(mesh_.nCells(), false);

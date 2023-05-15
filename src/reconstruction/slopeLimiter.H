@@ -18,7 +18,7 @@ forAll(mesh_.cells(), cellI)
         {
             label j = owner[faceI];
             if (j == cellI) { j = neighbour[faceI]; }
-            normalList.emplace_back(normal_[faceI]);
+            normalList.emplace_back(normal[faceI]);
             deltaList.emplace_back(mesh_.Cf()[faceI]-mesh_.C()[cellI]);
             d0_AdjList.emplace_back(Col5X1(rho_[j], rhoU_[j][0], rhoU_[j][1], rhoU_[j][2], rhoE_[j]));
         }
