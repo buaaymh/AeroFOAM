@@ -30,10 +30,11 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "solver.H"
+#include "eulerSolver.H"
 #include "euler2ndSolver.H"
 #include "euler3rdSolver.H"
-#include "turb2ndSolver.H"
+#include "navierStokesSolver.H"
+#include "navierStokes2ndSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -81,7 +82,6 @@ int main(int argc, char *argv[])
         Info << "# Continuity relativeRes [-] = " << relativeResRho  << endl;
         Info << "# Momentum   relativeRes [-] = " << relativeResRhoU << endl;
         Info << "# Energy     relativeRes [-] = " << relativeResRhoE << endl;
-        if (fluidProps.simulationType == "SATurb") solver->solveTurbulence();
         Info << "----------------------------------------" << nl;
 
         if (method == "LUSGS") solver->solveFlowLinearSystemByLUSGS(resRho, resRhoU, resRhoE);

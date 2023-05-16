@@ -79,13 +79,14 @@ volScalarField p
 
 Info << "====================================================" << endl;
 
-std::unique_ptr<solver> solver;
+std::unique_ptr<eulerSolver> solver;
 label order = mesh.schemes().lookup<label>("order");
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
     else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
 }
+solver->correctFields();
 // Resident
 scalarField resRho_1(mesh.nCells());
 vectorField resRhoU_1(mesh.nCells());

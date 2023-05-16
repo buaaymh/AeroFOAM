@@ -95,18 +95,19 @@ if (Pstream::master())
 
 Info << "====================================================" << endl;
 
-std::unique_ptr<solver> solver;
+std::unique_ptr<eulerSolver> solver;
 label order = mesh.schemes().lookup<label>("order");
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
     else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
 }
-else
+else if (fluidProps.simulationType == "laminar")
 {
-    solver = std::make_unique<turb2ndSolver>(fluidProps, rho, U, p);
+    if (order == 2) solver = std::make_unique<navierStokes2ndSolver>(fluidProps, rho, U, p);
+    // else if (order == 3) solver = std::make_unique<navierStokes3rdSolver>(fluidProps, rho, U, p);
 }
-
+solver->correctFields();
 // Resident
 scalarField resRho(mesh.nCells());
 vectorField resRhoU(mesh.nCells());

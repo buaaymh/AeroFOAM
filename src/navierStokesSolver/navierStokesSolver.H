@@ -1,0 +1,151 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+Class
+    navierStokesSolver
+
+Description
+    2nd order solver for Euler flow.
+
+Author
+    Minghao Yang
+
+\*---------------------------------------------------------------------------*/
+
+#ifndef navierStokesSolver_H
+#define navierStokesSolver_H
+
+#include "eulerSolver.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+/*---------------------------------------------------------------------------*\
+                           Class navierStokesSolver Declaration
+\*---------------------------------------------------------------------------*/
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+class navierStokesSolver: public eulerSolver
+{
+    // Private Member Functions
+    //- Disallow default bitwise copy construct
+    navierStokesSolver(const navierStokesSolver&);
+    //- Disallow default bitwise assignment
+    void operator=(const navierStokesSolver&);
+
+protected:
+    //- Constant
+    const scalar Ma_Re_;
+    const scalar S_T_;
+    //- laminar viscosity
+    volScalarField laminarViscosity_;
+    //- Velocity grad
+    volTensorField UGrad_;
+    //- Velocity grad
+    volVectorField TGrad_;
+    //- nuMax
+    scalarField nuMax_;
+    //- delta between ij
+    vectorField delta_;
+
+public:
+    // Constructors
+    navierStokesSolver
+    (
+        const fluidProperties& fluidProps,
+        volScalarField& rho,
+        volVectorField& U,
+        volScalarField& p
+    );
+
+    // Destructor - default
+    virtual ~navierStokesSolver() {};
+
+    // Member Functions
+
+    virtual void evaluateFlowRes
+    (
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE
+    ) = 0;
+
+    virtual void correctFields();
+
+protected:
+
+    void evaluateViscousFlux
+    (
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const vector& U,
+        const vector& TGrad,
+        const tensor& UGrad,
+        const scalar& laminarViscosity,
+        const vector& normal
+    ) const;
+
+    virtual void evaluateMatrixLDU
+    (
+        const scalar& alpha,
+        scalarField& L,
+        scalarField& U,
+        scalarField& D
+    ) const;
+
+    virtual void evaluateFlowResForGMRES
+    (
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE
+    );
+};
+
+
+template<class value, class grad>
+grad AverageGrad
+(
+    const value& value_L,
+    const value& value_R,
+    const grad&  grad_L,
+    const grad&  grad_R,
+    const vector& delta
+)
+{
+    const scalar l = mag(delta);
+    const vector t = delta/l;
+    grad averageGrad = 0.5*(grad_L+grad_R);
+    averageGrad -= ((averageGrad&t) - (value_R-value_L)/l)*t;
+    return averageGrad;
+}
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //
