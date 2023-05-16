@@ -1,31 +1,22 @@
 void Foam::solver::correctFields()
 {
     // Internal fields
-    U_.ref() = rhoU_ / rho_;
-    p_.ref() = (rhoE_ - 0.5*rho_*magSqr(U_)) * (Gamma-1.0);
+    U_.ref() = rhoU_/rho_;
+    p_.ref() = (rhoE_-0.5*rho_*magSqr(U_))*(Gamma-1.0);
     const bool rhoBool = Foam::positiveCorrect(rho_);
     const bool pBool   = Foam::positiveCorrect(p_);
     if (rhoBool || pBool)
     {
-        rhoU_ = rho_ * U_;
-        rhoE_ = p_/(Gamma-1.0) + 0.5*rho_*magSqr(U_);
+        rhoU_.ref() = rho_*U_;
+        rhoE_.ref() = p_/(Gamma-1.0)+0.5*rho_*magSqr(U_);
     }
-    T_.ref() = p_*Gamma/rho_;
+    T_.primitiveFieldRef() = Gamma*p_.primitiveField()/rho_.primitiveField();
     c_ = sqrt(T_.primitiveField());
-    Ma_.primitiveFieldRef() = mag(U_.primitiveFieldRef())/c_;
     // Boundary conditions
     correctPrimitiveBoundary(rho_, U_, p_, T_);
     // Update other BCs
-    const volScalarField::Boundary& rhoBf = rho_.boundaryFieldRef();
-    const volVectorField::Boundary& UBf = U_.boundaryFieldRef();
-    const volScalarField::Boundary& pBf = p_.boundaryFieldRef();
-    const volScalarField::Boundary& TBf = T_.boundaryFieldRef();
-    volVectorField::Boundary& rhoUBf = rhoU_.boundaryFieldRef();
-    volScalarField::Boundary& rhoEBf = rhoE_.boundaryFieldRef();
-    volScalarField::Boundary& MaBf = Ma_.boundaryFieldRef();
-    rhoUBf = rhoBf * UBf;
-    rhoEBf = pBf/(Gamma-1.0) + 0.5*rhoBf*magSqr(UBf);
-    MaBf = mag(UBf)/sqrt(TBf);
+    rhoU_.correctBoundaryConditions();
+    rhoE_.correctBoundaryConditions();
     if (fluidProps_.simulationType != "Euler") correctViscousFields();
 }
 

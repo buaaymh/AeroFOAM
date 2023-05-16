@@ -83,8 +83,6 @@ protected:
     volVectorField rhoU_;
     //- Energy
     volScalarField rhoE_;
-    //- Mach number
-    volScalarField Ma_;
     //- nuTilde
     volScalarField nuTilde_;
     //- laminar viscosity

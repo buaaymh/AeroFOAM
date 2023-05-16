@@ -44,14 +44,6 @@ void Foam::euler3rdSolver::evaluateFlowRes
         resRhoU[j] += rhoUFlux;
         resRhoE[j] += rhoEFlux;
     }
-    d1Rho_.correctBoundaryConditions();
-    d1RhoU_.correctBoundaryConditions();
-    d1RhoE_.correctBoundaryConditions();
-    d2Rho_.correctBoundaryConditions();
-    d2RhoUx_.correctBoundaryConditions();
-    d2RhoUy_.correctBoundaryConditions();
-    d2RhoUz_.correctBoundaryConditions();
-    d2RhoE_.correctBoundaryConditions();
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();

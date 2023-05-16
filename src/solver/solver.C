@@ -77,18 +77,6 @@ Foam::solver::solver
         ),
         p_/(Gamma-1.0) + 0.5*rho_*magSqr(U_)
     ),
-    Ma_
-    (
-        IOobject
-        (
-            "Ma",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mag(U_)/Foam::sqrt(T_)
-    ),
     nuTilde_
     (
         IOobject

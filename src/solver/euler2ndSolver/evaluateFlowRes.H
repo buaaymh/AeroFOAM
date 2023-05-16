@@ -9,8 +9,8 @@ void Foam::euler2ndSolver::evaluateFlowRes
     UGrad_   = fvc::grad(U_);
     pGrad_   = fvc::grad(p_);
     const word limiter = mesh_.schemes().subDict("gradSchemes").lookupOrDefault<word>("Limiter", "Venkat");
-    if (limiter == "Venkat") limiterVenkatakrishnan();
-    else if (limiter == "Barth") limiterBarthJespersen();
+    if (limiter == "Venkat") limiterVenkatakrishnan(rho_, U_, p_, rhoGrad_, UGrad_, pGrad_);
+    else if (limiter == "Barth") limiterBarthJespersen(rho_, U_, p_, rhoGrad_, UGrad_, pGrad_);
     else Info << "Error in limiter type!" << endl;
     resRho  = scalarField(mesh_.nCells(), 0.0);
     resRhoU = vectorField(mesh_.nCells(), vector::zero);

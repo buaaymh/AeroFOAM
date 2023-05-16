@@ -37,6 +37,7 @@ Foam::euler2ndSolver::euler2ndSolver
 )
 :
     solver(fluidProps, rho, U, p),
+    Limiter(mesh_),
     rhoGrad_
     (
         IOobject
@@ -58,46 +59,11 @@ Foam::euler2ndSolver::euler2ndSolver
         ),
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-    rhoLimit_
-    (
-        IOobject
-        (
-            "rhoLimit",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 1)
-    ),
-    ULimit_
-    (
-        IOobject
-        (
-            "ULimit",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless, vector::one)
-    ),
-    pLimit_
-    (
-        IOobject
-        (
-            "pLimit",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 1)
     )
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 #include "evaluateFlowRes.H"
-
-#include "limiter.H"
 
 // ************************************************************************* //

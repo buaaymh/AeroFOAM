@@ -35,7 +35,7 @@ Author
 #ifndef euler2ndSolver_H
 #define euler2ndSolver_H
 
-#include "solver.H"
+#include "limiter.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -48,18 +48,13 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-class euler2ndSolver: public solver
+class euler2ndSolver: public solver, public Limiter
 {
+    using solver::mesh_;
     // Private Data
     volVectorField rhoGrad_;
     //- temperature grad
     volVectorField pGrad_;
-    //- Density limit
-    volScalarField rhoLimit_;
-    //- Velocity limit
-    volVectorField ULimit_;
-    //- pressure limit
-    volScalarField pLimit_;
 
     // Private Member Functions
     //- Disallow default bitwise copy construct
@@ -88,23 +83,6 @@ public:
         vectorField& resRhoU,
         scalarField& resRhoE
     );
-    
-    void deltaMaxMin
-    (
-        const volScalarField& rho,
-        const volVectorField& U,
-        const volScalarField& p,
-        scalarField& rhoMin,
-        scalarField& rhoMax,
-        vectorField& UMin,
-        vectorField& UMax,
-        scalarField& pMin,
-        scalarField& pMax
-    ) const;
-
-    void limiterVenkatakrishnan();
-
-    void limiterBarthJespersen();
 
 };
 
