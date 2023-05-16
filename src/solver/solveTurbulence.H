@@ -1,4 +1,0 @@
-void Foam::solver::solveTurbulence()
-{
-
-}

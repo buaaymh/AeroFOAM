@@ -35,11 +35,7 @@ Author
 #ifndef eulerSolver_H
 #define eulerSolver_H
 
-#include "emptyFvPatch.H"
-#include "cyclicFvPatch.H"
-#include "processorFvPatch.H"
-#include "boundMinMax.H"
-#include "dbnsFlux.H"
+#include "solver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -52,40 +48,13 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-class eulerSolver
+class eulerSolver: public solver
 {
     // Private Member Functions
     //- Disallow default bitwise copy construct
     eulerSolver(const eulerSolver&);
     //- Disallow default bitwise assignment
     void operator=(const eulerSolver&);
-
-protected:
-    const fluidProperties& fluidProps_;
-    //- Riemann solver
-    std::unique_ptr<dbnsFlux> riemann_;
-    //- Reference to mesh
-    const fvMesh& mesh_;
-    //- Normal
-    surfaceVectorField normal_;
-    //- Static density
-    volScalarField& rho_;
-    //- Velocity
-    volVectorField& U_;
-    //- Static pressure
-    volScalarField& p_;
-    //- Static temperature
-    volScalarField T_;
-    //- Momentum
-    volVectorField rhoU_;
-    //- Energy
-    volScalarField rhoE_;
-    //- Sound speed
-    scalarField c_;
-    //- Volume projections
-    vectorField volProjections_;
-    //- Local time steps
-    scalarField localDtDv_;
 
 public:
     // Constructors
@@ -99,23 +68,6 @@ public:
 
     // Destructor - default
     virtual ~eulerSolver() {};
-
-    // Member Functions
-    const scalarField& rho()  const { return rho_.primitiveField(); }
-    const vectorField& rhoU() const { return rhoU_.primitiveField(); }
-    const scalarField& rhoE() const { return rhoE_.primitiveField(); }
-    
-    scalarField& rho()  { return rho_.primitiveFieldRef(); }
-    vectorField& rhoU() { return rhoU_.primitiveFieldRef(); }
-    scalarField& rhoE() { return rhoE_.primitiveFieldRef(); }
-    
-    const scalarField& LTS() const { return localDtDv_; }
-
-    void updateLTS()
-    {
-        scalar CFL = mesh_.solution().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
-        localDtDv_ = CFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
-    }
 
     virtual void evaluateFlowRes
     (
@@ -151,8 +103,6 @@ public:
     virtual void correctFields();
 
 protected:
-
-    void conservativeToPrimitiveFields();
 
     virtual void evaluateMatrixLDU
     (
@@ -197,8 +147,6 @@ private:
         vectorField& dRhoU,
         scalarField& dRhoE
     ) const;
-
-    void volProjectionsInit();
 
 };
 

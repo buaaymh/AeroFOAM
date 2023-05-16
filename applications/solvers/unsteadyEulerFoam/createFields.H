@@ -79,7 +79,7 @@ volScalarField p
 
 Info << "====================================================" << endl;
 
-std::unique_ptr<eulerSolver> solver;
+std::unique_ptr<solver> solver;
 label order = mesh.schemes().lookup<label>("order");
 if (fluidProps.simulationType == "Euler")
 {

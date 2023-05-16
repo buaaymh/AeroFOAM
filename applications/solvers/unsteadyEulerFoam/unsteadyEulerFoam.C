@@ -30,7 +30,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "eulerSolver.H"
+#include "solver.H"
 #include "euler2ndSolver.H"
 #include "euler3rdSolver.H"
 

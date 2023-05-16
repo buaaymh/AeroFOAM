@@ -77,7 +77,7 @@ Foam::navierStokesSolver::navierStokesSolver
 
 void Foam::navierStokesSolver::correctFields()
 {
-    eulerSolver::correctFields();
+    conservativeToPrimitiveFields();
     laminarViscosity_ = pow(T_, 1.5)*(1.0+S_T_)/(T_+S_T_);
     nuMax_ = (max(4.0/3.0, Gamma)/Pr_Lam)*laminarViscosity_.primitiveFieldRef()/rho_.primitiveField();
 }

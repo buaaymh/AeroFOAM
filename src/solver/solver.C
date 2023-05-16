@@ -22,7 +22,6 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 \*---------------------------------------------------------------------------*/
-
 #include "fvCFD.H"
 #include "solver.H"
 #include "AUSMplusUpFlux.H"
@@ -38,8 +37,6 @@ Foam::solver::solver
 )
 :
     fluidProps_(fluidProps),
-    Ma_Re_(fluidProps.Mach_inf/fluidProps.Re_inf),
-    S_T_(110.4/fluidProps.T_inf),
     mesh_(rho.mesh()),
     normal_(mesh_.Sf()/mesh_.magSf()),
     rho_(rho),
@@ -77,78 +74,9 @@ Foam::solver::solver
         ),
         p_/(Gamma-1.0) + 0.5*rho_*magSqr(U_)
     ),
-    nuTilde_
-    (
-        IOobject
-        (
-            "nuTilde",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 0)
-    ),
-    laminarViscosity_
-    (
-        IOobject
-        (
-            "laminarViscosity",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 0)
-    ),
-    eddyViscosity_
-    (
-        IOobject
-        (
-            "eddyViscosity",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 0)
-    ),
-    UGrad_
-    (
-        IOobject
-        (
-            "UGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedTensor(dimless/dimLength, tensor::zero)
-    ),
-    TGrad_
-    (
-        IOobject
-        (
-            "TGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-   nuTildeGrad_
-    (
-        IOobject
-        (
-            "nuTildeGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
     c_(sqrt(T_.primitiveField())),
-    delta_(mesh_.delta()),
     volProjections_(vectorField(mesh_.nCells())),
-    localDtDv_(scalarField(mesh_.nCells())),
-    nuMax_(scalarField(mesh_.nCells(), 0.0)),
-    deltaDES_(scalarField(mesh_.nCells()))
+    localDtDv_(scalarField(mesh_.nCells()))
 {
     Info << "=================Solver Information==================" << endl;
     word flux = mesh_.schemes().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");
@@ -165,52 +93,6 @@ Foam::solver::solver
         riemann_ = std::make_unique<roeFlux>();
     }
     volProjectionsInit();
-    if (fluidProps_.simulationType != "Euler")
-    {
-        laminarViscosity_ = volScalarField
-        (
-            IOobject
-            (
-                "laminarViscosity",
-                mesh_.time().timeName(),
-                mesh_,
-                IOobject::NO_READ,
-                IOobject::AUTO_WRITE
-            ),
-            mesh_,
-            dimensionedScalar(dimless, 0)
-        );
-        if (fluidProps_.simulationType == "SATurb")
-        {
-            nuTilde_ = volScalarField
-            (
-                IOobject
-                (
-                    "nuTilde",
-                    mesh_.time().timeName(),
-                    mesh_,
-                    IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh_,
-                dimensionedScalar(dimless, 0.01)
-            );
-            eddyViscosity_ = volScalarField
-            (
-                IOobject
-                (
-                    "eddyViscosity",
-                    mesh_.time().timeName(),
-                    mesh_,
-                    IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh_,
-                dimensionedScalar(dimless, 0)
-            );
-        }
-    }
-    correctFields();
 }
 
 void Foam::solver::volProjectionsInit()
@@ -238,14 +120,108 @@ void Foam::solver::volProjectionsInit()
     }
 }
 
-#include "correctFields.H"
+void Foam::solver::conservativeToPrimitiveFields()
+{
+    U_.ref() = rhoU_/rho_;
+    p_.ref() = (rhoE_-0.5*rho_*magSqr(U_))*(Gamma-1.0);
+    const bool rhoBool = Foam::positiveCorrect(rho_);
+    const bool pBool   = Foam::positiveCorrect(p_);
+    if (rhoBool || pBool)
+    {
+        rhoU_.ref() = rho_*U_;
+        rhoE_.ref() = p_/(Gamma-1.0)+0.5*rho_*magSqr(U_);
+    }
+    rho_.correctBoundaryConditions();
+    U_.correctBoundaryConditions();
+    p_.correctBoundaryConditions();
+    T_.primitiveFieldRef() = Gamma*p_.primitiveField()/rho_.primitiveField();
+    c_ = sqrt(T_.primitiveField());
+    forAll(mesh_.boundary(), patchI)
+    {
+        const word name = mesh_.boundary()[patchI].name();
+        const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+        const vectorField& normal = normal_.boundaryField()[patchI];
+        fvPatchScalarField& rhoBound = rho_.boundaryFieldRef()[patchI];
+        fvPatchVectorField& UBound = U_.boundaryFieldRef()[patchI];
+        fvPatchScalarField& pBound = p_.boundaryFieldRef()[patchI];
+        if (name == "farField")
+        {
+            if (fluidProps_.Mach_inf < 1.0)
+            {
+                forAll(bfaceCells, faceI)
+                {
+                    const label i = bfaceCells[faceI];
+                    const scalar c2 = Gamma*p_[i]/rho_[i];
+                    const scalar qn = U_[i]&normal[faceI];
+                    const scalar rhoc = Foam::sqrt(c2)*rho_[i];
+                    if (qn < 0.0)
+                    {
+                        const scalar pB = pBound[faceI];
+                        pBound[faceI] = 0.5*(pB+p_[i]-rhoc*(normal[faceI]&(UBound[faceI]-U_[i])));
+                        rhoBound[faceI] += (pBound[faceI]-pB)/c2;
+                        UBound[faceI] += normal[faceI]*(pBound[faceI]-pB)/rhoc;
+                    }
+                    else
+                    {
+                        rhoBound[faceI] = rho_[i]+(pBound[faceI]-p_[i])/c2;
+                        UBound[faceI] = U_[i]+normal[faceI]*(p_[i]-pBound[faceI])/rhoc;
+                    }
+                }
+            }
+            else
+            {
+                forAll(bfaceCells, faceI)
+                {
+                    const label i = bfaceCells[faceI];
+                    const scalar qn = U_[i]&normal[faceI];
+                    if (qn > 0.0)
+                    {
+                        rhoBound[faceI] = rho_[i];
+                        UBound[faceI]   = U_[i];
+                        pBound[faceI]   = p_[i];
+                    }
+                }
+            }
+        }
+        if (name == "inlet")
+        {
+            const scalarField Ma = mag(UBound)/sqrt(pBound*Gamma/rhoBound);
+            forAll(bfaceCells, faceI)
+            {
+                if (Ma[faceI] < 1.0)
+                {
+                    const label i = bfaceCells[faceI];
+                    const scalar c2 = Gamma*p_[i]/rho_[i];
+                    const scalar rhoc = rho_[i]*Foam::sqrt(c2);
+                    const scalar pB = pBound[faceI];
+                    pBound[faceI] = 0.5*(pB+p_[i]-rhoc*(normal[faceI]&(UBound[faceI]-U_[i])));
+                    rhoBound[faceI] += (pBound[faceI]-pB)/c2;
+                    UBound[faceI] += normal[faceI]*(pBound[faceI]-pB)/rhoc;
+                }
+            }
+        }
+        if (name == "outlet")
+        {
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                const scalar c2 = Gamma*p_[i]/rho_[i];
+                const scalar Ma = mag(U_[i])/Foam::sqrt(c2);
+                const scalar rhoc = rho_[i]*Foam::sqrt(c2);
+                if (Ma >= 1.0)
+                {
+                    pBound[faceI]   = p_[i];
+                }
+                else
+                {
+                    rhoBound[faceI] = rho_[i]+(pBound[faceI]-p_[i])/c2;
+                    UBound[faceI] = U_[i]+normal[faceI]*(p_[i]-pBound[faceI])/rhoc;
 
-#include "functions.H"
-
-#include "solveTurbulence.H"
-
-#include "evaluateFlowRes.H"
-
-#include "solveFlowLinearSystem.H"
+                }
+            }
+        }
+    }
+    T_.boundaryFieldRef() = p_.boundaryFieldRef()*Gamma/rho_.boundaryFieldRef();
+}
 
 // ************************************************************************* //

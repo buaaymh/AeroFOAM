@@ -60,11 +60,8 @@ class solver
     //- Disallow default bitwise assignment
     void operator=(const solver&);
 
-protected:
+protected:    
     const fluidProperties& fluidProps_;
-    //- Constant
-    const scalar Ma_Re_;
-    const scalar S_T_;
     //- Riemann solver
     std::unique_ptr<dbnsFlux> riemann_;
     //- Reference to mesh
@@ -83,30 +80,12 @@ protected:
     volVectorField rhoU_;
     //- Energy
     volScalarField rhoE_;
-    //- nuTilde
-    volScalarField nuTilde_;
-    //- laminar viscosity
-    volScalarField laminarViscosity_;
-    //- eddy viscosity
-    volScalarField eddyViscosity_;
-    //- Velocity grad
-    volTensorField UGrad_;
-    //- Velocity grad
-    volVectorField TGrad_;
-    // - nuTilde grad
-    volVectorField nuTildeGrad_;
     //- Sound speed
     scalarField c_;
-    //- delta between ij
-    vectorField delta_;
     //- Volume projections
     vectorField volProjections_;
     //- Local time steps
     scalarField localDtDv_;
-    //- nuMax
-    scalarField nuMax_;
-    //- hybrid delta
-    scalarField deltaDES_;
 
 public:
     // Constructors
@@ -121,7 +100,7 @@ public:
     // Destructor - default
     virtual ~solver() {};
 
-    // Member Functions
+ // Member Functions
     const scalarField& rho()  const { return rho_.primitiveField(); }
     const vectorField& rhoU() const { return rhoU_.primitiveField(); }
     const scalarField& rhoE() const { return rhoE_.primitiveField(); }
@@ -143,30 +122,23 @@ public:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
-    );
+    ) = 0;
 
-    void evaluateViscousFlowRes
-    (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE
-    );
-
-    void solveFlowLinearSystemByLUSGS
+    virtual void solveFlowLinearSystemByLUSGS
     (
         const scalarField& resRho,
         const vectorField& resRhoU,
         const scalarField& resRhoE
-    );
+    ) = 0;
 
-    void solveFlowLinearSystemByGMRES
+    virtual void solveFlowLinearSystemByGMRES
     (
         const scalarField& resRho,
         const vectorField& resRhoU,
         const scalarField& resRhoE
-    );
+    ) = 0;
 
-    void solveFlowPseudoTimeSystem
+    virtual void solveFlowPseudoTimeSystem
     (
         const scalar& dt,
         const scalar& alpha,
@@ -174,13 +146,13 @@ public:
         const vectorField& resRhoU,
         const scalarField& resRhoE,
         scalar& resL1
-    );
+    ) = 0;
 
-    void correctFields();
-
-    void solveTurbulence();
+    virtual void correctFields() = 0;
 
 protected:
+
+    void conservativeToPrimitiveFields();
 
     virtual void evaluateMatrixLDU
     (
@@ -188,9 +160,16 @@ protected:
         scalarField& L,
         scalarField& U,
         scalarField& D
-    ) const;
+    ) const = 0;
 
-    void matrixVectorProduct
+    virtual void evaluateFlowResForGMRES
+    (
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE
+    ) = 0;
+
+    virtual void matrixVectorProduct
     (
         const scalarField& resRho,
         const vectorField& resRhoU,
@@ -201,67 +180,13 @@ protected:
         scalarField& y_Rho,
         vectorField& y_RhoU,
         scalarField& y_RhoE
-    );
-
-    void correctPrimitiveBoundary
-    (
-        volScalarField& rho,
-        volVectorField& U,
-        volScalarField& p,
-        volScalarField& T
-    );
-
-    void correctViscousFields();
-
-    void precondition
-    (
-        const scalar& alpha,
-        const scalarField& L,
-        const scalarField& U,
-        const scalarField& D,
-        const scalarField& resRho,
-        const vectorField& resRhoU,
-        const scalarField& resRhoE,
-        scalarField& dRho,
-        vectorField& dRhoU,
-        scalarField& dRhoE
-    ) const;
-
-    void evaluateViscousFlux
-    (
-        vector& rhoUFlux,
-        scalar& rhoEFlux,
-        const vector& U,
-        const vector& TGrad,
-        const tensor& UGrad,
-        const scalar& laminarViscosity,
-        const scalar& eddyViscosity,
-        const vector& normal
-    ) const;
+    ) = 0;
 
 private:
 
     void volProjectionsInit();
 
 };
-
-
-template<class value, class grad>
-grad AverageGrad
-(
-    const value& value_L,
-    const value& value_R,
-    const grad&  grad_L,
-    const grad&  grad_R,
-    const vector& delta
-)
-{
-    const scalar l = mag(delta);
-    const vector t = delta/l;
-    grad averageGrad = 0.5*(grad_L+grad_R);
-    averageGrad -= ((averageGrad&t) - (value_R-value_L)/l)*t;
-    return averageGrad;
-}
 
 } // End namespace Foam
 
