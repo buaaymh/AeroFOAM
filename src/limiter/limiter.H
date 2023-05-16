@@ -35,7 +35,9 @@ Author
 #ifndef limiter_H
 #define limiter_H
 
-#include "solver.H"
+#include "definitions.H"
+#include "cyclicFvPatch.H"
+#include "processorFvPatch.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

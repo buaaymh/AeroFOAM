@@ -35,6 +35,7 @@ Author
 #ifndef euler2ndSolver_H
 #define euler2ndSolver_H
 
+#include "solver.H"
 #include "limiter.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

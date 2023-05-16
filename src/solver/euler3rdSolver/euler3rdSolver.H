@@ -35,6 +35,7 @@ Author
 #ifndef euler3rdSolver_H
 #define euler3rdSolver_H
 
+#include "solver.H"
 #include "reconstruction.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

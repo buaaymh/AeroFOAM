@@ -35,8 +35,9 @@ Author
 #ifndef reconstruction_H
 #define reconstruction_H
 
-#include "solver.H"
 #include "element.H"
+#include "cyclicFvPatch.H"
+#include "processorFvPatch.H"
 #include <map>
 #include <set>
 

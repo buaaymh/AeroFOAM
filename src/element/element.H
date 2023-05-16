@@ -35,7 +35,7 @@ Author
 #ifndef element_H
 #define element_H
 
-#include "solver.H"
+#include "definitions.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

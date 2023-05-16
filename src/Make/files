@@ -3,11 +3,11 @@ dbnsFlux/dbnsFlux.C
 dbnsFlux/roeFlux/roeFlux.C
 dbnsFlux/hllcFlux/hllcFlux.C
 dbnsFlux/AUSMplusUpFlux/AUSMplusUpFlux.C
-solver/solver.C
 bound/boundMinMax.C
+limiter/limiter.C
 element/element.C
 reconstruction/reconstruction.C
-solver/euler2ndSolver/limiter.C
+solver/solver.C
 solver/euler2ndSolver/euler2ndSolver.C
 solver/euler3rdSolver/euler3rdSolver.C
 solver/turb2ndSolver/turb2ndSolver.C
