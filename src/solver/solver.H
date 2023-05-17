@@ -76,6 +76,8 @@ protected:
     volScalarField& p_;
     //- Static temperature
     volScalarField T_;
+    //- Mach number
+    volScalarField Ma_;
     //- Momentum
     volVectorField rhoU_;
     //- Energy

@@ -54,6 +54,18 @@ Foam::solver::solver
         ),
         p_*Gamma/rho_
     ),
+    Ma_
+    (
+        IOobject
+        (
+            "Ma",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mag(U_)/Foam::sqrt(T_)
+    ),
     rhoU_
     (
         IOobject
@@ -136,6 +148,7 @@ void Foam::solver::conservativeToPrimitiveFields()
     p_.correctBoundaryConditions();
     T_.primitiveFieldRef() = Gamma*p_.primitiveField()/rho_.primitiveField();
     c_ = sqrt(T_.primitiveField());
+    Ma_.primitiveFieldRef() = mag(U_.primitiveField())/c_;
     forAll(mesh_.boundary(), patchI)
     {
         const word name = mesh_.boundary()[patchI].name();
@@ -151,9 +164,9 @@ void Foam::solver::conservativeToPrimitiveFields()
                 forAll(bfaceCells, faceI)
                 {
                     const label i = bfaceCells[faceI];
-                    const scalar c2 = Gamma*p_[i]/rho_[i];
+                    const scalar c2 = T_[i];
                     const scalar qn = U_[i]&normal[faceI];
-                    const scalar rhoc = Foam::sqrt(c2)*rho_[i];
+                    const scalar rhoc = c_[i]*rho_[i];
                     if (qn < 0.0)
                     {
                         const scalar pB = pBound[faceI];
@@ -191,8 +204,8 @@ void Foam::solver::conservativeToPrimitiveFields()
                 if (Ma[faceI] < 1.0)
                 {
                     const label i = bfaceCells[faceI];
-                    const scalar c2 = Gamma*p_[i]/rho_[i];
-                    const scalar rhoc = rho_[i]*Foam::sqrt(c2);
+                    const scalar c2 = T_[i];
+                    const scalar rhoc = rho_[i]*c_[i];
                     const scalar pB = pBound[faceI];
                     pBound[faceI] = 0.5*(pB+p_[i]-rhoc*(normal[faceI]&(UBound[faceI]-U_[i])));
                     rhoBound[faceI] += (pBound[faceI]-pB)/c2;
@@ -205,23 +218,23 @@ void Foam::solver::conservativeToPrimitiveFields()
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                const scalar c2 = Gamma*p_[i]/rho_[i];
-                const scalar Ma = mag(U_[i])/Foam::sqrt(c2);
-                const scalar rhoc = rho_[i]*Foam::sqrt(c2);
-                if (Ma >= 1.0)
+                if (Ma_[i] < 1.0)
                 {
-                    pBound[faceI]   = p_[i];
-                }
-                else
-                {
+                    const scalar c2 = T_[i];
+                    const scalar rhoc = rho_[i]*c_[i];
                     rhoBound[faceI] = rho_[i]+(pBound[faceI]-p_[i])/c2;
                     UBound[faceI] = U_[i]+normal[faceI]*(p_[i]-pBound[faceI])/rhoc;
-
+                    if ((UBound[faceI]&normal[faceI]) < 0.0)
+                    {
+                        const vector signU = vector(sign(U_[i].x()), sign(U_[i].y()), sign(U_[i].z()));
+                        UBound[faceI] = cmptMultiply(signU, max(cmptMag(UBound[faceI]), cmptMag(U_[i])));
+                    }
                 }
             }
         }
     }
-    T_.boundaryFieldRef() = p_.boundaryFieldRef()*Gamma/rho_.boundaryFieldRef();
+    T_.boundaryFieldRef() = p_.boundaryField()*Gamma/rho_.boundaryField();
+    Ma_.boundaryFieldRef() = mag(U_.boundaryField())/Foam::sqrt(T_.boundaryField());
 }
 
 // ************************************************************************* //
