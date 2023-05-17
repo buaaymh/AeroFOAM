@@ -185,6 +185,8 @@ Foam::Reconstruction::Reconstruction
 
 #include "functions.H"
 
+#include "evaluateVarsAndGrads.H"
+
 #include "initVrLinearSystem.H"
 
 #include "iterationStep.H"

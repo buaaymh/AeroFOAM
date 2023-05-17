@@ -13,6 +13,7 @@ eulerSolver/euler2ndSolver/euler2ndSolver.C
 eulerSolver/euler3rdSolver/euler3rdSolver.C
 navierStokesSolver/navierStokesSolver.C
 navierStokesSolver/navierStokes2ndSolver/navierStokes2ndSolver.C
+navierStokesSolver/navierStokes3rdSolver/navierStokes3rdSolver.C
 # solver/euler2ndSolver/euler2ndSolver.C
 # solver/euler3rdSolver/euler3rdSolver.C
 # solver/turb2ndSolver/turb2ndSolver.C

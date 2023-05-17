@@ -1,4 +1,4 @@
-void Foam::euler3rdSolver::evaluateFlowRes
+void Foam::navierStokes3rdSolver::evaluateFlowRes
 (
     scalarField& resRho,
     vectorField& resRhoU,
@@ -6,7 +6,8 @@ void Foam::euler3rdSolver::evaluateFlowRes
 )
 {   
     scalar rho_i, rho_j, rhoE_i, rhoE_j;
-    vector rhoU_i, rhoU_j;
+    vector rhoU_i, rhoU_j, rhoGrad_i, rhoGrad_j, rhoEGrad_i, rhoEGrad_j;
+    tensor rhoUGrad_i, rhoUGrad_j;
     resRho  = scalarField(mesh_.nCells(), 0.0);
     resRhoU = vectorField(mesh_.nCells(), vector::zero);
     resRhoE = scalarField(mesh_.nCells(), 0.0);
@@ -18,12 +19,9 @@ void Foam::euler3rdSolver::evaluateFlowRes
         scalar rhoEFlux = 0.0;
         const label i = mesh_.owner()[faceI];
         const label j = mesh_.neighbour()[faceI];
+        const scalar deltaTilde = min(mesh_.V()[i], mesh_.V()[j])/mesh_.magSf()[faceI];
         if (isP1Cell_[i] && isP1Cell_[j])
         {
-            evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], mesh_.Cf()[faceI]-mesh_.C()[i]);
-            evaluateVars(rho_j, rhoU_j, rhoE_j, rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], mesh_.Cf()[faceI]-mesh_.C()[j]);
-            evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
-                         normal_[faceI], mesh_.magSf()[faceI]);
         }
         else
         {
@@ -31,10 +29,14 @@ void Foam::euler3rdSolver::evaluateFlowRes
             {
                 const vector delta_i = faceQuad_[faceI]->at(gaussI) - mesh_.C()[i];
                 const vector delta_j = faceQuad_[faceI]->at(gaussI) - mesh_.C()[j];
-                evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                evaluateVars(rho_j, rhoU_j, rhoE_j, rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], delta_j);
-                evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
-                             faceQuad_[faceI]->normal(gaussI), faceQuad_[faceI]->weight(gaussI));
+                evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                    rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                evaluateVarsAndGrads(rho_j, rhoU_j, rhoE_j, rhoGrad_j, rhoUGrad_j, rhoEGrad_j,
+                                    rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], delta_j);
+                evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                             rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
+                             rhoGrad_i, rhoGrad_j, rhoUGrad_i, rhoUGrad_j, rhoEGrad_i, rhoEGrad_j,
+                             deltaTilde, faceQuad_[faceI]->normal(gaussI), faceQuad_[faceI]->weight(gaussI));
             }
         }
         resRho[i]  -= rhoFlux;
@@ -51,6 +53,7 @@ void Foam::euler3rdSolver::evaluateFlowRes
         const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
         const word name = mesh_.boundary()[patchI].name();
         const word type = mesh_.boundary()[patchI].type();
+        const label start = mesh_.boundary()[patchI].start();
         if (mesh_.boundary()[patchI].coupled())
         {
             const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
@@ -69,29 +72,36 @@ void Foam::euler3rdSolver::evaluateFlowRes
             const symmTensorField d2RhoUz_neigh = d2RhoUz_.boundaryField()[patchI].patchNeighbourField();
             const symmTensorField d2RhoE_neigh = d2RhoE_.boundaryField()[patchI].patchNeighbourField();
             const std::vector<std::unique_ptr<Face>>& boundaryQuad = patch2ndQuad_[patchI];
-            forAll(bfaceCells, j)
+            forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux  = 0.0;
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux = 0.0;
-                const label i = bfaceCells[j];
-                for (label gaussI = 0; gaussI != boundaryQuad[j]->size(); ++gaussI)
+                const label i = bfaceCells[faceI];
+                const scalar deltaTilde = mesh_.V()[i]/magSf[faceI];
+                for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
-                    const vector delta_i = boundaryQuad[j]->at(gaussI) - ownerCn[j];
-                    const vector delta_j = boundaryQuad[j]->at(gaussI) - neighCn[j];
-                    evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], d1Rho_[i], d1RhoU_[i], d1RhoE_[i],
-                                 d2Rho_[i], d2RhoUx_[i], d2RhoUy_[i], d2RhoUz_[i], d2RhoE_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                    evaluateVars(rho_j, rhoU_j, rhoE_j, rho_neigh[j], rhoU_neigh[j], rhoE_neigh[j], d1Rho_neigh[j], d1RhoU_neigh[j], d1RhoE_neigh[j],
-                                 d2Rho_neigh[j], d2RhoUx_neigh[j], d2RhoUy_neigh[j], d2RhoUz_neigh[j], d2RhoE_neigh[j], basisMean_neigh[j], rDeltaXYZ_neigh[j], delta_j);
-                    evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
-                                 boundaryQuad[j]->normal(gaussI), boundaryQuad[j]->weight(gaussI));
+                    const vector delta_i = boundaryQuad[faceI]->at(gaussI) - ownerCn[faceI];
+                    const vector delta_j = boundaryQuad[faceI]->at(gaussI) - neighCn[faceI];
+                    evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                        rho_[i], rhoU_[i], rhoE_[i], d1Rho_[i], d1RhoU_[i], d1RhoE_[i],
+                                        d2Rho_[i], d2RhoUx_[i], d2RhoUy_[i], d2RhoUz_[i], d2RhoE_[i],
+                                        basisMean_[i], rDeltaXYZ_[i], delta_i);
+                    evaluateVarsAndGrads(rho_j, rhoU_j, rhoE_j, rhoGrad_j, rhoUGrad_j, rhoEGrad_j,
+                                        rho_neigh[faceI], rhoU_neigh[faceI], rhoE_neigh[faceI], d1Rho_neigh[faceI], d1RhoU_neigh[faceI], d1RhoE_neigh[faceI],
+                                        d2Rho_neigh[faceI], d2RhoUx_neigh[faceI], d2RhoUy_neigh[faceI], d2RhoUz_neigh[faceI], d2RhoE_neigh[faceI],
+                                        basisMean_neigh[faceI], rDeltaXYZ_neigh[faceI], delta_j);
+                    evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                 rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
+                                 rhoGrad_i, rhoGrad_j, rhoUGrad_i, rhoUGrad_j, rhoEGrad_i, rhoEGrad_j,
+                                 deltaTilde, boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
                 }
                 resRho[i]  -= rhoFlux;
                 resRhoU[i] -= rhoUFlux;
                 resRhoE[i] -= rhoEFlux;
             }
         }
-        if (type == "symmetryPlane" || type == "wall" || type == "symmetry")
+        if (type == "symmetryPlane" || type == "symmetry")
         {
             const vectorField& Cf = mesh_.boundary()[patchI].Cf();
             const vectorField  Cn = mesh_.boundary()[patchI].Cn();
@@ -125,20 +135,69 @@ void Foam::euler3rdSolver::evaluateFlowRes
                 resRhoE[i] -= rhoEFlux;
             }
         }
+        if (type == "wall")
+        {
+            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
+            const vectorField  Cn = mesh_.boundary()[patchI].Cn();
+            const std::vector<std::unique_ptr<Face>>& boundaryQuad = patch2ndQuad_[patchI];
+            forAll(bfaceCells, faceI)
+            {
+                scalar rhoFlux  = 0.0;
+                vector rhoUFlux = vector::zero;
+                scalar rhoEFlux = 0.0;
+                const label i = bfaceCells[faceI];
+                if (isP1Cell_[i])
+                {
+                }
+                else
+                {
+                    for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
+                    {
+                        const vector delta_i = boundaryQuad[faceI]->at(gaussI) - Cn[faceI];
+                        evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                            rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                        evaluateWallFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                         rho_i, rhoU_i, rhoE_i,
+                                         rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                         boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
+                    }
+                }
+                resRho[i]  -= rhoFlux;
+                resRhoU[i] -= rhoUFlux;
+                resRhoE[i] -= rhoEFlux;
+            }
+        }
         if (name == "inlet" || name == "outlet" || name == "farField")
         {
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];
             const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
+            const vectorField  Cn = mesh_.boundary()[patchI].Cn();
+            std::unique_ptr<Face> faceQuad;
             forAll(bfaceCells, faceI)
             {
-                scalar rhoFlux;
-                vector rhoUFlux;
-                scalar rhoEFlux;
+                scalar rhoFlux  = 0.0;
+                vector rhoUFlux = vector::zero;
+                scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[faceI];
-                Foam::evaluateConvectiveFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                             rhoBound[faceI], UBound[faceI], pBound[faceI],
-                                             normal[faceI]*magSf[faceI]);
+                build2ndFace(mesh_, start+faceI, faceQuad);
+                if (isP1Cell_[i])
+                {
+                }
+                else
+                {
+                    for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
+                    {
+                        const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
+                        evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                            rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                        evaluateInletOutletFlux(rhoFlux, rhoUFlux, rhoEFlux,
+                                                rhoBound[faceI], UBound[faceI], pBound[faceI],
+                                                rho_i, rhoU_i, rhoE_i,
+                                                rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                                faceQuad->normal(gaussI), faceQuad->weight(gaussI));
+                    }
+                }
                 resRho[i]  -= rhoFlux;
                 resRhoU[i] -= rhoUFlux;
                 resRhoE[i] -= rhoEFlux;

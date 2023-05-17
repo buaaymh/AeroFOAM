@@ -32,10 +32,10 @@ Author
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef euler3rdSolver_H
-#define euler3rdSolver_H
+#ifndef navierStokes3rdSolver_H
+#define navierStokes3rdSolver_H
 
-#include "eulerSolver.H"
+#include "navierStokesSolver.H"
 #include "reconstruction.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -49,19 +49,19 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-class euler3rdSolver: public eulerSolver, public Reconstruction
+class navierStokes3rdSolver: public navierStokesSolver, public Reconstruction
 {
-    using eulerSolver::mesh_;
-    using eulerSolver::rho_;
-    using eulerSolver::rhoU_;
-    using eulerSolver::rhoE_;
+    using navierStokesSolver::mesh_;
+    using navierStokesSolver::rho_;
+    using navierStokesSolver::rhoU_;
+    using navierStokesSolver::rhoE_;
 
 private:
     // Private Member Functions
     //- Disallow default bitwise copy construct
-    euler3rdSolver(const euler3rdSolver&);
+    navierStokes3rdSolver(const navierStokes3rdSolver&);
     //- Disallow default bitwise assignment
-    void operator=(const euler3rdSolver&);
+    void operator=(const navierStokes3rdSolver&);
     
     // Member Functions
 
@@ -80,10 +80,65 @@ private:
         const scalar& magSf
     ) const;
 
+    void evaluateFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& rho_L,
+        const scalar& rho_R,
+        const vector& rhoU_L,
+        const vector& rhoU_R,
+        const scalar& rhoE_L,
+        const scalar& rhoE_R,
+        const vector& rhoGrad_L,
+        const vector& rhoGrad_R,
+        const tensor& rhoUGrad_L,
+        const tensor& rhoUGrad_R,
+        const vector& rhoEGrad_L,
+        const vector& rhoEGrad_R,
+        const scalar& deltaTilde,
+        const vector& normal,
+        const scalar& magSf
+    ) const;
+
+    void evaluateWallFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& rho,
+        const vector& rhoU,
+        const scalar& rhoE,
+        const vector& rhoGrad,
+        const tensor& rhoUGrad,
+        const vector& rhoEGrad,
+        const vector& normal,
+        const scalar& magSf
+    ) const;
+
+    void evaluateInletOutletFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& rhoBound,
+        const vector& UBound,
+        const scalar& pBound,
+        const scalar& rhoInter,
+        const vector& rhoUInter,
+        const scalar& rhoEInter,
+        const vector& rhoGrad,
+        const tensor& rhoUGrad,
+        const vector& rhoEGrad,
+        const vector& normal,
+        const scalar& magSf
+    ) const;
+
 public:
 
     // Constructors - default
-    euler3rdSolver
+    navierStokes3rdSolver
     (
         const fluidProperties& fluidProps,
         volScalarField& rho,
@@ -92,7 +147,7 @@ public:
     );
 
     // Destructor - default
-    virtual ~euler3rdSolver() {};
+    virtual ~navierStokes3rdSolver() {};
 
     // Member Functions
     void evaluateFlowRes

@@ -269,6 +269,84 @@ Mat5X3 slope_Limiter
     const vector& rDeltaXYZ
 );
 
+// * * * * * * * * * * evaluateVar and Grad Functions * * * * * * * * * * * //
+
+void evaluateVars
+(
+    scalar& rho,
+    vector& rhoU,
+    scalar& rhoE,
+    const scalar& rho_0,
+    const vector& rhoU_0,
+    const scalar& rhoE_0,
+    const Mat9X5& coefs,
+    const symmTensor& basisMean,
+    const vector& rDeltaXYZ,
+    const vector& delta
+);
+
+void evaluateVars
+(
+    scalar& rho,
+    vector& rhoU,
+    scalar& rhoE,
+    const scalar& rho_0,
+    const vector& rhoU_0,
+    const scalar& rhoE_0,
+    const vector& d1Rho,
+    const tensor& d1RhoU,
+    const vector& d1RhoE,
+    const symmTensor& d2Rho,
+    const symmTensor& d2RhoUx,
+    const symmTensor& d2RhoUy,
+    const symmTensor& d2RhoUz,
+    const symmTensor& d2RhoE,
+    const symmTensor& basisMean,
+    const vector& rDeltaXYZ,
+    const vector& delta
+);
+
+void evaluateVarsAndGrads
+(
+    scalar& rho,
+    vector& rhoU,
+    scalar& rhoE,
+    vector& rhoGrad,
+    tensor& rhoUGrad,
+    vector& rhoEGrad,
+    const scalar& rho_0,
+    const vector& rhoU_0,
+    const scalar& rhoE_0,
+    const Mat9X5& coefs,
+    const symmTensor& basisMean,
+    const vector& rDeltaXYZ,
+    const vector& delta
+);
+
+void evaluateVarsAndGrads
+(
+    scalar& rho,
+    vector& rhoU,
+    scalar& rhoE,
+    vector& rhoGrad,
+    tensor& rhoUGrad,
+    vector& rhoEGrad,
+    const scalar& rho_0,
+    const vector& rhoU_0,
+    const scalar& rhoE_0,
+    const vector& d1Rho,
+    const tensor& d1RhoU,
+    const vector& d1RhoE,
+    const symmTensor& d2Rho,
+    const symmTensor& d2RhoUx,
+    const symmTensor& d2RhoUy,
+    const symmTensor& d2RhoUz,
+    const symmTensor& d2RhoE,
+    const symmTensor& basisMean,
+    const vector& rDeltaXYZ,
+    const vector& delta
+);
+
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
