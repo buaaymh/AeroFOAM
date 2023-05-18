@@ -39,8 +39,6 @@ Foam::eulerSolver::eulerSolver
 void Foam::eulerSolver::correctFields()
 {
     conservativeToPrimitiveFields();
-    rhoU_.correctBoundaryConditions();
-    rhoE_.correctBoundaryConditions();
 }
 
 #include "functions.H"

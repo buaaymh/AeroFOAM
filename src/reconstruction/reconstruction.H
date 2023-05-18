@@ -156,6 +156,12 @@ Col9X1 polynomialDn2
     const vector& normal
 );
 
+Mat9X3 polynomialGrad
+(
+    const vector& delta,
+    const vector& rDeltaXYZ
+);
+
 // * * * * * * * * * * * * WBAP Functions * * * * * * * * * * * * //
 
 Mat5X3 transformD1Coefs

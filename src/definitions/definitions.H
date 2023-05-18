@@ -79,6 +79,7 @@ using Mat6X6 = Eigen::Matrix<scalar, 6, 6>;
 
 using Mat8X3 = Eigen::Matrix<scalar, 8, 3>;
 
+using Mat9X3 = Eigen::Matrix<scalar, 9, 3>;
 using Mat9X5 = Eigen::Matrix<scalar, 9, 5>;
 using Mat9X9 = Eigen::Matrix<scalar, 9, 9>;
 

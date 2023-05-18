@@ -95,6 +95,29 @@ Col9X1 Foam::polynomialDn2
     );
 }
 
+Mat9X3 Foam::polynomialGrad
+(
+    const vector& delta,
+    const vector& rDeltaXYZ
+)
+{
+    const vector B = cmptMultiply(delta, rDeltaXYZ);
+    Mat9X3 polyGrad;
+    polyGrad.col(0) << rDeltaXYZ.x(), 0, 0,
+                       B.x()*rDeltaXYZ.x(), B.y()*rDeltaXYZ.x(), B.z()*rDeltaXYZ.x(),
+                       0, 0,
+                       0;
+    polyGrad.col(1) << 0, rDeltaXYZ.y(), 0,
+                       0, B.x()*rDeltaXYZ.y(), 0,
+                       B.y()*rDeltaXYZ.y(), B.z()*rDeltaXYZ.y(),
+                       0;
+    polyGrad.col(2) << 0, 0, rDeltaXYZ.z(),
+                       0, 0, B.x()*rDeltaXYZ.z(),
+                       0, B.y()*rDeltaXYZ.z(),
+                       B.z()*rDeltaXYZ.z();
+    return polyGrad;
+}
+
 Mat5X3 Foam::transformD1Coefs
 (
     const Mat5X9& coefs,

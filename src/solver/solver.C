@@ -144,6 +144,8 @@ void Foam::solver::conservativeToPrimitiveFields()
         rhoE_.ref() = p_/(Gamma-1.0)+0.5*rho_*magSqr(U_);
     }
     rho_.correctBoundaryConditions();
+    rhoU_.correctBoundaryConditions();
+    rhoE_.correctBoundaryConditions();
     U_.correctBoundaryConditions();
     p_.correctBoundaryConditions();
     T_.primitiveFieldRef() = Gamma*p_.primitiveField()/rho_.primitiveField();

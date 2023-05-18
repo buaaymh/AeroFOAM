@@ -36,6 +36,7 @@ Description
 #include "euler3rdSolver.H"
 #include "navierStokesSolver.H"
 #include "navierStokes2ndSolver.H"
+#include "navierStokes3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

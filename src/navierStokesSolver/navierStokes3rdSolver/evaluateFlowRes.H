@@ -20,24 +20,17 @@ void Foam::navierStokes3rdSolver::evaluateFlowRes
         const label i = mesh_.owner()[faceI];
         const label j = mesh_.neighbour()[faceI];
         const scalar deltaTilde = min(mesh_.V()[i], mesh_.V()[j])/mesh_.magSf()[faceI];
-        if (isP1Cell_[i] && isP1Cell_[j])
+        for (label gaussI = 0; gaussI != faceQuad_[faceI]->size(); ++gaussI)
         {
-        }
-        else
-        {
-            for (label gaussI = 0; gaussI != faceQuad_[faceI]->size(); ++gaussI)
-            {
-                const vector delta_i = faceQuad_[faceI]->at(gaussI) - mesh_.C()[i];
-                const vector delta_j = faceQuad_[faceI]->at(gaussI) - mesh_.C()[j];
-                evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
-                                    rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                evaluateVarsAndGrads(rho_j, rhoU_j, rhoE_j, rhoGrad_j, rhoUGrad_j, rhoEGrad_j,
-                                    rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], delta_j);
-                evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                             rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
-                             rhoGrad_i, rhoGrad_j, rhoUGrad_i, rhoUGrad_j, rhoEGrad_i, rhoEGrad_j,
-                             deltaTilde, faceQuad_[faceI]->normal(gaussI), faceQuad_[faceI]->weight(gaussI));
-            }
+            const vector delta_i = faceQuad_[faceI]->at(gaussI) - mesh_.C()[i];
+            const vector delta_j = faceQuad_[faceI]->at(gaussI) - mesh_.C()[j];
+            evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                 rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+            evaluateVarsAndGrads(rho_j, rhoU_j, rhoE_j, rhoGrad_j, rhoUGrad_j, rhoEGrad_j,
+                                 rho_[j], rhoU_[j], rhoE_[j], coefs_[j], basisMean_[j], rDeltaXYZ_[j], delta_j);
+            evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
+                         rhoGrad_i, rhoGrad_j, rhoUGrad_i, rhoUGrad_j, rhoEGrad_i, rhoEGrad_j,
+                         deltaTilde, faceQuad_[faceI]->normal(gaussI), faceQuad_[faceI]->weight(gaussI));
         }
         resRho[i]  -= rhoFlux;
         resRhoU[i] -= rhoUFlux;
@@ -91,8 +84,7 @@ void Foam::navierStokes3rdSolver::evaluateFlowRes
                                         rho_neigh[faceI], rhoU_neigh[faceI], rhoE_neigh[faceI], d1Rho_neigh[faceI], d1RhoU_neigh[faceI], d1RhoE_neigh[faceI],
                                         d2Rho_neigh[faceI], d2RhoUx_neigh[faceI], d2RhoUy_neigh[faceI], d2RhoUz_neigh[faceI], d2RhoE_neigh[faceI],
                                         basisMean_neigh[faceI], rDeltaXYZ_neigh[faceI], delta_j);
-                    evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                 rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
+                    evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_j, rhoU_i, rhoU_j, rhoE_i, rhoE_j,
                                  rhoGrad_i, rhoGrad_j, rhoUGrad_i, rhoUGrad_j, rhoEGrad_i, rhoEGrad_j,
                                  deltaTilde, boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
                 }
@@ -103,7 +95,6 @@ void Foam::navierStokes3rdSolver::evaluateFlowRes
         }
         if (type == "symmetryPlane" || type == "symmetry")
         {
-            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
             const vectorField  Cn = mesh_.boundary()[patchI].Cn();
             const std::vector<std::unique_ptr<Face>>& boundaryQuad = patch2ndQuad_[patchI];
             forAll(bfaceCells, faceI)
@@ -112,23 +103,13 @@ void Foam::navierStokes3rdSolver::evaluateFlowRes
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[faceI];
-                if (isP1Cell_[i])
+                for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
-                    evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], Cf[faceI]-Cn[faceI]);
-                    rhoU_j = rhoU_i - 2*(rhoU_i&normal[faceI])*normal[faceI];
+                    const vector delta_i = boundaryQuad[faceI]->at(gaussI) - Cn[faceI];
+                    evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                    rhoU_j = rhoU_i - 2*(rhoU_i&boundaryQuad[faceI]->normal(gaussI))*boundaryQuad[faceI]->normal(gaussI);
                     evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_i, rhoU_i, rhoU_j, rhoE_i, rhoE_i,
-                                 normal[faceI], magSf[faceI]);
-                }
-                else
-                {
-                    for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
-                    {
-                        const vector delta_i = boundaryQuad[faceI]->at(gaussI) - Cn[faceI];
-                        evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                        rhoU_j = rhoU_i - 2*(rhoU_i&boundaryQuad[faceI]->normal(gaussI))*boundaryQuad[faceI]->normal(gaussI);
-                        evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_i, rhoU_i, rhoU_j, rhoE_i, rhoE_i,
-                                     boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
-                    }
+                                 boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
                 }
                 resRho[i]  -= rhoFlux;
                 resRhoU[i] -= rhoUFlux;
@@ -137,7 +118,6 @@ void Foam::navierStokes3rdSolver::evaluateFlowRes
         }
         if (type == "wall")
         {
-            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
             const vectorField  Cn = mesh_.boundary()[patchI].Cn();
             const std::vector<std::unique_ptr<Face>>& boundaryQuad = patch2ndQuad_[patchI];
             forAll(bfaceCells, faceI)
@@ -146,21 +126,14 @@ void Foam::navierStokes3rdSolver::evaluateFlowRes
                 vector rhoUFlux = vector::zero;
                 scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[faceI];
-                if (isP1Cell_[i])
+                for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
-                }
-                else
-                {
-                    for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
-                    {
-                        const vector delta_i = boundaryQuad[faceI]->at(gaussI) - Cn[faceI];
-                        evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
-                                            rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                        evaluateWallFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                         rho_i, rhoU_i, rhoE_i,
-                                         rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
-                                         boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
-                    }
+                    const vector delta_i = boundaryQuad[faceI]->at(gaussI) - Cn[faceI];
+                    evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                         rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                    evaluateWallFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rhoU_i, rhoE_i,
+                                     rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                     boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
                 }
                 resRho[i]  -= rhoFlux;
                 resRhoU[i] -= rhoUFlux;
@@ -181,22 +154,14 @@ void Foam::navierStokes3rdSolver::evaluateFlowRes
                 scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[faceI];
                 build2ndFace(mesh_, start+faceI, faceQuad);
-                if (isP1Cell_[i])
+                for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
                 {
-                }
-                else
-                {
-                    for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
-                    {
-                        const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
-                        evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
-                                            rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                        evaluateInletOutletFlux(rhoFlux, rhoUFlux, rhoEFlux,
-                                                rhoBound[faceI], UBound[faceI], pBound[faceI],
-                                                rho_i, rhoU_i, rhoE_i,
-                                                rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
-                                                faceQuad->normal(gaussI), faceQuad->weight(gaussI));
-                    }
+                    const vector delta_i = faceQuad->at(gaussI) - Cn[faceI];
+                    evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                         rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
+                    evaluateInletOutletFlux(rhoFlux, rhoUFlux, rhoEFlux, rhoBound[faceI], UBound[faceI], pBound[faceI],
+                                            rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                            faceQuad->normal(gaussI), faceQuad->weight(gaussI));
                 }
                 resRho[i]  -= rhoFlux;
                 resRhoU[i] -= rhoUFlux;

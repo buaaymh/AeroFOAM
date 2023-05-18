@@ -109,6 +109,35 @@ void Foam::Reconstruction::iterationStep()
                 bW[i] += b;
             }
         }
+        if (type == "wall" && fluidProps_.simulationType != "Euler")
+        {
+            const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
+            const scalarField d_ij = mag(mesh_.boundary()[patchI].delta());
+            const std::vector<std::unique_ptr<Face>>& boundaryQuad = patch4stQuad_[patchI];
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                const vector dp = vector(vrWeightSqr_[0]/d_ij[faceI],
+                                         vrWeightSqr_[1]*d_ij[faceI],
+                                         vrWeightSqr_[2]*pow3(d_ij[faceI]));
+                Mat9X5 b = Mat9X5::Zero();
+                for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
+                {
+                    const vector delta_i = boundaryQuad[faceI]->at(gaussI) - ownerCn[faceI];
+                    const vector dpwTemp = boundaryQuad[faceI]->weight(gaussI)*dp;
+                    Col9X1 Dn0_i = polynomialDn0(delta_i, rDeltaXYZ_[i], basisMean_[i]);
+                    Col5X1 varDn0 = coefs_[i].transpose()*Dn0_i;
+                    // Dn0
+                    const vector rhoUDn0_i = rhoU_[i] + vector(varDn0(1), varDn0(2), varDn0(3));
+                    const vector rhoUDn0_j = -rhoUDn0_i;
+                    const scalar dRhoDn0  = dpwTemp[0]*varDn0(0);
+                    const vector dRhoUDn0 = dpwTemp[0]*(rhoUDn0_j - rhoU_[i]);
+                    const scalar dRhoEDn0 = dpwTemp[0]*varDn0(4);
+                    b += Dn0_i*Col5X1(dRhoDn0, dRhoUDn0[0], dRhoUDn0[1], dRhoUDn0[2], dRhoEDn0).transpose();
+                }
+                bW[i] += b;
+            }
+        }
     }
 
     /* Block Gauss–Seidel iteration */

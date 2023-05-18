@@ -105,7 +105,7 @@ if (fluidProps.simulationType == "Euler")
 else if (fluidProps.simulationType == "laminar")
 {
     if (order == 2) solver = std::make_unique<navierStokes2ndSolver>(fluidProps, rho, U, p);
-    // else if (order == 3) solver = std::make_unique<navierStokes3rdSolver>(fluidProps, rho, U, p);
+    else if (order == 3) solver = std::make_unique<navierStokes3rdSolver>(fluidProps, rho, U, p);
 }
 solver->correctFields();
 // Resident
