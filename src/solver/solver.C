@@ -134,8 +134,8 @@ void Foam::solver::volProjectionsInit()
 
 void Foam::solver::conservativeToPrimitiveFields()
 {
-    U_.ref() = rhoU_/rho_;
-    p_.ref() = (rhoE_-0.5*rho_*magSqr(U_))*(Gamma-1.0);
+    U_.ref() = rhoU_.internalField()/rho_.internalField();
+    p_.ref() = (rhoE_.internalField()-0.5*rho_.internalField()*magSqr(U_.internalField()))*(Gamma-1.0);
     const bool rhoBool = Foam::positiveCorrect(rho_);
     const bool pBool   = Foam::positiveCorrect(p_);
     if (rhoBool || pBool)

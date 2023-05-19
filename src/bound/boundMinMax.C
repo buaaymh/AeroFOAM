@@ -34,32 +34,34 @@ bool Foam::positiveCorrect
     volScalarField& vsf
 )
 {
-    const dimensionedScalar vsf0("boundMin", dimless, SMALL);
-    scalar minVsf = min(vsf).value();
-    scalar maxVsf = max(vsf).value();
+    const dimensionedScalar vsf0("boundMin", dimless, 1e-6);
+    label index = 0;
+    scalar minVsf = GREAT;
+    forAll(vsf, cellI)
+    {
+        if(vsf[cellI] < minVsf)
+        {
+            minVsf = vsf[cellI];
+            index  = cellI;
+        }
+    }
     bool changed = false;
-
     if (minVsf < vsf0.value())
     {
-        Info << "# Bounding field         [-] = " << vsf.name() << nl
-             << "# Min value              [-] = " << minVsf << nl
-             << "# Max value              [-] = " << maxVsf << nl
-             << "# Avg value              [-] = " << gAverage(vsf.internalField())
-             << endl;
+        Pout << "----------------------------------------" << nl;
+        Pout << "# Min " << vsf.name() << " = " << minVsf  << " at " << vsf.mesh().C()[index]<< endl;
         vsf.primitiveFieldRef() = max
         (
             max
             (
                 vsf.primitiveField(),
                 fvc::average(max(vsf, vsf0))().primitiveField()
-                *pos(vsf0.value() - vsf.primitiveField())
+              * pos0(-vsf.primitiveField())
             ),
             vsf0.value()
         );
-        Info << "# New Min value          [-] = " << gMin(vsf.internalField()) << endl;
-        vsf.correctBoundaryConditions();
         changed = true;
-        Info << "----------------------------------------" << nl;
+        Pout << "----------------------------------------" << nl;
     }
     return changed;
 }
