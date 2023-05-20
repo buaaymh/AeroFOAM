@@ -76,9 +76,9 @@ void Foam::Reconstruction::initVrLinearSystem()
         Mat9X9 B_ij = Mat9X9::Zero();
         Col9X1 b_i  = Col9X1::Zero();
         Col9X1 b_j  = Col9X1::Zero();
-        const vector dp = vector(vrWeightSqr_[0]/d_ij_[faceI],
-                                 vrWeightSqr_[1]*d_ij_[faceI],
-                                 vrWeightSqr_[2]*pow3(d_ij_[faceI]));
+        const vector dp = sqrt(sqrt(mesh_.magSf()[faceI])/d_ij_[faceI]) * vector(vrWeightSqr_[0],
+                                                                                 vrWeightSqr_[1]*sqr(d_ij_[faceI]),
+                                                                                 vrWeightSqr_[2]*pow4(d_ij_[faceI]));
         for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
         {
             const vector delta_i = faceQuad->at(gaussI) - mesh_.C()[i];
@@ -114,6 +114,7 @@ void Foam::Reconstruction::initVrLinearSystem()
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+        const scalarField& magSf = mesh_.boundary()[patchI].magSf();
         const scalarField d_ij = mag(mesh_.boundary()[patchI].delta());
         const vectorField ownerCn = mesh_.boundary()[patchI].Cn();
         const label start = mesh_.boundary()[patchI].start();
@@ -132,9 +133,9 @@ void Foam::Reconstruction::initVrLinearSystem()
                 Mat9X9 A_i  = Mat9X9::Zero();
                 Mat9X9 B_ij = Mat9X9::Zero();
                 Col9X1 b_i  = Col9X1::Zero();
-                const vector dp = vector(vrWeightSqr_[0]/d_ij[j],
-                                         vrWeightSqr_[1]*d_ij[j],
-                                         vrWeightSqr_[2]*pow3(d_ij[j]));
+                const vector dp = sqrt(sqrt(magSf[j])/d_ij[j]) * vector(vrWeightSqr_[0],
+                                                                        vrWeightSqr_[1]*sqr(d_ij[j]),
+                                                                        vrWeightSqr_[2]*pow4(d_ij[j]));
                 for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
                 {
                     const vector delta_i = faceQuad->at(gaussI) - ownerCn[j];
@@ -170,9 +171,7 @@ void Foam::Reconstruction::initVrLinearSystem()
             {
                 const label i = bfaceCells[faceI];
                 Mat9X9 A_i = Mat9X9::Zero();
-                const vector dp = vector(vrWeightSqr_[0]/d_ij[faceI],
-                                         vrWeightSqr_[1]*d_ij[faceI],
-                                         vrWeightSqr_[2]*pow3(d_ij[faceI]));
+                const vector dp = sqrt(sqrt(magSf[faceI])/(2*d_ij[faceI])) * vector(vrWeightSqr_[0], 0, 0);
                 for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
                     const vector delta_i = boundaryQuad[faceI]->at(gaussI) - ownerCn[faceI];

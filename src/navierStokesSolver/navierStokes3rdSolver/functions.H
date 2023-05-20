@@ -64,7 +64,7 @@ void Foam::navierStokes3rdSolver::evaluateFlux
     tensor rhoUGrad = 0.5*(rhoUGrad_L+ rhoUGrad_R+ normal*(rhoU_R-rhoU_L)/deltaTilde);
     vector rhoEGrad = 0.5*(rhoEGrad_L+ rhoEGrad_R+ normal*(rhoE_R-rhoE_L)/deltaTilde);
     tensor UGrad = (rho*rhoUGrad-rhoU*rhoGrad)/sqr(rho);
-    vector TGrad = Gamma*(Gamma-1)*(rhoEGrad-rhoE*rhoGrad/rho-(rhoU&UGrad))/rho;
+    vector TGrad = (Gamma*(Gamma-1)/rho)*(rhoEGrad-rhoE/rho*rhoGrad-(rhoU&UGrad));
     scalar laminarViscosity = pow(T, 1.5)*(1.0+S_T_)/(T+S_T_);
     scalar kappa  = (laminarViscosity/Pr_Lam)/(Gamma-1.0);
     vector StrainRateU = (UGrad + UGrad.T())&normal;
@@ -76,9 +76,7 @@ void Foam::navierStokes3rdSolver::evaluateFlux
 
 void Foam::navierStokes3rdSolver::evaluateWallFlux
 (
-    scalar& rhoFlux,
     vector& rhoUFlux,
-    scalar& rhoEFlux,
     const scalar& rho,
     const vector& rhoU,
     const scalar& rhoE,
@@ -89,9 +87,8 @@ void Foam::navierStokes3rdSolver::evaluateWallFlux
     const scalar& magSf
 ) const
 {
-    vector rhoU_dummy = rhoU - 2*(rhoU&normal)*normal;
-    evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho, rho, rhoU, rhoU_dummy, rhoE, rhoE, normal, magSf);
     scalar p = (rhoE-0.5*magSqr(rhoU)/rho)*(Gamma-1.0);
+    rhoUFlux += p * normal * magSf;
     scalar T = Gamma*p/rho;
     tensor UGrad = (rho*rhoUGrad-rhoU*rhoGrad)/sqr(rho);
     scalar laminarViscosity = pow(T, 1.5)*(1.0+S_T_)/(T+S_T_);

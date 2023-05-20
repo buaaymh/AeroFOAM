@@ -104,9 +104,7 @@ private:
 
     void evaluateWallFlux
     (
-        scalar& rhoFlux,
         vector& rhoUFlux,
-        scalar& rhoEFlux,
         const scalar& rho,
         const vector& rhoU,
         const scalar& rhoE,

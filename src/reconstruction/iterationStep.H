@@ -37,6 +37,7 @@ void Foam::Reconstruction::iterationStep()
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+        const scalarField& magSf = mesh_.boundary()[patchI].magSf();
         const word type = mesh_.boundary()[patchI].type();
         if (mesh_.boundary()[patchI].coupled())
         {
@@ -87,9 +88,7 @@ void Foam::Reconstruction::iterationStep()
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                const vector dp = vector(vrWeightSqr_[0]/d_ij[faceI],
-                                         vrWeightSqr_[1]*d_ij[faceI],
-                                         vrWeightSqr_[2]*pow3(d_ij[faceI]));
+                const vector dp = sqrt(sqrt(magSf[faceI])/(2*d_ij[faceI])) * vector(vrWeightSqr_[0], 0, 0);
                 Mat9X5 b = Mat9X5::Zero();
                 for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
@@ -117,9 +116,7 @@ void Foam::Reconstruction::iterationStep()
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                const vector dp = vector(vrWeightSqr_[0]/d_ij[faceI],
-                                         vrWeightSqr_[1]*d_ij[faceI],
-                                         vrWeightSqr_[2]*pow3(d_ij[faceI]));
+                const vector dp = sqrt(sqrt(magSf[faceI])/(2*d_ij[faceI])) * vector(vrWeightSqr_[0], 0, 0);
                 Mat9X5 b = Mat9X5::Zero();
                 for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
@@ -139,7 +136,7 @@ void Foam::Reconstruction::iterationStep()
             }
         }
     }
-
+    const scalar Omega = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("Omega", 1.0);
     /* Block Gauss–Seidel iteration */
     forAll(mesh_.cells(), cellI)
     {
@@ -162,7 +159,7 @@ void Foam::Reconstruction::iterationStep()
                 }
             }
         }
-        coefs_[cellI] = rA_[cellI] * bW[cellI];
+        coefs_[cellI] = (1-Omega)*coefs_[cellI] + Omega*(rA_[cellI]*bW[cellI]);
     }
     /* Limiting coefficients of polynomials */
     limitCoefficients();
