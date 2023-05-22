@@ -71,15 +71,13 @@ Foam::navierStokesSolver::navierStokesSolver
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
     ),
-    nuMax_(scalarField(mesh_.nCells(), 0.0)),
     delta_(mesh_.delta())
 {}
 
 void Foam::navierStokesSolver::correctFields()
 {
     conservativeToPrimitiveFields();
-    muLam_ = pow(T_, 1.5)*(1.0+S_T_)/(T_+S_T_);
-    nuMax_ = (max(4.0/3.0, Gamma)/Pr_Lam)*muLam_.primitiveFieldRef()/rho_.primitiveField();
+    muLam_ = muLam(T_, S_T_);
 }
 
 #include "evaluateFlowRes.H"

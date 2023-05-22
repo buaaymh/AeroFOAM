@@ -65,7 +65,7 @@ void Foam::navierStokes3rdSolver::evaluateFlux
     vector rhoEGrad = 0.5*(rhoEGrad_L+ rhoEGrad_R+ normal*(rhoE_R-rhoE_L)/deltaTilde);
     tensor UGrad = (rho*rhoUGrad-rhoU*rhoGrad)/sqr(rho);
     vector TGrad = (Gamma*(Gamma-1)/rho)*(rhoEGrad-rhoE/rho*rhoGrad-(rhoU&UGrad));
-    scalar laminarViscosity = pow(T, 1.5)*(1.0+S_T_)/(T+S_T_);
+    scalar laminarViscosity = muLam(T, S_T_);
     scalar kappa  = (laminarViscosity/Pr_Lam)/(Gamma-1.0);
     vector StrainRateU = (UGrad + UGrad.T())&normal;
     scalar divU = UGrad.xx() + UGrad.yy() + UGrad.zz();
@@ -91,7 +91,7 @@ void Foam::navierStokes3rdSolver::evaluateWallFlux
     rhoUFlux += p * normal * magSf;
     scalar T = Gamma*p/rho;
     tensor UGrad = (rho*rhoUGrad-rhoU*rhoGrad)/sqr(rho);
-    scalar laminarViscosity = pow(T, 1.5)*(1.0+S_T_)/(T+S_T_);
+    scalar laminarViscosity = muLam(T, S_T_);
     vector StrainRateU = (UGrad + UGrad.T())&normal;
     scalar divU = UGrad.xx() + UGrad.yy() + UGrad.zz();
     vector rhoUViscousFlux = laminarViscosity*StrainRateU - 2.0/3.0*laminarViscosity*divU*normal;
@@ -127,7 +127,7 @@ void Foam::navierStokes3rdSolver::evaluateInletOutletFlux
     scalar T = Gamma*pBound/rhoBound;
     tensor UGrad = (rhoUGrad*rho-rhoU*rhoGrad)/sqr(rho);
     vector TGrad = Gamma*(Gamma-1)*(rhoEGrad-rhoE*rhoGrad/rho-(rhoU&UGrad))/rho;
-    scalar laminarViscosity = pow(T, 1.5)*(1.0+S_T_)/(T+S_T_);
+    scalar laminarViscosity = muLam(T, S_T_);
     scalar kappa  = (laminarViscosity/Pr_Lam)/(Gamma-1.0);
     vector StrainRateU = (UGrad + UGrad.T())&normal;
     scalar divU = UGrad.xx() + UGrad.yy() + UGrad.zz();

@@ -66,8 +66,6 @@ protected:
     volTensorField UGrad_;
     //- Velocity grad
     volVectorField TGrad_;
-    //- nuMax
-    scalarField nuMax_;
     //- delta between ij
     vectorField delta_;
 
@@ -122,7 +120,18 @@ protected:
         const scalar& muLam,
         const vector& normal
     ) const;
+
 };
+
+template<class Type>
+Type muLam
+(
+    const Type& T,
+    const scalar& S_T
+)
+{ 
+    return pow(T, 1.5)*(1.0+S_T)/(T+S_T);
+}
 
 } // End namespace Foam
 
