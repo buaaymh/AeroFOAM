@@ -42,7 +42,6 @@ void Foam::navierStokes3rdSolver::evaluateFlowRes
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-        const vectorField& normal = normal_.boundaryField()[patchI];
         const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
         const word name = mesh_.boundary()[patchI].name();
         const word type = mesh_.boundary()[patchI].type();

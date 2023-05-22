@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
 
     const scalar k11_22 = (3.0-Foam::sqrt(3.0))/6.0;
     const scalar k21    = 1.0/Foam::sqrt(3.0);
+    const scalar nCells = scalar(returnReduce(mesh.nCells(), sumOp<label>()));
     
     while (runTime.run())
     {
@@ -83,14 +84,16 @@ int main(int argc, char *argv[])
             scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_1);
             if (i == 0)
             {
-                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
+                L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
                 if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
             {
-                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
+                L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
                 if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
             }
         }
@@ -107,14 +110,16 @@ int main(int argc, char *argv[])
             scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_2 + k21*resRhoE_1);
             if (i == 0)
             {
-                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
+                L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
                 if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
             {
-                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
+                L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
                 if (L1_deltaRho/L1_deltaRho_0 < relTol|| L1_deltaRho < tolerance)  break;
             }
         }

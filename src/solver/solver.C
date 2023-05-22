@@ -88,7 +88,10 @@ Foam::solver::solver
     ),
     c_(sqrt(T_.primitiveField())),
     volProjections_(vectorField(mesh_.nCells())),
-    localDtDv_(scalarField(mesh_.nCells()))
+    localDtDv_(scalarField(mesh_.nCells())),
+    dRho_(scalarField(mesh_.nCells())),
+    dRhoU_(vectorField(mesh_.nCells())),
+    dRhoE_(scalarField(mesh_.nCells()))
 {
     Info << "=================Solver Information==================" << endl;
     word flux = mesh_.schemes().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");

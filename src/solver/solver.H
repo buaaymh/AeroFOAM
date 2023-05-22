@@ -88,6 +88,12 @@ protected:
     vectorField volProjections_;
     //- Local time steps
     scalarField localDtDv_;
+    //- Continuity residual
+    scalarField dRho_;
+    //- Momentum residual
+    vectorField dRhoU_;
+    //- Energy residual
+    scalarField dRhoE_;
 
 public:
     // Constructors
@@ -110,6 +116,10 @@ public:
     scalarField& rho()  { return rho_.primitiveFieldRef(); }
     vectorField& rhoU() { return rhoU_.primitiveFieldRef(); }
     scalarField& rhoE() { return rhoE_.primitiveFieldRef(); }
+    
+    const scalarField& dRho()  const { return dRho_; }
+    const vectorField& dRhoU() const { return dRhoU_; }
+    const scalarField& dRhoE() const { return dRhoE_; }
     
     const scalarField& LTS() const { return localDtDv_; }
 
@@ -146,8 +156,7 @@ public:
         const scalar& alpha,
         const scalarField& resRho,
         const vectorField& resRhoU,
-        const scalarField& resRhoE,
-        scalar& resL1
+        const scalarField& resRhoE
     ) = 0;
 
     virtual void correctFields() = 0;

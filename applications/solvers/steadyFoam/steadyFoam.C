@@ -53,9 +53,6 @@ int main(int argc, char *argv[])
 
     const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
     const scalar nCells    = scalar(returnReduce(mesh.nCells(), sumOp<label>()));
-    scalar initialResRho  = SMALL;
-    scalar initialResRhoU = SMALL;
-    scalar initialResRhoE = SMALL;
 
     while (runTime.run())
     {
@@ -68,37 +65,28 @@ int main(int argc, char *argv[])
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
         Info << "# Local Courant          [-] = " << CFL << endl;
         Info << "----------------------------------------" << nl;
-        scalar absoluteResRho  = Foam::sqrt(gSumSqr(resRho/mesh.V())/nCells);
-        scalar absoluteResRhoU = Foam::sqrt(gSum(magSqr(resRhoU)/mesh.V())/nCells);
-        scalar absoluteResRhoE = Foam::sqrt(gSumSqr(resRhoE/mesh.V())/nCells);
-
-        if (runTime.value() <= 5)
-        {
-            initialResRho  = max(initialResRho,  absoluteResRho);
-            initialResRhoU = max(initialResRhoU, absoluteResRhoU);
-            initialResRhoE = max(initialResRhoE, absoluteResRhoE);
-        }
-        scalar relativeResRho  = absoluteResRho/initialResRho;
-        scalar relativeResRhoU = absoluteResRhoU/initialResRhoU;
-        scalar relativeResRhoE = absoluteResRhoE/initialResRhoE;
-        Info << "# Continuity relativeRes [-] = " << relativeResRho  << endl;
-        Info << "# Momentum   relativeRes [-] = " << relativeResRhoU << endl;
-        Info << "# Energy     relativeRes [-] = " << relativeResRhoE << endl;
-        Info << "----------------------------------------" << nl;
 
         if (method == "LUSGS") solver->solveFlowLinearSystemByLUSGS(resRho, resRhoU, resRhoE);
         else solver->solveFlowLinearSystemByGMRES(resRho, resRhoU, resRhoE);
         solver->correctFields();
-        
+
+        scalar resRho  = gSum(mag(solver->dRho()))/nCells;
+        scalar resRhoU = gSum(mag(solver->dRhoU()))/nCells;
+        scalar resRhoE = gSum(mag(solver->dRhoE()))/nCells;
+        Info << "# Continuity residual    [-] = " << resRho  << endl;
+        Info << "# Momentum   residual    [-] = " << resRhoU << endl;
+        Info << "# Energy     residual    [-] = " << resRhoE << endl;
+        Info << "----------------------------------------" << nl;
+
         if (Pstream::master())
         {
             outputFilePtr() << runTime.value() << tab
                             << runTime.elapsedCpuTime() << tab
-                            << relativeResRho << tab
-                            << relativeResRhoU << tab
-                            << relativeResRhoE << endl;
+                            << resRho << tab
+                            << resRhoU << tab
+                            << resRhoE << endl;
         }
-        if (relativeResRho < tolerance) runTime.writeAndEnd();
+        if (resRho < tolerance) runTime.writeAndEnd();
         else runTime.write();
 	
         Info << "# ExecutionTime          [s] = " << runTime.elapsedCpuTime()  << nl

@@ -11,13 +11,10 @@ void Foam::eulerSolver::solveFlowLinearSystemByLUSGS
     scalarField D(1.0/localDtDv_);
     evaluateMatrixLDU(1.0, L, U, D);
     // Preconditioning step
-    scalarField dRho(mesh_.nCells());
-    vectorField dRhoU(mesh_.nCells());
-    scalarField dRhoE(mesh_.nCells());
-    precondition(1.0, L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
-    rho_.primitiveFieldRef()  += dRho;
-    rhoU_.primitiveFieldRef() += dRhoU;
-    rhoE_.primitiveFieldRef() += dRhoE;
+    precondition(1.0, L, U, D, resRho, resRhoU, resRhoE, dRho_, dRhoU_, dRhoE_);
+    rho_.primitiveFieldRef()  += dRho_;
+    rhoU_.primitiveFieldRef() += dRhoU_;
+    rhoE_.primitiveFieldRef() += dRhoE_;
 }
 
 void Foam::eulerSolver::solveFlowPseudoTimeSystem
@@ -26,8 +23,7 @@ void Foam::eulerSolver::solveFlowPseudoTimeSystem
     const scalar& alpha,
     const scalarField& resRho,
     const vectorField& resRhoU,
-    const scalarField& resRhoE,
-    scalar& resL1
+    const scalarField& resRhoE
 )
 {
     // Calculate L, U and D
@@ -37,14 +33,10 @@ void Foam::eulerSolver::solveFlowPseudoTimeSystem
     scalarField D(1.0/localDtDv_ + mesh_.V().field()/dt);
     evaluateMatrixLDU(alpha, L, U, D);
     // Preconditioning step
-    scalarField dRho(mesh_.nCells());
-    vectorField dRhoU(mesh_.nCells());
-    scalarField dRhoE(mesh_.nCells());
-    precondition(alpha, L, U, D, resRho, resRhoU, resRhoE, dRho, dRhoU, dRhoE);
-    resL1 = gSum(mag(dRho))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-    rho_.primitiveFieldRef()  += dRho;
-    rhoU_.primitiveFieldRef() += dRhoU;
-    rhoE_.primitiveFieldRef() += dRhoE;
+    precondition(alpha, L, U, D, resRho, resRhoU, resRhoE, dRho_, dRhoU_, dRhoE_);
+    rho_.primitiveFieldRef()  += dRho_;
+    rhoU_.primitiveFieldRef() += dRhoU_;
+    rhoE_.primitiveFieldRef() += dRhoE_;
 }
 
 void Foam::eulerSolver::solveFlowLinearSystemByGMRES
@@ -64,9 +56,9 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
     scalarField U(mesh_.nInternalFaces());
     scalarField D(1.0/localDtDv_);
     evaluateMatrixLDU(1.0, L, U, D);
-    scalarField dRho(mesh_.nCells(), 0);
-    vectorField dRhoU(mesh_.nCells(), vector::zero);
-    scalarField dRhoE(mesh_.nCells(), 0);
+    dRho_  = scalarField(mesh_.nCells(), 0);
+    dRhoU_ = vectorField(mesh_.nCells(), vector::zero);
+    dRhoE_ = scalarField(mesh_.nCells(), 0);
 
     scalarField resRho0(mesh_.nCells());
     vectorField resRhoU0(mesh_.nCells());
@@ -142,9 +134,9 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
         /*---  Update solution ---*/
         for (label k = 0; k < i; k++)
         {
-            dRho  += y[k] * z_Rho[k];
-            dRhoU += y[k] * z_RhoU[k];
-            dRhoE += y[k] * z_RhoE[k];
+            dRho_  += y[k] * z_Rho[k];
+            dRhoU_ += y[k] * z_RhoU[k];
+            dRhoE_ += y[k] * z_RhoE[k];
         }
         if (finalRes < relTol*initialRes || eulerSolverIter >= innerIter)
         {
@@ -153,13 +145,13 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
             break;
         }
         // Re-calculate the residual
-        matrixVectorProduct(resRho0, resRhoU0, resRhoE0, dRho, dRhoU, dRhoE, w_Rho[0], w_RhoU[0], w_RhoE[0]);
+        matrixVectorProduct(resRho0, resRhoU0, resRhoE0, dRho_, dRhoU_, dRhoE_, w_Rho[0], w_RhoU[0], w_RhoE[0]);
         w_Rho[0]  = resRho  - w_Rho[0];
         w_RhoU[0] = resRhoU - w_RhoU[0];
         w_RhoE[0] = resRhoE - w_RhoE[0];
         beta = Foam::sqrt(gSumSqr(w_Rho[0]) + gSum(magSqr(w_RhoU[0])) + gSumSqr(w_RhoE[0]));
     }
-    rho_.primitiveFieldRef()  += dRho;
-    rhoU_.primitiveFieldRef() += dRhoU;
-    rhoE_.primitiveFieldRef() += dRhoE;
+    rho_.primitiveFieldRef()  += dRho_;
+    rhoU_.primitiveFieldRef() += dRhoU_;
+    rhoE_.primitiveFieldRef() += dRhoE_;
 }

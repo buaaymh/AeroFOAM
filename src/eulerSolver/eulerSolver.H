@@ -96,8 +96,7 @@ public:
         const scalar& alpha,
         const scalarField& resRho,
         const vectorField& resRhoU,
-        const scalarField& resRhoE,
-        scalar& resL1
+        const scalarField& resRhoE
     );
 
     virtual void correctFields();
