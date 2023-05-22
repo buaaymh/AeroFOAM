@@ -61,7 +61,7 @@ protected:
     const scalar Ma_Re_;
     const scalar S_T_;
     //- laminar viscosity
-    volScalarField laminarViscosity_;
+    volScalarField muLam_;
     //- Velocity grad
     volTensorField UGrad_;
     //- Velocity grad
@@ -119,7 +119,7 @@ protected:
         const vector& U,
         const vector& TGrad,
         const tensor& UGrad,
-        const scalar& laminarViscosity,
+        const scalar& muLam,
         const vector& normal
     ) const;
 };

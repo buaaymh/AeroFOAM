@@ -36,7 +36,7 @@ Foam::navierStokesSolver::navierStokesSolver
     eulerSolver(fluidProps, rho, U, p),
     Ma_Re_(fluidProps.Mach_inf/fluidProps.Re_inf),
     S_T_(110.4/fluidProps.T_inf),
-    laminarViscosity_
+    muLam_
     (
         IOobject
         (
@@ -78,8 +78,8 @@ Foam::navierStokesSolver::navierStokesSolver
 void Foam::navierStokesSolver::correctFields()
 {
     conservativeToPrimitiveFields();
-    laminarViscosity_ = pow(T_, 1.5)*(1.0+S_T_)/(T_+S_T_);
-    nuMax_ = (max(4.0/3.0, Gamma)/Pr_Lam)*laminarViscosity_.primitiveFieldRef()/rho_.primitiveField();
+    muLam_ = pow(T_, 1.5)*(1.0+S_T_)/(T_+S_T_);
+    nuMax_ = (max(4.0/3.0, Gamma)/Pr_Lam)*muLam_.primitiveFieldRef()/rho_.primitiveField();
 }
 
 #include "evaluateFlowRes.H"

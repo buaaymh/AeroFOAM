@@ -42,7 +42,7 @@ void Foam::navierStokes2ndSolver::evaluateFlowRes
         vector TGrad = AverageGrad(T_[i], T_[j], TGrad_[i], TGrad_[j], delta_[faceI]);
         tensor UGrad = AverageGrad(U_[i], U_[j], UGrad_[i], UGrad_[j], delta_[faceI]);
         evaluateViscousFlux(rhoUFlux, rhoEFlux, 0.5*(U_[i]+U_[j]), TGrad, UGrad,
-                            0.5*(laminarViscosity_[i]+laminarViscosity_[j]), normal_[faceI]);
+                            0.5*(muLam_[i]+muLam_[j]), normal_[faceI]);
         resRhoU[i] += rhoUFlux*mesh_.magSf()[faceI];
         resRhoE[i] += rhoEFlux*mesh_.magSf()[faceI];
         resRhoU[j] -= rhoUFlux*mesh_.magSf()[faceI];
@@ -65,7 +65,7 @@ void Foam::navierStokes2ndSolver::evaluateFlowRes
             const vectorField U_neigh   = U_.boundaryField()[patchI].patchNeighbourField();
             const scalarField p_neigh   = p_.boundaryField()[patchI].patchNeighbourField();
             const scalarField T_neigh = T_.boundaryField()[patchI].patchNeighbourField();
-            const scalarField laminarViscosity_neigh = laminarViscosity_.boundaryField()[patchI].patchNeighbourField();
+            const scalarField muLam_neigh = muLam_.boundaryField()[patchI].patchNeighbourField();
             const vectorField rhoGrad_neigh = rhoGrad_.boundaryField()[patchI].patchNeighbourField();
             const tensorField UGrad_neigh   = UGrad_.boundaryField()[patchI].patchNeighbourField();
             const vectorField pGrad_neigh   = pGrad_.boundaryField()[patchI].patchNeighbourField();
@@ -93,7 +93,7 @@ void Foam::navierStokes2ndSolver::evaluateFlowRes
                 vector TGrad = AverageGrad(T_[i], T_neigh[faceI], TGrad_[i], TGrad_neigh[faceI], delta[faceI]);
                 tensor UGrad = AverageGrad(U_[i], U_neigh[faceI], UGrad_[i], UGrad_neigh[faceI], delta[faceI]);
                 evaluateViscousFlux(rhoUFlux, rhoEFlux, 0.5*(U_[i]+U_neigh[faceI]), TGrad, UGrad,
-                                    0.5*(laminarViscosity_[i]+laminarViscosity_neigh[faceI]), normal[faceI]);
+                                    0.5*(muLam_[i]+muLam_neigh[faceI]), normal[faceI]);
                 resRhoU[i] += rhoUFlux*magSf[faceI];
                 resRhoE[i] += rhoEFlux*magSf[faceI];
             }
@@ -118,7 +118,7 @@ void Foam::navierStokes2ndSolver::evaluateFlowRes
                 vector rhoUFlux = pBound[faceI]*normal[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
                 evaluateViscousFlux(rhoUFlux, rhoEFlux, vector::zero, vector::zero, UGrad_[i],
-                                    laminarViscosity_[i], normal[faceI]);
+                                    muLam_[i], normal[faceI]);
                 resRhoU[i] += rhoUFlux * magSf[faceI];
             }
         }
@@ -127,7 +127,7 @@ void Foam::navierStokes2ndSolver::evaluateFlowRes
             const fvPatchScalarField& rhoBound = rho_.boundaryField()[patchI];
             const fvPatchVectorField& UBound = U_.boundaryField()[patchI];
             const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
-            const fvPatchScalarField& laminarViscosityBound = laminarViscosity_.boundaryField()[patchI];
+            const fvPatchScalarField& muLamBound = muLam_.boundaryField()[patchI];
             forAll(bfaceCells, faceI)
             {
                 scalar rhoFlux;
@@ -141,7 +141,7 @@ void Foam::navierStokes2ndSolver::evaluateFlowRes
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
                 resRhoE[i] -= rhoEFlux * magSf[faceI];
                 evaluateViscousFlux(rhoUFlux, rhoEFlux, UBound[faceI], TGrad_[i], UGrad_[i],
-                                    laminarViscosityBound[faceI], normal[faceI]);
+                                    muLamBound[faceI], normal[faceI]);
                 resRhoU[i] += rhoUFlux * magSf[faceI];
                 resRhoE[i] += rhoEFlux * magSf[faceI];
             }
