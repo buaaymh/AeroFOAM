@@ -135,7 +135,7 @@ void Foam::solver::volProjectionsInit()
     }
 }
 
-void Foam::solver::conservativeToPrimitiveFields()
+void Foam::solver::correctFields()
 {
     U_.ref() = rhoU_.internalField()/rho_.internalField();
     p_.ref() = (rhoE_.internalField()-0.5*rho_.internalField()*magSqr(U_.internalField()))*(Gamma-1.0);

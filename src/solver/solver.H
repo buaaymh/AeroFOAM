@@ -159,11 +159,9 @@ public:
         const scalarField& resRhoE
     ) = 0;
 
-    virtual void correctFields() = 0;
+    virtual void correctFields();
 
 protected:
-
-    void conservativeToPrimitiveFields();
 
     virtual void evaluateMatrixLDU
     (

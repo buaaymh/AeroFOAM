@@ -36,11 +36,6 @@ Foam::eulerSolver::eulerSolver
     solver(fluidProps, rho, U, p)
 {}
 
-void Foam::eulerSolver::correctFields()
-{
-    conservativeToPrimitiveFields();
-}
-
 #include "functions.H"
 
 #include "evaluateFlowRes.H"

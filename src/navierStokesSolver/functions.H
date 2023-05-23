@@ -6,6 +6,8 @@ void Foam::navierStokesSolver::evaluateMatrixLDU
     scalarField& D
 ) const
 {
+    
+    scalarField nuMax = (max(4.0/3.0, Gamma)/Pr_Lam)*muLam_.primitiveField()/rho_.primitiveField();
     // Calculate L, U and D
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
@@ -16,8 +18,8 @@ void Foam::navierStokesSolver::evaluateMatrixLDU
         const label i = owner[faceI];
         const label j = neighbour[faceI];
         const scalar magSf_vol = Ma_Re_*sqr(magSf[faceI])/mag(delta_[faceI]&Sf[faceI]);
-        L[faceI] = 0.5*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI] + magSf_vol*nuMax_[i]);
-        U[faceI] = 0.5*alpha*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI] + magSf_vol*nuMax_[j]);
+        L[faceI] = 0.5*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI] + magSf_vol*nuMax[i]);
+        U[faceI] = 0.5*alpha*(mag(U_[j]&Sf[faceI])+c_[j]*magSf[faceI] + magSf_vol*nuMax[j]);
         D[i] += L[faceI];
         D[j] += U[faceI];
     }

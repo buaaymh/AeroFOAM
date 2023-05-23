@@ -99,8 +99,6 @@ public:
         const scalarField& resRhoE
     );
 
-    virtual void correctFields();
-
 protected:
 
     virtual void evaluateMatrixLDU

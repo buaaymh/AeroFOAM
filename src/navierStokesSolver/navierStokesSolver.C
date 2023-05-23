@@ -76,7 +76,7 @@ Foam::navierStokesSolver::navierStokesSolver
 
 void Foam::navierStokesSolver::correctFields()
 {
-    conservativeToPrimitiveFields();
+    solver::correctFields();
     muLam_ = muLam(T_, S_T_);
 }
 
