@@ -1,4 +1,4 @@
-void Foam::turbulenceSolver::evaluateFlowResForGMRES
+void Foam::turbulence2ndSolver::evaluateFlowRes
 (
     scalarField& resRho,
     vectorField& resRhoU,
@@ -81,26 +81,4 @@ void Foam::turbulenceSolver::evaluateFlowResForGMRES
             }
         }
     }
-}
-
-void Foam::turbulenceSolver::evaluateViscousFlux
-(
-    vector& rhoUFlux,
-    scalar& rhoEFlux,
-    const vector& U,
-    const vector& TGrad,
-    const tensor& UGrad,
-    const scalar& muLam,
-    const scalar& muTurb,
-    const vector& normal
-) const
-{
-    const scalar mu = muLam + muTurb;
-    const scalar lambda = -2.0/3.0*mu;
-    const scalar kappa  = (muLam/Pr_Lam + muTurb/Pr_Turb)/(Gamma-1.0);
-    const vector StrainRateU = (UGrad + UGrad.T())&normal;
-    const scalar divU = UGrad.xx() + UGrad.yy() + UGrad.zz();
-    const vector rhoUViscousFlux = mu*StrainRateU + lambda*divU*normal;
-    rhoUFlux = Ma_Re_*rhoUViscousFlux;
-    rhoEFlux = Ma_Re_*((rhoUViscousFlux&U)+kappa*(TGrad&normal));
 }

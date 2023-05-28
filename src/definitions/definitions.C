@@ -104,3 +104,10 @@ scalar Foam::Barth
     }
     return 1.0;
 }
+
+vector Foam::vorticity(const tensor& UGrad)
+{
+    return vector(UGrad.zy()-UGrad.yz(),
+                  UGrad.xz()-UGrad.zx(),
+                  UGrad.yx()-UGrad.xy());
+}

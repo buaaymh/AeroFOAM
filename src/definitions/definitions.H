@@ -131,6 +131,9 @@ scalar Barth
     const scalar& deltaMax
 );
 
+
+vector vorticity(const tensor& UGrad);
+
 template<class value, class grad>
 grad AverageGrad
 (
