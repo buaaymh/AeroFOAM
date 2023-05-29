@@ -78,8 +78,8 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
     scalar beta = Foam::sqrt(gSumSqr(w_Rho[0]) + gSum(magSqr(w_RhoU[0])) + gSumSqr(w_RhoE[0]));
     scalar initialRes = beta;
     scalar finalRes = initialRes;
-    label eulerSolverIter = 0;
-    while (eulerSolverIter < innerIter)
+    label nIter = 0;
+    while (nIter < innerIter)
     {
         scalarSquareMatrix H(nDirs, 0);
         scalarField g(nDirs+1, 0);
@@ -120,7 +120,7 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
             H[i][i] = cs[i]*H[i][i] - sn[i]*beta;
 
             finalRes = mag(g[i+1]);
-            eulerSolverIter++;
+            nIter++;
         }
         /*---  Solve the least-squares system  ---*/
         for (label k = 0; k < i; k++)
@@ -138,10 +138,11 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
             dRhoU_ += y[k] * z_RhoU[k];
             dRhoE_ += y[k] * z_RhoE[k];
         }
-        if (finalRes < relTol*initialRes || eulerSolverIter >= innerIter)
+        if (finalRes < relTol*initialRes || nIter >= innerIter)
         {
-            Info << "# Newton innerIter       [-] = " << eulerSolverIter << nl
-                 << "# |res|/|res0|           [-] = " << finalRes/initialRes << endl;
+            Info << "# Newton innerIter       [-] = " << nIter << nl
+                 << "# Flow   |res|/|res0|    [-] = " << finalRes/initialRes << nl
+                 << "----------------------------------------" << endl;
             break;
         }
         // Re-calculate the residual
