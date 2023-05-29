@@ -6,7 +6,6 @@ void Foam::navierStokesSolver::evaluateMatrixLDU
     scalarField& D
 ) const
 {
-    
     scalarField nuMax = (max(4.0/3.0, Gamma)/Pr_Lam)*muLam_.primitiveField()/rho_.primitiveField();
     // Calculate L, U and D
     const labelUList& owner = mesh_.owner();

@@ -111,7 +111,12 @@ public:
         scalarField& resNuTilda
     );
 
-    virtual void solveTurbLinearSystemByLUSGS
+    void solveTurbLinearSystemByLUSGS
+    (
+        const scalarField& resNuTilda
+    );
+
+    void solveTurbLinearSystemByGMRES
     (
         const scalarField& resNuTilda
     );
@@ -174,6 +179,26 @@ protected:
         const scalar& nuLam,
         const scalar& nuTilda,
         const scalar& volume
+    ) const;
+
+private:
+
+    void precondition
+    (
+        const scalarField& L,
+        const scalarField& U,
+        const scalarField& D,
+        const scalarField& resNuTilda,
+        scalarField& dNuTilda
+    ) const;
+
+    void matrixVectorProduct
+    (
+        const scalarField& L,
+        const scalarField& U,
+        const scalarField& D,
+        const scalarField& v_NuTilda,
+        scalarField& y_NuTilda
     ) const;
 
 };
