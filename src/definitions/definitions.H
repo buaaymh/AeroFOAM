@@ -131,25 +131,8 @@ scalar Barth
     const scalar& deltaMax
 );
 
-
 vector vorticity(const tensor& UGrad);
 
-template<class value, class grad>
-grad AverageGrad
-(
-    const value& value_L,
-    const value& value_R,
-    const grad&  grad_L,
-    const grad&  grad_R,
-    const vector& delta
-)
-{
-    const scalar l = mag(delta);
-    const vector t = delta/l;
-    grad averageGrad = 0.5*(grad_L+grad_R);
-    averageGrad -= ((averageGrad&t) - (value_R-value_L)/l)*t;
-    return averageGrad;
-}
 
 } // End namespace Foam
 

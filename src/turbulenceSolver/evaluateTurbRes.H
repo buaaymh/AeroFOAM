@@ -18,8 +18,7 @@ void Foam::turbulenceSolver::evaluateTurbRes
         const scalar nuLam_ij = 0.5*(nuLam_[i]+nuLam_[j]);
         const scalar nuTilda_ij = 0.5*(nuTilda_[i]+nuTilda_[j]);
         const scalar nu_e = nu(nuTilda_ij, nuLam_ij);
-        vector nuTildaGrad = AverageGrad(nuTilda_[i], nuTilda_[j], nuTildaGrad_[i], nuTildaGrad_[j], delta_[faceI]);
-        nuTildaFlux -= Ma_Re_*nu_e*(nuTildaGrad&mesh_.Sf()[faceI])/SA::sigma;
+        nuTildaFlux -= Ma_Re_*nu_e*(0.5*(nuTildaGrad_[i]+nuTildaGrad_[j])&mesh_.Sf()[faceI])/SA::sigma;
         resNuTilda[i] -= nuTildaFlux;
         resNuTilda[j] += nuTildaFlux;
     }
@@ -31,7 +30,6 @@ void Foam::turbulenceSolver::evaluateTurbRes
         const word type = mesh_.boundary()[patchI].type();
         if (mesh_.boundary()[patchI].coupled())
         {
-            const vectorField delta = mesh_.boundary()[patchI].delta();
             const scalarField nuLam_neigh = nuLam_.boundaryField()[patchI].patchNeighbourField();
             const vectorField U_neigh = U_.boundaryField()[patchI].patchNeighbourField();
             const scalarField nuTilda_neigh = nuTilda_.boundaryField()[patchI].patchNeighbourField();
@@ -47,8 +45,7 @@ void Foam::turbulenceSolver::evaluateTurbRes
                 const scalar nu_ij = 0.5*(nuLam_[i]+nuLam_neigh[faceI]);
                 const scalar nuTilda_ij = 0.5*(nuTilda_[i]+nuTilda_neigh[faceI]);
                 const scalar nu_e = nu(nuTilda_ij, nu_ij);
-                vector nuTildaGrad = AverageGrad(nuTilda_[i], nuTilda_neigh[faceI], nuTildaGrad_[i], nuTildaGrad_neigh[faceI], delta[faceI]);
-                nuTildaFlux -= Ma_Re_*nu_e*(nuTildaGrad&Sf[faceI])/SA::sigma;
+                nuTildaFlux -= Ma_Re_*nu_e*(0.5*(nuTildaGrad_[i]+nuTildaGrad_neigh[faceI])&Sf[faceI])/SA::sigma;
                 resNuTilda[i] -= nuTildaFlux;
 
             }

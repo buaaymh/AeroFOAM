@@ -39,10 +39,10 @@ void Foam::turbulence2ndSolver::evaluateFlowRes
         resRho[j]  += rhoFlux * mesh_.magSf()[faceI];
         resRhoU[j] += rhoUFlux* mesh_.magSf()[faceI];
         resRhoE[j] += rhoEFlux* mesh_.magSf()[faceI];
-        vector TGrad = AverageGrad(T_[i], T_[j], TGrad_[i], TGrad_[j], delta_[faceI]);
-        tensor UGrad = AverageGrad(U_[i], U_[j], UGrad_[i], UGrad_[j], delta_[faceI]);
-        evaluateViscousFlux(rhoUFlux, rhoEFlux, 0.5*(U_[i]+U_[j]), TGrad, UGrad,
-                            0.5*(muLam_[i]+muLam_[j]), 0.5*(muTurb_[i]+muTurb_[j]), normal_[faceI]);
+        evaluateViscousFlux(rhoUFlux, rhoEFlux,
+                            0.5*(U_[i]+U_[j]), 0.5*(TGrad_[i]+TGrad_[j]),
+                            0.5*(UGrad_[i]+UGrad_[j]), 0.5*(muLam_[i]+muLam_[j]),
+                            0.5*(muTurb_[i]+muTurb_[j]), normal_[faceI]);
         resRhoU[i] += rhoUFlux*mesh_.magSf()[faceI];
         resRhoE[i] += rhoEFlux*mesh_.magSf()[faceI];
         resRhoU[j] -= rhoUFlux*mesh_.magSf()[faceI];
@@ -90,10 +90,10 @@ void Foam::turbulence2ndSolver::evaluateFlowRes
                 resRho[i]  -= rhoFlux *magSf[faceI];
                 resRhoU[i] -= rhoUFlux*magSf[faceI];
                 resRhoE[i] -= rhoEFlux*magSf[faceI];
-                vector TGrad = AverageGrad(T_[i], T_neigh[faceI], TGrad_[i], TGrad_neigh[faceI], delta[faceI]);
-                tensor UGrad = AverageGrad(U_[i], U_neigh[faceI], UGrad_[i], UGrad_neigh[faceI], delta[faceI]);
-                evaluateViscousFlux(rhoUFlux, rhoEFlux, 0.5*(U_[i]+U_neigh[faceI]), TGrad, UGrad,
-                                    0.5*(muLam_[i]+muLam_neigh[faceI]), 0.5*(muTurb_[i]+muTurb_neigh[faceI]), normal[faceI]);
+                evaluateViscousFlux(rhoUFlux, rhoEFlux,
+                                    0.5*(U_[i]+U_neigh[faceI]),0.5*(TGrad_[i]+TGrad_neigh[faceI]),
+                                    0.5*(UGrad_[i]+UGrad_neigh[faceI]), 0.5*(muLam_[i]+muLam_neigh[faceI]),
+                                    0.5*(muTurb_[i]+muTurb_neigh[faceI]), normal[faceI]);
                 resRhoU[i] += rhoUFlux*magSf[faceI];
                 resRhoE[i] += rhoEFlux*magSf[faceI];
             }
