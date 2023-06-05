@@ -14,17 +14,15 @@ fluidProperties fluidProps;
 
 testDict.lookup("simulationType") >> fluidProps.simulationType;
 
-fluidProps.gamma = testDict.lookupOrDefault<scalar>("gamma", 1.4);
-
 Info << "=================Fluid Properties===================" << nl
      << "simulationType: "  << fluidProps.simulationType << nl
-     << "gamma:          "  << fluidProps.gamma << nl
      << "====================================================" << endl;
 
 const dictionary& freeStream = testDict.subDict("freeStream");
 fluidProps.AOA = freeStream.lookup<scalar>("AOA");
-fluidProps.Mach_inf = freeStream.lookup<scalar>("Mach");
-fluidProps.T_inf = freeStream.lookup<scalar>("T");
+fluidProps.Mach_inf = freeStream.lookupOrDefault<scalar>("Mach", 1.0);
+fluidProps.Re_inf = freeStream.lookupOrDefault<scalar>("Re", 10000);
+fluidProps.T_inf = freeStream.lookupOrDefault<scalar>("T", 288);
 fluidProps.p_inf = freeStream.lookupOrDefault<scalar>("Pressure", 101325.0);
 
 Info << "===============Free-stream Definition================" << nl
@@ -81,7 +79,7 @@ volScalarField p
 
 // vortex evolution problem
 scalar beta = 5.0;
-scalar gamma = fluidProps.gamma;
+scalar gamma = Foam::Gamma;
 scalar pi = constant::mathematical::pi;
 forAll(mesh.C(), cellI)
 {
@@ -152,19 +150,17 @@ volScalarField rhoRef
 Info << "====================================================" << endl;
 
 std::unique_ptr<solver> solver;
-label order = mesh.schemesDict().lookup<label>("order");
+label order = mesh.schemes().lookup<label>("order");
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
-    else if (order == 3)
-    {
-        solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
-    }
+    else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
 }
 else
 {
     Info << "Error in simulationType!" << endl;
 }
+solver->correctFields();
 // Resident
 scalarField resRho_1(mesh.nCells());
 vectorField resRhoU_1(mesh.nCells());

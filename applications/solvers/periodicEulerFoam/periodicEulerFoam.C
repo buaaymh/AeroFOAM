@@ -49,21 +49,21 @@ int main(int argc, char *argv[])
 
     const scalar k11_22 = (3.0-Foam::sqrt(3.0))/6.0;
     const scalar k21    = 1.0/Foam::sqrt(3.0);
+    const scalar nCells = scalar(returnReduce(mesh.nCells(), sumOp<label>()));
     scalar step = 0;
     scalar iterations = 0;
 
     while (runTime.run())
     {
-        const label innerIter = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
-        const scalar tolerance = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
-        const scalar relTol = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
+        const label innerIter = mesh.solution().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
+        const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
+        const scalar relTol = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
         const scalar dt = runTime.deltaT().value();
         const scalarField dt_dv(dt/mesh.V().field());
 
         step += 2;
         runTime++;
         Info<< "Time = " << runTime.value() << " s" << nl;
-        solver->correctFields();
 
         scalarField rho_0(solver->rho());
         vectorField rhoU_0(solver->rhoU());
@@ -87,18 +87,19 @@ int main(int argc, char *argv[])
             scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_1);
             if (i == 0)
             {
-                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
+                L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
                 if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
             {
-                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
-                if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break; 
+                L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
+                if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
             }
         }
-        iterations += count;
         Info << "LUSGS 1 converged in " << count << " iterations, and L1(dRho) = " << L1_deltaRho << endl;
 
         // Stage 2
@@ -112,24 +113,25 @@ int main(int argc, char *argv[])
             scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_2 + k21*resRhoE_1);
             if (i == 0)
             {
-                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
+                L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
                 if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
             {
-                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
+                L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
                 if (L1_deltaRho/L1_deltaRho_0 < relTol|| L1_deltaRho < tolerance)  break;
             }
         }
-        iterations += count;
         Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
 
         solver->rho()  = rho_0  + 0.5 * dt_dv * (resRho_1 + resRho_2);
         solver->rhoU() = rhoU_0 + 0.5 * dt_dv * (resRhoU_1 + resRhoU_2);
         solver->rhoE() = rhoE_0 + 0.5 * dt_dv * (resRhoE_1 + resRhoE_2);
-        
+
         solver->correctFields();
         runTime.write();
 	
