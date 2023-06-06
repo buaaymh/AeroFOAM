@@ -16,5 +16,6 @@ navierStokesSolver/navierStokes2ndSolver/navierStokes2ndSolver.C
 navierStokesSolver/navierStokes3rdSolver/navierStokes3rdSolver.C
 turbulenceSolver/turbulenceSolver.C
 turbulenceSolver/turbulence2ndSolver/turbulence2ndSolver.C
+turbulenceSolver/turbulence3rdSolver/turbulence3rdSolver.C
 
 LIB = $(FOAM_USER_LIBBIN)/libAeroFoam
