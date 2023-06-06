@@ -28,6 +28,7 @@ fluidProps.p_inf = freeStream.lookupOrDefault<scalar>("Pressure", 101325.0);
 Info << "===============Free-stream Definition================" << nl
      << "Temperature    : "  << fluidProps.T_inf << " K" << nl
      << "Mach number    : "  << fluidProps.Mach_inf << nl
+     << "Reynolds number: "  << fluidProps.Re_inf << nl
      << "Angle of attack: "  << fluidProps.AOA  << " deg" << nl
      << "Pressure       : "  << fluidProps.p_inf  << " N/m2" << nl
      << "====================================================" << endl;
@@ -77,6 +78,21 @@ volScalarField p
     mesh
 );
 
+Info<< "Reading field nuTilda" << endl;
+volScalarField nuTilda
+(
+    IOobject
+    (
+        "nuTilda",
+        runTime.timeName(),
+        mesh,
+        IOobject::MUST_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh
+);
+
+// File pointer to direct the output to
 autoPtr<OFstream> outputFilePtr;
 if (Pstream::master())
 {
@@ -86,21 +102,24 @@ if (Pstream::master())
     mkDir(outputDir);
     // Open the file in the newly created directory
     outputFilePtr.reset(new OFstream(outputDir/"residuals.dat"));
-    outputFilePtr() << "# Residuals" << endl;
-    outputFilePtr() << "# Step" << tab << "CPU" << tab << "L2(resRho)" << endl;
+    outputFilePtr() << "# Step" << tab << "CPU" << tab
+                    << "Continuity" << tab
+                    << "Momentum" << tab
+                    << "Energy" << tab
+                    << "Turbulence" << endl;
 }
 
 Info << "====================================================" << endl;
 
-euler2ndSolver solver
-(
-    fluidProps,
-    rho,
-    U,
-    p
-);
+std::unique_ptr<turbulenceSolver> solver;
+label order = mesh.schemes().lookup<label>("order");
 
+if (order == 2) solver = std::make_unique<turbulence2ndSolver>(fluidProps, rho, U, p, nuTilda);
+else if (order == 3) solver = std::make_unique<turbulence3rdSolver>(fluidProps, rho, U, p, nuTilda);
+
+solver->correctFields();
 // Resident
 scalarField resRho(mesh.nCells());
 vectorField resRhoU(mesh.nCells());
 scalarField resRhoE(mesh.nCells());
+scalarField resNuTilda(mesh.nCells());

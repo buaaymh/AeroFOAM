@@ -30,8 +30,9 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "solver.H"
-#include "euler2ndSolver.H"
+#include "turbulenceSolver.H"
+#include "turbulence2ndSolver.H"
+#include "turbulence3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -46,46 +47,59 @@ int main(int argc, char *argv[])
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    const scalar tolerance = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
-    scalar L2Res_0 = GREAT;
-    
+    const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
+    const scalar nCells    = scalar(returnReduce(mesh.nCells(), sumOp<label>()));
+
     while (runTime.run())
     {
-        solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
-        const scalar L2ResRho  = Foam::sqrt(gSumSqr(resRho));
-        const scalar L2ResRhoU = Foam::sqrt(gSum(magSqr(resRhoU)));
-        const scalar L2ResRhoE = Foam::sqrt(gSumSqr(resRhoE));
-        const scalar L2Res     = Foam::sqrt(sqr(L2ResRho) + sqr(L2ResRhoU) + sqr(L2ResRhoE));
-        if (runTime.value() == 0) { L2Res_0 = L2Res; }
-        const scalar relRes = L2Res/L2Res_0;
-
+        const word method = mesh.solution().subDict("SOLVER").lookupOrDefault<word>("method", "LUSGS");
+        const scalar CFL  = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
         runTime++;
-        Info << "Time = " << runTime.value() << endl;
-        Info << "# FGMRES solving for  rho, L2 residual = " << L2ResRho << nl
-             << "# FGMRES solving for rhoU, L2 residual = " << L2ResRhoU << nl
-             << "# FGMRES solving for rhoE, L2 residual = " << L2ResRhoE << endl;
-        Info << "# Relative residual = " << relRes << endl;
+        Info << "========================================" << nl;
+        Info << "# " << method << " # Iteration Step = " << runTime.value() << endl;
+        Info << "========================================" << nl;
+        solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
+        solver->evaluateTurbRes(resNuTilda);
+        Info << "# Local Courant          [-] = " << CFL << endl;
+        Info << "----------------------------------------" << nl;
 
-        if (relRes > 1e-2) solver.updateCFL(50);
-        else if ((relRes < 1e-2) && (relRes > 1e-5)) solver.updateCFL(200);
-        else solver.updateCFL(1000);
+        if (method == "LUSGS")
+        {
+            solver->solveTurbLinearSystemByLUSGS(resNuTilda);
+            solver->solveFlowLinearSystemByLUSGS(resRho, resRhoU, resRhoE);
+        }
+        else
+        {
+            solver->solveTurbLinearSystemByGMRES(resNuTilda);
+            solver->solveFlowLinearSystemByGMRES(resRho, resRhoU, resRhoE);
+        }
+        solver->correctFields();
+
+        scalar resRho  = gSum(mag(solver->dRho()))/nCells;
+        scalar resRhoU = gSum(mag(solver->dRhoU()))/nCells;
+        scalar resRhoE = gSum(mag(solver->dRhoE()))/nCells;
+        scalar resNuTilda = gSum(mag(solver->dNuTilda()))/nCells;
+        Info << "# Continuity residual    [-] = " << resRho  << endl;
+        Info << "# Momentum   residual    [-] = " << resRhoU << endl;
+        Info << "# Energy     residual    [-] = " << resRhoE << endl;
+        Info << "# Turbulence residual    [-] = " << resNuTilda << endl;
+        Info << "----------------------------------------" << nl;
 
         if (Pstream::master())
         {
             outputFilePtr() << runTime.value() << tab
                             << runTime.elapsedCpuTime() << tab
-                            << relRes << endl;
+                            << resRho << tab
+                            << resRhoU << tab
+                            << resRhoE << tab
+                            << resNuTilda << endl;
         }
-        if (fluidProps.simulationType == "SATurb") solver.solveTurbulence();
-        solver.solveFlowLinearSystem(resRho, resRhoU, resRhoE);
-        solver.correctFields();
-
-        if (relRes < tolerance) runTime.writeAndEnd();
+        if (resRho < tolerance) runTime.writeAndEnd();
         else runTime.write();
-
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
+	
+        Info << "# ExecutionTime          [s] = " << runTime.elapsedCpuTime()  << nl
+             << "# ClockTime              [s] = " << runTime.elapsedClockTime() << nl
+             << "----------------------------------------" << nl << endl;
     }
 
     Info<< "End\n" << endl;
