@@ -133,6 +133,28 @@ scalar Barth
 
 vector vorticity(const tensor& UGrad);
 
+scalar func
+(
+    const scalar& rho,
+    const vector& rhoU,
+    const scalar& rhoE,
+    const scalar& dRho,
+    const vector& dRhoU,
+    const scalar& dRhoE,
+    const scalar& x
+);
+
+scalar solveForPressure
+(
+    const scalar& rho,
+    const vector& rhoU,
+    const scalar& rhoE,
+    const scalar& dRho,
+    const vector& dRhoU,
+    const scalar& dRhoE,
+    const scalar& xMax
+);
+
 
 } // End namespace Foam
 
