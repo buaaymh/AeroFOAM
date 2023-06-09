@@ -192,12 +192,4 @@ void Foam::Reconstruction::initVrLinearSystem()
         }
     }
     forAll(mesh_.C(), cellI) rA_[cellI] = rA_[cellI].inverse();
-
-    // Initialize N*h^((k+1)/2)
-    forAll(mesh_.owner(), faceI)
-    {
-        const scalar h_k = pow(d_ij_[faceI], 1.5);
-        N_h_[mesh_.owner()[faceI]] += h_k;
-        N_h_[mesh_.neighbour()[faceI]] += h_k;
-    }
 }

@@ -8,6 +8,7 @@ if (indicator)
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
+        const scalar h_k = 1.0/pow(d_ij_[faceI], 1.5);
         rho_max[i] = max(rho_max[i], rho_[j]);
         rho_max[j] = max(rho_max[j], rho_[i]);
         if (isP1Cell_[i] && isP1Cell_[j]) continue;
@@ -23,12 +24,12 @@ if (indicator)
         Col6X1 PolyCenter_j = Col6X1(0.5*basisMean_[j][0], basisMean_[j][1], basisMean_[j][2],
                                      0.5*basisMean_[j][3], basisMean_[j][4],
                                      0.5*basisMean_[j][5]);
-        rho_error[i]  += mag((d2RhoCoefs_i-(d2RhoCoefs_j.array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
-        rho_error[j]  += mag((d2RhoCoefs_j-(d2RhoCoefs_i.array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
+        rho_error[i]  += h_k*mag((d2RhoCoefs_i-(d2RhoCoefs_j.array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
+        rho_error[j]  += h_k*mag((d2RhoCoefs_j-(d2RhoCoefs_i.array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
     }
     forAll(mesh_.cells(), cellI)
     {
-        IS_[cellI] = rho_error[cellI]/(N_h_[cellI]*rho_max[cellI]);
+        IS_[cellI] = rho_error[cellI]/(mesh_.cellCells()[cellI].size()*rho_max[cellI]);
         if (IS_[cellI] > IS)
         {
             isTrouble_[cellI] = true;
@@ -49,6 +50,7 @@ else
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
+        const scalar h_k = 1.0/pow(d_ij_[faceI], 1.5);
         rho_max[i]  = max(rho_max[i],  rho_[j]);
         rho_max[j]  = max(rho_max[j],  rho_[i]);
         rhoU_max[i] = max(rhoU_max[i], rhoU[j]);
@@ -68,23 +70,23 @@ else
         Col6X1 PolyCenter_j = Col6X1(0.5*basisMean_[j][0], basisMean_[j][1], basisMean_[j][2],
                                      0.5*basisMean_[j][3], basisMean_[j][4],
                                      0.5*basisMean_[j][5]);
-        rho_error[i]  += mag((d2Coefs_i.col(0)-(d2Coefs_j.col(0).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
-        rhoU_error[i] += sqr((d2Coefs_i.col(1)-(d2Coefs_j.col(1).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
-        rhoU_error[i] += sqr((d2Coefs_i.col(2)-(d2Coefs_j.col(2).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
-        rhoU_error[i] += sqr((d2Coefs_i.col(3)-(d2Coefs_j.col(3).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
-        rhoE_error[i] += mag((d2Coefs_i.col(4)-(d2Coefs_j.col(4).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
+        rho_error[i]  += h_k*mag((d2Coefs_i.col(0)-(d2Coefs_j.col(0).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
+        rhoU_error[i] += h_k*sqr((d2Coefs_i.col(1)-(d2Coefs_j.col(1).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
+        rhoU_error[i] += h_k*sqr((d2Coefs_i.col(2)-(d2Coefs_j.col(2).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
+        rhoU_error[i] += h_k*sqr((d2Coefs_i.col(3)-(d2Coefs_j.col(3).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
+        rhoE_error[i] += h_k*mag((d2Coefs_i.col(4)-(d2Coefs_j.col(4).array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
         
-        rho_error[j]  += mag((d2Coefs_j.col(0)-(d2Coefs_i.col(0).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
-        rhoU_error[j] += sqr((d2Coefs_j.col(1)-(d2Coefs_i.col(1).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
-        rhoU_error[j] += sqr((d2Coefs_j.col(2)-(d2Coefs_i.col(2).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
-        rhoU_error[j] += sqr((d2Coefs_j.col(3)-(d2Coefs_i.col(3).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
-        rhoE_error[j] += mag((d2Coefs_j.col(4)-(d2Coefs_i.col(4).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
+        rho_error[j]  += h_k*mag((d2Coefs_j.col(0)-(d2Coefs_i.col(0).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
+        rhoU_error[j] += h_k*sqr((d2Coefs_j.col(1)-(d2Coefs_i.col(1).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
+        rhoU_error[j] += h_k*sqr((d2Coefs_j.col(2)-(d2Coefs_i.col(2).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
+        rhoU_error[j] += h_k*sqr((d2Coefs_j.col(3)-(d2Coefs_i.col(3).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
+        rhoE_error[j] += h_k*mag((d2Coefs_j.col(4)-(d2Coefs_i.col(4).array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
     }
     forAll(mesh_.cells(), cellI)
     {
-        IS_[cellI] = max(rho_error[cellI]/(N_h_[cellI]*rho_max[cellI]),
-                         rhoE_error[cellI]/(N_h_[cellI]*rhoE_max[cellI]));
-        IS_[cellI] = max(IS_[cellI], rhoU_error[cellI]/(N_h_[cellI]*(rhoU_max[cellI]+1e-6)));
+        IS_[cellI] = max(rho_error[cellI]/(mesh_.cellCells()[cellI].size()*rho_max[cellI]),
+                         rhoE_error[cellI]/(mesh_.cellCells()[cellI].size()*rhoE_max[cellI]));
+        IS_[cellI] = max(IS_[cellI], rhoU_error[cellI]/(mesh_.cellCells()[cellI].size()*(rhoU_max[cellI]+1e-6)));
         if (IS_[cellI] > IS)
         {
             isTrouble_[cellI] = true;
