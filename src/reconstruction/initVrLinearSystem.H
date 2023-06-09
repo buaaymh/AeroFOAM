@@ -77,8 +77,8 @@ void Foam::Reconstruction::initVrLinearSystem()
         Col9X1 b_i  = Col9X1::Zero();
         Col9X1 b_j  = Col9X1::Zero();
         const vector dp = sqrt(mesh_.magSf()[faceI]/d_ij_[faceI]) * vector(vrWeightSqr_[0],
-                                                                                 vrWeightSqr_[1]*sqr(d_ij_[faceI]),
-                                                                                 vrWeightSqr_[2]*pow4(d_ij_[faceI]));
+                                                                           vrWeightSqr_[1]*sqr(d_ij_[faceI]),
+                                                                           vrWeightSqr_[2]*pow4(d_ij_[faceI]));
         for (label gaussI = 0; gaussI != faceQuad->size(); ++gaussI)
         {
             const vector delta_i = faceQuad->at(gaussI) - mesh_.C()[i];
