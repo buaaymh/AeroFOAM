@@ -38,7 +38,6 @@ void Foam::Reconstruction::limitCoefficients()
         count = 0;
         forAll(mesh_.C(), cellI)
         {
-            if (!isTrouble_[cellI]) continue;
             scalar factor = 1.0;
             scalar delta = coefs_[cellI].col(0).array().abs().matrix().dot(polyNorm_[cellI]);
             if (rho_[cellI]  < delta) factor = min(factor, rho_[cellI]/delta);
