@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
+    const scalar eps = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("resSmooth", 0.3);
     const scalar nCells    = scalar(returnReduce(mesh.nCells(), sumOp<label>()));
 
     while (runTime.run())
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
         }
         else
         {
+            if (eps > SMALL) solver->smoothFlowRes(resRho, resRhoU, resRhoE, resNuTilda, eps);
             solver->solveTurbLinearSystemByGMRES(resNuTilda);
             solver->solveFlowLinearSystemByGMRES(resRho, resRhoU, resRhoE);
         }

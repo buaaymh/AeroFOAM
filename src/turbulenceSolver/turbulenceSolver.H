@@ -125,6 +125,15 @@ public:
 
     virtual void correctFields();
 
+    void smoothFlowRes
+    (
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE,
+        scalarField& resNuTilda,
+        const scalar& eps
+    );
+
 protected:
 
     virtual void evaluateMatrixLDU

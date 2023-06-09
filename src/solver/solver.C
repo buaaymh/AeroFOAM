@@ -242,4 +242,131 @@ void Foam::solver::correctFields()
     Ma_.boundaryFieldRef() = mag(U_.boundaryField())/Foam::sqrt(T_.boundaryField());
 }
 
+void Foam::solver::smoothFlowRes
+(
+    scalarField& resRho,
+    vectorField& resRhoU,
+    scalarField& resRhoE,
+    const scalar& eps
+)
+{
+    volScalarField resRhoStar
+    (
+        IOobject
+        (
+            "resRhoStar",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 0.0)
+    );
+    volVectorField resRhoUStar
+    (
+        IOobject
+        (
+            "resRhoUStar",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless, vector::zero)
+    );
+    volScalarField resRhoEStar
+    (
+        IOobject
+        (
+            "resRhoEStar",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 0.0)
+    );
+    
+    resRhoStar.primitiveFieldRef()  = resRho;
+    resRhoUStar.primitiveFieldRef() = resRhoU;
+    resRhoEStar.primitiveFieldRef() = resRhoE;
+
+    scalarField bRho(mesh_.nCells(), 0.0);
+    vectorField bRhoU(mesh_.nCells(), vector::zero);
+    scalarField bRhoE(mesh_.nCells(), 0.0);
+    scalarField coefOfA(mesh_.nCells(), 1.0);
+
+    const auto& owner = mesh_.owner();
+    const auto& neighbour = mesh_.neighbour();
+    forAll(mesh_.owner(), faceI)
+    {
+        const label i = owner[faceI];
+        const label j = neighbour[faceI];
+        coefOfA[i] += eps;
+        coefOfA[j] += eps;
+        bRho[i]  += resRhoStar[j];
+        bRhoU[i] += resRhoUStar[j];
+        bRhoE[i] += resRhoEStar[j];
+        bRho[j]  += resRhoStar[i];
+        bRhoU[j] += resRhoUStar[i];
+        bRhoE[j] += resRhoEStar[i];
+    }
+    resRhoStar.correctBoundaryConditions();
+    resRhoUStar.correctBoundaryConditions();
+    resRhoEStar.correctBoundaryConditions();
+    forAll(mesh_.boundary(), patchI)
+    {
+        if (mesh_.boundary()[patchI].coupled())
+        {
+            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+            const scalarField resRhoStar_neigh  = resRhoStar.boundaryField()[patchI].patchNeighbourField();
+            const vectorField resRhoUStar_neigh = resRhoUStar.boundaryField()[patchI].patchNeighbourField();
+            const scalarField resRhoEStar_neigh = resRhoEStar.boundaryField()[patchI].patchNeighbourField();
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                coefOfA[i] += eps;
+                bRho[i]  += resRhoStar_neigh[faceI];
+                bRhoU[i] += resRhoUStar_neigh[faceI];
+                bRhoE[i] += resRhoEStar_neigh[faceI];
+            }
+        }
+    }
+    resRhoStar.primitiveFieldRef()  = eps*(resRho  + eps*bRho) /coefOfA;
+    resRhoUStar.primitiveFieldRef() = eps*(resRhoU + eps*bRhoU)/coefOfA;
+    resRhoEStar.primitiveFieldRef() = eps*(resRhoE + eps*bRhoE)/coefOfA;
+
+    forAll(mesh_.owner(), faceI)
+    {
+        const label i = owner[faceI];
+        const label j = neighbour[faceI];
+        resRho[i]  += resRhoStar[j];
+        resRhoU[i] += resRhoUStar[j];
+        resRhoE[i] += resRhoEStar[j];
+        resRho[j]  += resRhoStar[i];
+        resRhoU[j] += resRhoUStar[i];
+        resRhoE[j] += resRhoEStar[i];
+    }
+    resRhoStar.correctBoundaryConditions();
+    resRhoUStar.correctBoundaryConditions();
+    resRhoEStar.correctBoundaryConditions();
+    forAll(mesh_.boundary(), patchI)
+    {
+        if (mesh_.boundary()[patchI].coupled())
+        {
+            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+            const scalarField resRhoStar_neigh  = resRhoStar.boundaryField()[patchI].patchNeighbourField();
+            const vectorField resRhoUStar_neigh = resRhoUStar.boundaryField()[patchI].patchNeighbourField();
+            const scalarField resRhoEStar_neigh = resRhoEStar.boundaryField()[patchI].patchNeighbourField();
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                resRho[i]  += resRhoStar_neigh[faceI];
+                resRhoU[i] += resRhoUStar_neigh[faceI];
+                resRhoE[i] += resRhoEStar_neigh[faceI];
+            }
+        }
+    }
+    resRho  /= coefOfA;
+    resRhoU /= coefOfA;
+    resRhoE /= coefOfA;
+}
+
 // ************************************************************************* //
