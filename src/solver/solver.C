@@ -126,12 +126,10 @@ void Foam::solver::volProjectionsInit()
     }
     forAll(mesh_.boundary(), patchI)
     {   
-        scalar temp = 0.25;
-        if (mesh_.boundary()[patchI].coupled()) temp = 0.5;
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
         const auto& Sf = mesh_.boundary()[patchI].Sf();
         forAll(bfaceCells, faceI)
-            volProjections_[bfaceCells[faceI]] += temp*cmptMag(Sf[faceI]);
+            volProjections_[bfaceCells[faceI]] += 0.5*cmptMag(Sf[faceI]);
     }
 }
 
