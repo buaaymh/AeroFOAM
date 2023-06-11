@@ -4,11 +4,13 @@ if (indicator)
 {
     scalarField rho_error(mesh_.nCells(), 0.0);
     scalarField rho_max(rho_.primitiveField());
+    scalarField h_max(mesh_.nCells(), 0.0);
     forAll(owner, faceI)
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        const scalar h_k = 1.0/pow(d_ij_[faceI], 1.5);
+        h_max[i] = max(h_max[i], d_ij_[faceI]);
+        h_max[j] = max(h_max[j], d_ij_[faceI]);
         rho_max[i] = max(rho_max[i], rho_[j]);
         rho_max[j] = max(rho_max[j], rho_[i]);
         if (isP1Cell_[i] && isP1Cell_[j]) continue;
@@ -24,12 +26,12 @@ if (indicator)
         Col6X1 PolyCenter_j = Col6X1(0.5*basisMean_[j][0], basisMean_[j][1], basisMean_[j][2],
                                      0.5*basisMean_[j][3], basisMean_[j][4],
                                      0.5*basisMean_[j][5]);
-        rho_error[i]  += h_k*mag((d2RhoCoefs_i-(d2RhoCoefs_j.array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
-        rho_error[j]  += h_k*mag((d2RhoCoefs_j-(d2RhoCoefs_i.array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
+        rho_error[i] += mag((d2RhoCoefs_i-(d2RhoCoefs_j.array()*transfoam_ij.array()).matrix()).dot(PolyCenter_i));
+        rho_error[j] += mag((d2RhoCoefs_j-(d2RhoCoefs_i.array()/transfoam_ij.array()).matrix()).dot(PolyCenter_j));
     }
     forAll(mesh_.cells(), cellI)
     {
-        IS_[cellI] = rho_error[cellI]/(mesh_.cellCells()[cellI].size()*rho_max[cellI]);
+        IS_[cellI] = rho_error[cellI]/(mesh_.cellCells()[cellI].size()*pow(h_max[cellI], 1.5)*rho_max[cellI]);
         if (IS_[cellI] > IS)
         {
             isTrouble_[cellI] = true;
