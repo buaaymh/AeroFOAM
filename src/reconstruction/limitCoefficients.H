@@ -40,9 +40,9 @@ void Foam::Reconstruction::limitCoefficients()
         {
             scalar factor = 1.0;
             scalar delta = coefs_[cellI].col(0).array().abs().matrix().dot(polyNorm_[cellI]);
-            if (rho_[cellI]  < delta) factor = min(factor, rho_[cellI]/delta);
+            if (rho_[cellI]  < 2*delta) factor = min(factor, 0.5*rho_[cellI]/delta);
             delta = coefs_[cellI].col(4).array().abs().matrix().dot(polyNorm_[cellI]);
-            if (rhoE_[cellI] < delta) factor = min(factor, rhoE_[cellI]/delta);
+            if (rhoE_[cellI] < 2*delta) factor = min(factor, 0.5*rhoE_[cellI]/delta);
             if (factor < 1.0)
             {
                 coefs_[cellI] *= factor;
