@@ -3,7 +3,7 @@ void Foam::turbulenceSolver::solveTurbLinearSystemByLUSGS
     const scalarField& resNuTilda
 )
 {
-    updateLTS();
+    updateLTSforSATurb();
     scalarField L(mesh_.nInternalFaces());
     scalarField U(mesh_.nInternalFaces());
     scalarField D(1.0/localDtDv_);
@@ -23,7 +23,7 @@ void Foam::turbulenceSolver::solveTurbLinearSystemByGMRES
     const label innerIter = mesh_.solution().subDict("SOLVER").lookupOrDefault<label>("innerIter", 5);
     const scalar relTol = mesh_.solution().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.1);
     // Calculate L, U and D
-    updateLTS();
+    updateLTSforSATurb();
     scalarField L(mesh_.nInternalFaces());
     scalarField U(mesh_.nInternalFaces());
     scalarField D(1.0/localDtDv_);
