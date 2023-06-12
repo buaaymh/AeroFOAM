@@ -54,14 +54,12 @@ int main(int argc, char *argv[])
     while (runTime.run())
     {
         const word method = mesh.solution().subDict("SOLVER").lookupOrDefault<word>("method", "LUSGS");
-        const scalar CFL  = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
         runTime++;
         Info << "========================================" << nl;
         Info << "# " << method << " # Iteration Step = " << runTime.value() << endl;
         Info << "========================================" << nl;
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
         solver->evaluateTurbRes(resNuTilda);
-        Info << "# Local Courant          [-] = " << CFL << endl;
         Info << "----------------------------------------" << nl;
 
         if (method == "LUSGS")

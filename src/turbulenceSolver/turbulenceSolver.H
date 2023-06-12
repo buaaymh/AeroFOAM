@@ -98,12 +98,6 @@ public:
     // Member Functions
     const scalarField& dNuTilda()  const { return dNuTilda_; }
 
-    void updateLTSforSATurb()
-    {
-        scalar CFL = mesh_.solution().subDict("SOLVER").lookupOrDefault<scalar>("turbCFL", 1.0);
-        localDtDv_ = CFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
-    }
-
     virtual void evaluateFlowRes
     (
         scalarField& resRho,
