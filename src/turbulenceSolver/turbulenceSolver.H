@@ -78,6 +78,8 @@ class turbulenceSolver: public navierStokesSolver
         volScalarField muTurb_;
         //- nuTilda grad
         volVectorField nuTildaGrad_;
+        //- nuTilda limit
+        volScalarField nuTildaLimit_;
         //- nuTilda residual
         scalarField dNuTilda_;
 
@@ -208,6 +210,12 @@ private:
         const scalarField& v_NuTilda,
         scalarField& y_NuTilda
     ) const;
+
+    void limitNuTildaGrad
+    (
+        const volScalarField& nuTilda,
+        const volVectorField& nuTildaGrad
+    );
 
 };
 

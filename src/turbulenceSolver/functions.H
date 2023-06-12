@@ -52,13 +52,16 @@ void Foam::turbulenceSolver::evaluateTurbLDU
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        const scalar q_ij = 0.5*(U_[i]+U_[j])&Sf[faceI];
+        scalar dx_L = mag((mesh_.Cf()[faceI] - mesh_.C()[i])&normal_[faceI]) + SMALL;
+        scalar dx_R = mag((mesh_.Cf()[faceI] - mesh_.C()[j])&normal_[faceI]) + SMALL;
+        scalar dx = dx_L + dx_R; dx_L /= dx; dx_R /= dx;
+        const scalar q_ij = (dx_L*U_[i]+dx_R*U_[j])&mesh_.Sf()[faceI];
         const scalar a_i = 0.5*(q_ij+mag(q_ij));
         const scalar a_j = 0.5*(q_ij-mag(q_ij));
-        const scalar nu_ij = 0.5*(nuLam_[i]+nuLam_[j]);
-        const scalar nuTilda_ij = 0.5*(nuTilda_[i]+nuTilda_[j]);
-        const scalar nu_e = nu(nuTilda_ij, nu_ij);
-        const scalar gradSf = 0.25*((nuTildaGrad_[i]+nuTildaGrad_[j])&Sf[faceI]);
+        const scalar nuLam_ij = dx_L*nuLam_[i]+dx_R*nuLam_[j];
+        const scalar nuTilda_ij = dx_L*nuTilda_[i]+dx_R*nuTilda_[j];
+        const scalar nu_e = nu(nuTilda_ij, nuLam_ij);
+        const scalar gradSf = 0.5*((dx_L*nuTildaGrad_[i]+dx_R*nuTildaGrad_[j])&Sf[faceI]);
         const scalar projSf = (delta_[faceI]&Sf[faceI])/magSqr(delta_[faceI]);
         L[faceI] = alpha*(a_i - Ma_Re_*(gradSf - nu_e*projSf)/SA::sigma);
         U[faceI] = alpha*(a_j - Ma_Re_*(gradSf + nu_e*projSf)/SA::sigma);
@@ -74,6 +77,8 @@ void Foam::turbulenceSolver::evaluateTurbLDU
         const word type = mesh_.boundary()[patchI].type();
         if (mesh_.boundary()[patchI].coupled())
         {
+            const vectorField delta_i = mesh_.boundary()[patchI].Cf() - mesh_.boundary()[patchI].Cn();
+            const vectorField delta_j = delta_i - delta;
             const scalarField nuLam_neigh = nuLam_.boundaryField()[patchI].patchNeighbourField();
             const vectorField U_neigh = U_.boundaryField()[patchI].patchNeighbourField();
             const scalarField nuTilda_neigh = nuTilda_.boundaryField()[patchI].patchNeighbourField();
@@ -81,12 +86,15 @@ void Foam::turbulenceSolver::evaluateTurbLDU
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                const scalar q_ij = 0.5*(U_[i]+U_neigh[faceI])&Sf[faceI];
+                scalar dx_L  = mag(delta_i[faceI]&normal_[faceI]) + SMALL;
+                scalar dx_R  = mag(delta_j[faceI]&normal_[faceI]) + SMALL;
+                scalar dx = dx_L + dx_R; dx_L /= dx; dx_R /= dx;
+                const scalar q_ij = (dx_L*U_[i]+dx_R*U_neigh[faceI])&Sf[faceI];
                 const scalar a_i = 0.5*(q_ij+mag(q_ij));
-                const scalar nu_ij = 0.5*(nuLam_[i]+nuLam_neigh[faceI]);
-                const scalar nuTilda_ij = 0.5*(nuTilda_[i]+nuTilda_neigh[faceI]);
+                const scalar nu_ij = dx_L*nuLam_[i]+dx_R*nuLam_neigh[faceI];
+                const scalar nuTilda_ij = dx_L*nuTilda_[i]+dx_R*nuTilda_neigh[faceI];
                 const scalar nu_e = nu(nuTilda_ij, nu_ij);
-                const scalar gradSf = 0.25*((nuTildaGrad_[i]+nuTildaGrad_neigh[faceI])&Sf[faceI]);
+                const scalar gradSf = 0.5*((dx_L*nuTildaGrad_[i]+dx_R*nuTildaGrad_neigh[faceI])&Sf[faceI]);
                 const scalar projSf = (delta[faceI]&Sf[faceI])/magSqr(delta[faceI]);
                 D[i] += alpha*(a_i - Ma_Re_*(gradSf - nu_e*projSf)/SA::sigma);
             }
@@ -220,4 +228,75 @@ scalar Foam::turbulenceSolver::evaluateSourceJacobian
         }
     }
     return jacobian;
+}
+
+void Foam::turbulenceSolver::limitNuTildaGrad
+(
+    const volScalarField& nuTilda,
+    const volVectorField& nuTildaGrad
+)
+{
+    const scalar K = mesh_.schemes().subDict("gradSchemes").lookupOrDefault<scalar>("Venkat", 1);
+    scalarField nuTildaMin = nuTilda.field();
+    scalarField nuTildaMax = nuTilda.field();
+    const auto& owner = mesh_.owner();
+    const auto& neighbour = mesh_.neighbour();
+    forAll(owner, faceI)
+    {
+        const label i = owner[faceI];
+        const label j = neighbour[faceI];
+        // neighbors of node i
+        nuTildaMin[i] = min(nuTildaMin[i], nuTilda[j]);
+        nuTildaMax[i] = max(nuTildaMax[i], nuTilda[j]);
+        // neighbors of node j
+        nuTildaMin[j] = min(nuTildaMin[j], nuTilda[i]);
+        nuTildaMax[j] = max(nuTildaMax[j], nuTilda[i]);
+    }
+    forAll(mesh_.boundary(), patchI)
+    {
+        if(mesh_.boundary()[patchI].coupled())
+        {
+            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+            const scalarField nuTilda_neigh  = nuTilda.boundaryField()[patchI].patchNeighbourField();
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                // neighbors of node i
+                nuTildaMin[i] = min(nuTildaMin[i], nuTilda_neigh[faceI]);
+                nuTildaMax[i] = max(nuTildaMax[i], nuTilda_neigh[faceI]);
+            }
+        }
+    }
+    nuTildaMin -= nuTilda.field();
+    nuTildaMax -= nuTilda.field();
+    nuTildaLimit_.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
+    const scalarField delta = mag(mesh_.delta());
+    forAll(owner, faceI)
+    {
+        const label i = owner[faceI];
+        const label j = neighbour[faceI];
+        const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
+        const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
+        const scalar eps2 = Foam::pow3(K*delta[faceI]);
+        nuTildaLimit_[i] = min(nuTildaLimit_[i], Venkat(nuTildaGrad[i]&delta_i, nuTildaMin[i], nuTildaMax[i], eps2));
+        nuTildaLimit_[j] = min(nuTildaLimit_[j], Venkat(nuTildaGrad[j]&delta_j, nuTildaMin[j], nuTildaMax[j], eps2));
+    }
+    forAll(mesh_.boundary(), patchI)
+    {
+        if(mesh_.boundary()[patchI].coupled())
+        {
+            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
+            const vectorField Cn = mesh_.boundary()[patchI].Cn();
+            const scalarField delta = mag(mesh_.boundary()[patchI].delta());
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                const vector delta_i = Cf[faceI] - Cn[faceI];
+                const scalar eps2 = Foam::pow3(K*delta[faceI]);
+                nuTildaLimit_[i] = min(nuTildaLimit_[i], Venkat(nuTildaGrad[i]&delta_i, nuTildaMin[i], nuTildaMax[i], eps2));
+            }
+        }
+    }
+    nuTildaLimit_.correctBoundaryConditions();
 }

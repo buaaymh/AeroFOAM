@@ -39,11 +39,14 @@ void Foam::navierStokes2ndSolver::evaluateFlowRes
         resRho[j]  += rhoFlux * mesh_.magSf()[faceI];
         resRhoU[j] += rhoUFlux* mesh_.magSf()[faceI];
         resRhoE[j] += rhoEFlux* mesh_.magSf()[faceI];
+        scalar dx_L  = mag(delta_i&normal_[faceI]) + SMALL;
+        scalar dx_R  = mag(delta_j&normal_[faceI]) + SMALL;
+        scalar dx = dx_L + dx_R; dx_L /= dx; dx_R /= dx; 
         evaluateViscousFlux(rhoUFlux, rhoEFlux,
-                            0.5*(U_[i]+U_[j]),
-                            0.5*(TGrad_[i]+TGrad_[j]),
-                            0.5*(UGrad_[i]+UGrad_[j]),
-                            0.5*(muLam_[i]+muLam_[j]), normal_[faceI]);
+                            dx_L*U_[i]    +dx_R*U_[j],
+                            dx_L*TGrad_[i]+dx_R*TGrad_[j],
+                            dx_L*UGrad_[i]+dx_R*UGrad_[j],
+                            dx_L*muLam_[i]+dx_R*muLam_[j], normal_[faceI]);
         resRhoU[i] += rhoUFlux*mesh_.magSf()[faceI];
         resRhoE[i] += rhoEFlux*mesh_.magSf()[faceI];
         resRhoU[j] -= rhoUFlux*mesh_.magSf()[faceI];
@@ -59,7 +62,6 @@ void Foam::navierStokes2ndSolver::evaluateFlowRes
         const word type = mesh_.boundary()[patchI].type();
         if (mesh_.boundary()[patchI].coupled())
         {
-            const vectorField delta = mesh_.boundary()[patchI].delta();
             const vectorField delta_i = mesh_.boundary()[patchI].Cf() - mesh_.boundary()[patchI].Cn();
             const vectorField delta_j = delta_i - mesh_.boundary()[patchI].delta();
             const scalarField rho_neigh = rho_.boundaryField()[patchI].patchNeighbourField();
@@ -91,11 +93,14 @@ void Foam::navierStokes2ndSolver::evaluateFlowRes
                 resRho[i]  -= rhoFlux *magSf[faceI];
                 resRhoU[i] -= rhoUFlux*magSf[faceI];
                 resRhoE[i] -= rhoEFlux*magSf[faceI];
+                scalar dx_L  = mag(delta_i[faceI]&normal_[faceI]) + SMALL;
+                scalar dx_R  = mag(delta_j[faceI]&normal_[faceI]) + SMALL;
+                scalar dx = dx_L + dx_R; dx_L /= dx; dx_R /= dx; 
                 evaluateViscousFlux(rhoUFlux, rhoEFlux,
-                                    0.5*(U_[i]+U_neigh[faceI]),
-                                    0.5*(TGrad_[i]+TGrad_neigh[faceI]),
-                                    0.5*(UGrad_[i]+UGrad_neigh[faceI]),
-                                    0.5*(muLam_[i]+muLam_neigh[faceI]), normal[faceI]);
+                                    dx_L*U_[i]    +dx_R*U_neigh[faceI],
+                                    dx_L*TGrad_[i]+dx_R*TGrad_neigh[faceI],
+                                    dx_L*UGrad_[i]+dx_R*UGrad_neigh[faceI],
+                                    dx_L*muLam_[i]+dx_R*muLam_neigh[faceI], normal[faceI]);
                 resRhoU[i] += rhoUFlux*magSf[faceI];
                 resRhoE[i] += rhoEFlux*magSf[faceI];
             }

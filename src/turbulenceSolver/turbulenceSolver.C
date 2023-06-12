@@ -69,6 +69,17 @@ Foam::turbulenceSolver::turbulenceSolver
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
     ),
+    nuTildaLimit_
+    (
+        IOobject
+        (
+            "nuTildaLimit",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 1)
+    ),
     dNuTilda_(scalarField(mesh_.nCells()))
 {}
 
