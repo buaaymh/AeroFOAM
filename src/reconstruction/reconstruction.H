@@ -179,16 +179,6 @@ Mat5X6 transformD2Coefs
     const vector& rDeltaXYZ_j
 );
 
-void evaluateEigenMatrix
-(
-    Mat5X5& L,
-    Mat5X5& R,
-    const scalar& rho,
-    const vector& rhoU,
-    const scalar& rhoE,
-    const vector& normal
-);
-
 template<int cols>
 Eigen::Matrix<scalar, 5, cols> WBAP_L2_Limiter
 (
