@@ -126,6 +126,22 @@ scalar Foam::func
     return (Gamma-1.0)*(rhoE+x*dRhoE - 0.5*magSqr(rhoU+x*dRhoU)/(rho+x*dRho));
 }
 
+scalar Foam::diff
+(
+    const scalar& rho,
+    const vector& rhoU,
+    const scalar& rhoE,
+    const scalar& dRho,
+    const vector& dRhoU,
+    const scalar& dRhoE,
+    const scalar& x
+)
+{
+    scalar rhoNew  = rho  + x*dRho;
+    vector rhoUNew = rhoU + x*dRhoU;
+    return (Gamma-1.0)*(dRhoE - (dRhoU&rhoUNew)/rhoNew + 0.5*dRho*magSqr(rhoUNew)/sqr(rhoNew));
+}
+
 scalar Foam::solveForPressure
 (
     const scalar& rho,
@@ -134,25 +150,21 @@ scalar Foam::solveForPressure
     const scalar& dRho,
     const vector& dRhoU,
     const scalar& dRhoE,
+    const scalar& pMin,
     const scalar& xMax
 )
 {
     label iter = 1;
-    scalar a = 0.0, b = xMax, c = 0.5*(a+b);
-    scalar fa = func(rho, rhoU, rhoE, dRho, dRhoU, dRhoE, a) - 1e-3;
-    scalar fc = func(rho, rhoU, rhoE, dRho, dRhoU, dRhoE, c) - 1e-3;
-    while (mag(fc) > 1e-5)
+    scalar x0 = xMax;
+    scalar x = x0 - (func(rho, rhoU, rhoE, dRho, dRhoU, dRhoE, x0) - pMin)/
+                     diff(rho, rhoU, rhoE, dRho, dRhoU, dRhoE, x0);
+    scalar fx = func(rho, rhoU, rhoE, dRho, dRhoU, dRhoE, x) - pMin;
+    while((mag(fx) > 1e-5) && (iter < 10))
     {
+        x0 = x;
+        x = x0 - fx/diff(rho, rhoU, rhoE, dRho, dRhoU, dRhoE, x0);
+        fx = func(rho, rhoU, rhoE, dRho, dRhoU, dRhoE, x) - pMin;
         iter++;
-        if (fa*fc > 0) a = c;
-        else b = c;
-        c = 0.5*(a+b);
-        fc = func(rho, rhoU, rhoE, dRho, dRhoU, dRhoE, c) - 1e-3;
-        if (iter > 10)
-        {
-            if (fc < 0) c = 0.0;
-            break;
-        }
     }
-    return c;
+    return x;
 }
