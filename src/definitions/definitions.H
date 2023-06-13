@@ -167,6 +167,15 @@ scalar solveForPressure
     const scalar& xMax
 );
 
+void evaluateEigenMatrix
+(
+    Mat5X5& L,
+    Mat5X5& R,
+    const scalar& rho,
+    const vector& rhoU,
+    const scalar& rhoE,
+    const vector& normal
+);
 
 } // End namespace Foam
 
