@@ -209,4 +209,14 @@ void Foam::Reconstruction::initVrLinearSystem()
         }
     }
     forAll(mesh_.C(), cellI) rA_[cellI] = rA_[cellI].inverse();
+
+    // Initialize N*h^((k+1)/2)
+    forAll(mesh_.owner(), faceI)
+    {
+        const label i = mesh_.owner()[faceI];
+        const label j = mesh_.neighbour()[faceI];
+        N_h_[i] = max(N_h_[i], d_ij_[faceI]);;
+        N_h_[j] = max(N_h_[j], d_ij_[faceI]);;
+    }
+    N_h_ = pow(N_h_, 1.5);
 }
