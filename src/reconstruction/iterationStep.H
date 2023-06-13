@@ -136,30 +136,18 @@ void Foam::Reconstruction::iterationStep()
             }
         }
     }
-    const scalar Omega = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("Omega", 1.0);
     /* Block Gauss–Seidel iteration */
+    forAll(owner, faceI)
+    {
+        const label i = owner[faceI];
+        const label j = neighbour[faceI];
+        if (!isP1Cell_[i]) bW[i] += B_[faceI].transpose() * coefs_[j];
+        if (!isP1Cell_[j]) bW[j] += B_[faceI] * coefs_[i];
+    }
     forAll(mesh_.cells(), cellI)
     {
         if (isP1Cell_[cellI]) continue;
-        const labelList& cellFaces = mesh_.cells()[cellI];
-        forAll(cellFaces, f)
-        {
-            const label faceI = cellFaces[f];
-            if (mesh_.isInternalFace(faceI))
-            {
-                label j = owner[faceI];
-                if (j != cellI) /* j < cellI */
-                {
-                    bW[cellI] += B_[faceI] * coefs_[j];
-                }
-                else /* j > cellI */
-                {
-                    j = neighbour[faceI];
-                    bW[cellI] += B_[faceI].transpose() * coefs_[j];
-                }
-            }
-        }
-        coefs_[cellI] = (1-Omega)*coefs_[cellI] + Omega*(rA_[cellI]*bW[cellI]);
+        coefs_[cellI] = rA_[cellI]*bW[cellI];
     }
     /* Limiting coefficients of polynomials */
     limitCoefficients();
