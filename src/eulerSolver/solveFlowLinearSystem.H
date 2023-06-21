@@ -155,18 +155,18 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
     forAll(mesh_.cells(), cellI)
     {
         scalar factor  = 1.0;
-        if (rho_[cellI] + 2*dRho_[cellI] <= 0)
+        if (0.9*rho_[cellI] + dRho_[cellI] <= 0.0)
         {
-            factor = min(factor, (-0.5*rho_[cellI])/dRho_[cellI]);
+            factor = min(factor, (-0.9*rho_[cellI])/dRho_[cellI]);
         }
         scalar rhoNew  = rho_[cellI] + factor*dRho_[cellI];
         vector rhoUNew = rhoU_[cellI]+ factor*dRhoU_[cellI];
         scalar rhoENew = rhoE_[cellI]+ factor*dRhoE_[cellI];
         scalar pNew = (Gamma-1.0)*(rhoENew - 0.5*magSqr(rhoUNew)/rhoNew);
-        if (pNew <= 0.5*p_[cellI])
+        if (pNew <= 0.1*p_[cellI])
         {
             factor = min(factor, solveForPressure(rho_[cellI], rhoU_[cellI], rhoE_[cellI],
-                                                  dRho_[cellI], dRhoU_[cellI], dRhoE_[cellI], 0.5*p_[cellI], factor));
+                                                  dRho_[cellI], dRhoU_[cellI], dRhoE_[cellI], 0.1*p_[cellI], factor));
         }
         if (factor < 1.0)
         {
@@ -178,6 +178,7 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
             rhoENew = rhoE_[cellI]+ dRhoE_[cellI];
             scalar pNew = (Gamma-1.0)*(rhoENew - 0.5*magSqr(rhoUNew)/rhoNew);
             Pout << "=====================================" << endl
+                 << "Error at " << mesh_.C()[cellI] << nl
                  << "Delta Limiting factor = " << factor << nl
                  << "pressure = " << pNew << nl
                  << "density  = " << rhoNew << nl
