@@ -70,7 +70,6 @@ protected:
     //- Energy
     volScalarField& rhoE_;
     vector vrWeightSqr_;
-    std::vector<bool> isP1Cell_;
     std::vector<bool> isTrouble_;
     std::vector<Mat9X5> coefs_;
     std::vector<Mat5X9> limitedCoefs_i_;

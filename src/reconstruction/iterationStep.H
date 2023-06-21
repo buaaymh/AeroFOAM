@@ -1,24 +1,5 @@
 void Foam::Reconstruction::iterationStep()
 {
-    const Switch adaptive = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("adaptive", false);
-    isP1Cell_ = std::vector<bool>(mesh_.nCells(), false);
-    if (adaptive)
-    {
-        label count = 0;
-        volVectorField rhoGrad = fvc::grad(rhoE_);
-        forAll(mesh_.cells(), cellI)
-        {
-            scalar dRhoE = cmptSum(cmptMag(cmptDivide(rhoGrad[cellI], rDeltaXYZ_[cellI])));
-            if (dRhoE < 1e-6)
-            {
-                isP1Cell_[cellI] = true;
-                coefs_[cellI] = Mat9X5::Zero();
-                count++;
-            }
-        }
-        const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-        Info << "# P1 cell                [%] = " << percent << endl;
-    }
     /* Calculate b of vr linear system */
     std::vector<Mat9X5> bW(mesh_.nCells(), Mat9X5::Zero());
     const auto& owner = mesh_.owner();
@@ -141,12 +122,11 @@ void Foam::Reconstruction::iterationStep()
     {
         const label i = owner[faceI];
         const label j = neighbour[faceI];
-        if (!isP1Cell_[i]) bW[i] += B_[faceI].transpose() * coefs_[j];
-        if (!isP1Cell_[j]) bW[j] += B_[faceI] * coefs_[i];
+        bW[i] += B_[faceI].transpose() * coefs_[j];
+        bW[j] += B_[faceI] * coefs_[i];
     }
     forAll(mesh_.cells(), cellI)
     {
-        if (isP1Cell_[cellI]) continue;
         coefs_[cellI] = rA_[cellI]*bW[cellI];
     }
     /* Limiting coefficients of polynomials */

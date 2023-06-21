@@ -13,7 +13,7 @@ void Foam::Reconstruction::limitCoefficients()
 
     /* Limiting d2 coefficients of polynomials */
     const Switch characteristic = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("characteristic", false);
-    const word limiter = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<word>("limiter", "Slope1");
+    const word limiter = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<word>("limiter", "Slope");
     if (limiter == "Slope")
     {
         #include "slopeLimiter.H"

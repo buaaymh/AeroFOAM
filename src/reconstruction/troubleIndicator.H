@@ -10,7 +10,6 @@ if (indicator)
         const label j = neighbour[faceI];
         rho_max[i] = max(rho_max[i], rho_[j]);
         rho_max[j] = max(rho_max[j], rho_[i]);
-        if (isP1Cell_[i] && isP1Cell_[j]) continue;
         Col6X1 d2RhoCoefs_i  = coefs_[i].block<6,1>(3,0);
         Col6X1 d2RhoCoefs_j  = coefs_[j].block<6,1>(3,0);
         vector rDeltaXYZ_ij = cmptDivide(rDeltaXYZ_[j], rDeltaXYZ_[i]);

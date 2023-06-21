@@ -42,7 +42,6 @@ Foam::Reconstruction::Reconstruction
     rhoU_(rhoU),
     rhoE_(rhoE),
     vrWeightSqr_(vector::zero),
-    isP1Cell_(mesh_.nCells(), false),
     isTrouble_(mesh_.nCells(), false),
     coefs_(mesh_.nCells(), Mat9X5::Zero()),
     limitedCoefs_i_(mesh_.nInternalFaces(), Mat5X9::Zero()),
