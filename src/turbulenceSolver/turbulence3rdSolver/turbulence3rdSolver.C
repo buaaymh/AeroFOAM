@@ -38,7 +38,7 @@ Foam::turbulence3rdSolver::turbulence3rdSolver
 )
 :
     turbulenceSolver(fluidProps, rho, U, p, nuTilda),
-    Reconstruction(fluidProps, rho, rhoU_, rhoE_)
+    ReconstructionForSA(fluidProps, rho, rhoU_, rhoE_, nuTilda)
 
 {}
 

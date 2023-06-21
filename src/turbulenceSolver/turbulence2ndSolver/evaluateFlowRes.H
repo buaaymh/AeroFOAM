@@ -159,3 +159,16 @@ void Foam::turbulence2ndSolver::evaluateFlowRes
         }
     }
 }
+
+void Foam::turbulence2ndSolver::evaluateFlowRes
+(
+    scalarField& resRho,
+    vectorField& resRhoU,
+    scalarField& resRhoE,
+    scalarField& resNuTilda
+)
+{
+    evaluateFlowRes(resRho, resRhoU, resRhoE);
+    evaluateTurbRes(resNuTilda);
+}
+

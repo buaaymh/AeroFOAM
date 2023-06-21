@@ -93,6 +93,15 @@ void Foam::turbulenceSolver::evaluateFlowResForGMRES
         }
     }
 }
+void Foam::turbulenceSolver::evaluateFlowRes
+(
+    scalarField& resRho,
+    vectorField& resRhoU,
+    scalarField& resRhoE
+)
+{
+    evaluateFlowResForGMRES(resRho, resRhoU, resRhoE);
+}
 
 void Foam::turbulenceSolver::evaluateViscousFlux
 (

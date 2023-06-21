@@ -36,7 +36,7 @@ Author
 #define turbulence3rdSolver_H
 
 #include "turbulenceSolver.H"
-#include "reconstruction.H"
+#include "reconstructionForSA.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,7 +49,7 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-class turbulence3rdSolver: public turbulenceSolver, public Reconstruction
+class turbulence3rdSolver: public turbulenceSolver, public ReconstructionForSA
 {
     using turbulenceSolver::mesh_;
     using turbulenceSolver::rho_;
@@ -64,18 +64,16 @@ class turbulence3rdSolver: public turbulenceSolver, public Reconstruction
     void operator=(const turbulence3rdSolver&);
 
     // Member Functions
-
     void evaluateFlux
     (
         scalar& rhoFlux,
         vector& rhoUFlux,
         scalar& rhoEFlux,
-        const scalar& rho_L,
-        const scalar& rho_R,
-        const vector& rhoU_L,
-        const vector& rhoU_R,
-        const scalar& rhoE_L,
-        const scalar& rhoE_R,
+        scalar& nuTildaFlux,
+        const scalar& rho_L, const scalar& rho_R,
+        const vector& rhoU_L, const vector& rhoU_R,
+        const scalar& rhoE_L, const scalar& rhoE_R,
+        const scalar& nuTilda_L, const scalar& nuTilda_R,
         const vector& normal,
         const scalar& magSf
     ) const;
@@ -85,19 +83,15 @@ class turbulence3rdSolver: public turbulenceSolver, public Reconstruction
         scalar& rhoFlux,
         vector& rhoUFlux,
         scalar& rhoEFlux,
-        const scalar& rho_L,
-        const scalar& rho_R,
-        const vector& rhoU_L,
-        const vector& rhoU_R,
-        const scalar& rhoE_L,
-        const scalar& rhoE_R,
-        const vector& rhoGrad_L,
-        const vector& rhoGrad_R,
-        const tensor& rhoUGrad_L,
-        const tensor& rhoUGrad_R,
-        const vector& rhoEGrad_L,
-        const vector& rhoEGrad_R,
-        const scalar& muTurb,
+        scalar& nuTildaFlux,
+        const scalar& rho_L, const scalar& rho_R,
+        const vector& rhoU_L, const vector& rhoU_R,
+        const scalar& rhoE_L, const scalar& rhoE_R,
+        const scalar& nuTilda_L, const scalar& nuTilda_R,
+        const vector& rhoGrad_L, const vector& rhoGrad_R,
+        const tensor& rhoUGrad_L, const tensor& rhoUGrad_R,
+        const vector& rhoEGrad_L, const vector& rhoEGrad_R,
+        const vector& nuTildaGrad_L, const vector& nuTildaGrad_R,
         const scalar& deltaTilde,
         const vector& normal,
         const scalar& magSf
@@ -106,12 +100,14 @@ class turbulence3rdSolver: public turbulenceSolver, public Reconstruction
     void evaluateWallFlux
     (
         vector& rhoUFlux,
+        scalar& nuTildaFlux,
         const scalar& rho,
         const vector& rhoU,
         const scalar& rhoE,
         const vector& rhoGrad,
         const tensor& rhoUGrad,
         const vector& rhoEGrad,
+        const vector& nuTildaGrad,
         const vector& normal,
         const scalar& magSf
     ) const;
@@ -121,16 +117,20 @@ class turbulence3rdSolver: public turbulenceSolver, public Reconstruction
         scalar& rhoFlux,
         vector& rhoUFlux,
         scalar& rhoEFlux,
+        scalar& nuTildaFlux,
         const scalar& rhoBound,
         const vector& UBound,
         const scalar& pBound,
-        const scalar& rhoInter,
-        const vector& rhoUInter,
-        const scalar& rhoEInter,
+        const scalar& nuTildaBound,
+        const scalar& muLamBound,
+        const scalar& muTurbBound,
+        const scalar& rho,
+        const vector& rhoU,
+        const scalar& rhoE,
         const vector& rhoGrad,
         const tensor& rhoUGrad,
         const vector& rhoEGrad,
-        const scalar& muTurb,
+        const vector& nuTildaGrad,
         const vector& normal,
         const scalar& magSf
     ) const;
@@ -155,7 +155,8 @@ public:
     (
         scalarField& resRho,
         vectorField& resRhoU,
-        scalarField& resRhoE
+        scalarField& resRhoE,
+        scalarField& resNuTilda
     );
 
 };

@@ -57,8 +57,6 @@ class Reconstruction
     // Member Functions
     void initVrLinearSystem();
 
-    void limitCoefficients();
-
 protected:
     const fluidProperties& fluidProps_;
     //- Reference to mesh
@@ -111,8 +109,10 @@ public:
         volVectorField& rhoU,
         volScalarField& rhoE
     );
+    
+    void limitCoefficients();
 
-    void iterationStep();
+    virtual void iterationStep();
 
     // Destructor - default
     virtual ~Reconstruction() {};

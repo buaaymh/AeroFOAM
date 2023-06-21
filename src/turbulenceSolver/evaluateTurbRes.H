@@ -5,7 +5,6 @@ void Foam::turbulenceSolver::evaluateTurbRes
 {
     resNuTilda  = scalarField(mesh_.nCells(), 0.0);
     nuTildaGrad_ = fvc::grad(nuTilda_);
-    limitNuTildaGrad(nuTilda_, nuTildaGrad_);
     nuLam_ = muLam_/rho_;
     forAll(mesh_.owner(), faceI)
     {
@@ -18,8 +17,7 @@ void Foam::turbulenceSolver::evaluateTurbRes
         const scalar q_ij = (dx_L*U_[i]+dx_R*U_[j])&mesh_.Sf()[faceI];
         const scalar a_i = 0.5*(q_ij+mag(q_ij));
         const scalar a_j = 0.5*(q_ij-mag(q_ij));
-        nuTildaFlux += a_i*(nuTilda_[i]+((mesh_.Cf()[faceI] - mesh_.C()[i])&nuTildaGrad_[i])*nuTildaLimit_[i]) +
-                       a_j*(nuTilda_[j]+((mesh_.Cf()[faceI] - mesh_.C()[j])&nuTildaGrad_[j])*nuTildaLimit_[j]);
+        nuTildaFlux += a_i*nuTilda_[i] + a_j*nuTilda_[j];
         const scalar nuLam_ij = dx_L*nuLam_[i]+dx_R*nuLam_[j];
         const scalar nuTilda_ij = dx_L*nuTilda_[i]+dx_R*nuTilda_[j];
         const scalar nu_e = nu(nuTilda_ij, nuLam_ij);
@@ -41,7 +39,6 @@ void Foam::turbulenceSolver::evaluateTurbRes
             const vectorField U_neigh = U_.boundaryField()[patchI].patchNeighbourField();
             const scalarField nuTilda_neigh = nuTilda_.boundaryField()[patchI].patchNeighbourField();
             const vectorField nuTildaGrad_neigh = nuTildaGrad_.boundaryField()[patchI].patchNeighbourField();
-            const scalarField nuTildaLimite_neigh = nuTildaLimit_.boundaryField()[patchI].patchNeighbourField();
             forAll(bfaceCells, faceI)
             {
                 scalar nuTildaFlux = 0;
@@ -52,9 +49,7 @@ void Foam::turbulenceSolver::evaluateTurbRes
                 const scalar q_ij = (dx_L*U_[i]+dx_R*U_neigh[faceI])&Sf[faceI];
                 const scalar a_i = 0.5*(q_ij+mag(q_ij));
                 const scalar a_j = 0.5*(q_ij-mag(q_ij));
-                // nuTildaFlux += a_i*nuTilda_[i] + a_j*nuTilda_neigh[faceI];
-                nuTildaFlux += a_i*(nuTilda_[i]+(delta_i[faceI]&nuTildaGrad_[i])*nuTildaLimit_[i]) +
-                               a_j*(nuTilda_neigh[faceI]+(delta_j[faceI]&nuTildaGrad_neigh[faceI])*nuTildaLimite_neigh[faceI]);
+                nuTildaFlux += a_i*nuTilda_[i] + a_j*nuTilda_neigh[faceI];
                 const scalar nu_ij = dx_L*nuLam_[i]+dx_R*nuLam_neigh[faceI];
                 const scalar nuTilda_ij = dx_L*nuTilda_[i]+dx_R*nuTilda_neigh[faceI];
                 const scalar nu_e = nu(nuTilda_ij, nu_ij);

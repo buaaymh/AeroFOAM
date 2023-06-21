@@ -482,6 +482,44 @@ void build2ndCell
 );
 
 
+
+/*---------------------------------------------------------------------------*\
+                           Class Cell Declaration
+\*---------------------------------------------------------------------------*/
+
+class Cell
+{
+public:
+
+    // Destructor - default
+    virtual ~Cell() {};
+    
+    // Constructors - default
+    Cell() = default;
+
+    Cell
+    (
+        const fvMesh& mesh,
+        const label& cellI, 
+        const scalar& yWall,
+        const vector& nWall
+    );
+
+    // Member Functions
+    label size() const { return weights.size(); };
+
+    const scalar& distToWall(label i) const { return dists[i]; };
+
+    scalar weight(label i) const { return weights[i]; };
+    
+    const vector& at(label i) const { return quadPoints[i]; };
+    
+private:
+    std::vector<scalar> weights;
+    std::vector<scalar> dists;
+    std::vector<vector> quadPoints;
+};
+
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

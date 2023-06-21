@@ -85,6 +85,14 @@ public:
         vectorField& resRhoU,
         scalarField& resRhoE
     );
+    
+    virtual void evaluateFlowRes
+    (
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE,
+        scalarField& resNuTilda
+    );
 
 };
 

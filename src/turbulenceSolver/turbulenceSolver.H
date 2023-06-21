@@ -105,6 +105,14 @@ public:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
+    );
+
+    virtual void evaluateFlowRes
+    (
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE,
+        scalarField& resNuTilda
     ) = 0;
 
     virtual void evaluateTurbRes
@@ -125,15 +133,6 @@ public:
     virtual void correctTurbulenceFields();
 
     virtual void correctFields();
-
-    void smoothFlowRes
-    (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
-        scalarField& resNuTilda,
-        const scalar& eps
-    );
 
 protected:
 
