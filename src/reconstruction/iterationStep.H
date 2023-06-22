@@ -69,7 +69,7 @@ void Foam::Reconstruction::iterationStep()
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                const vector dp = sqrt(0.5*magSf[faceI]/d_ij[faceI])*vector(vrWeightSqr_[0], 0, 0);
+                const vector dp = (0.5/d_ij[faceI])*vector(vrWeightSqr_[0], 0, 0);
                 Mat9X5 b = Mat9X5::Zero();
                 for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
@@ -97,7 +97,7 @@ void Foam::Reconstruction::iterationStep()
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                const vector dp = sqrt(0.5*magSf[faceI]/d_ij[faceI])*vector(vrWeightSqr_[0], 0, 0);
+                const vector dp = (0.5/d_ij[faceI])*vector(vrWeightSqr_[0], 0, 0);
                 Mat9X5 b = Mat9X5::Zero();
                 for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
