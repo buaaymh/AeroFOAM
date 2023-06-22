@@ -6,7 +6,6 @@ void Foam::turbulenceSolver::evaluateMatrixLDU
     scalarField& D
 ) const
 {
-    
     scalarField nuMax = max(4.0/3.0, Gamma)*(muLam_.primitiveField()/Pr_Lam+muTurb_.primitiveField()/Pr_Turb)/rho_.primitiveField();
     // Calculate L, U and D
     const labelUList& owner = mesh_.owner();
@@ -28,10 +27,12 @@ void Foam::turbulenceSolver::evaluateMatrixLDU
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
         const vectorField& Sf = mesh_.Sf().boundaryField()[patchI];
         const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
+        const vectorField delta = mesh_.boundary()[patchI].delta();
         forAll(bfaceCells, faceI)
         {
             const label i = bfaceCells[faceI];
-            D[i] += 0.5*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI]);
+            const scalar magSf_vol = Ma_Re_*sqr(magSf[faceI])/mag(delta[faceI]&Sf[faceI]);
+            D[i] += 0.5*alpha*(mag(U_[i]&Sf[faceI])+c_[i]*magSf[faceI] + magSf_vol*nuMax[i]);
         }
     }
 }
@@ -228,75 +229,4 @@ scalar Foam::turbulenceSolver::evaluateSourceJacobian
         }
     }
     return jacobian;
-}
-
-void Foam::turbulenceSolver::limitNuTildaGrad
-(
-    const volScalarField& nuTilda,
-    const volVectorField& nuTildaGrad
-)
-{
-    const scalar K = mesh_.schemes().subDict("gradSchemes").lookupOrDefault<scalar>("Venkat", 1);
-    scalarField nuTildaMin = nuTilda.field();
-    scalarField nuTildaMax = nuTilda.field();
-    const auto& owner = mesh_.owner();
-    const auto& neighbour = mesh_.neighbour();
-    forAll(owner, faceI)
-    {
-        const label i = owner[faceI];
-        const label j = neighbour[faceI];
-        // neighbors of node i
-        nuTildaMin[i] = min(nuTildaMin[i], nuTilda[j]);
-        nuTildaMax[i] = max(nuTildaMax[i], nuTilda[j]);
-        // neighbors of node j
-        nuTildaMin[j] = min(nuTildaMin[j], nuTilda[i]);
-        nuTildaMax[j] = max(nuTildaMax[j], nuTilda[i]);
-    }
-    forAll(mesh_.boundary(), patchI)
-    {
-        if(mesh_.boundary()[patchI].coupled())
-        {
-            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-            const scalarField nuTilda_neigh  = nuTilda.boundaryField()[patchI].patchNeighbourField();
-            forAll(bfaceCells, faceI)
-            {
-                const label i = bfaceCells[faceI];
-                // neighbors of node i
-                nuTildaMin[i] = min(nuTildaMin[i], nuTilda_neigh[faceI]);
-                nuTildaMax[i] = max(nuTildaMax[i], nuTilda_neigh[faceI]);
-            }
-        }
-    }
-    nuTildaMin -= nuTilda.field();
-    nuTildaMax -= nuTilda.field();
-    nuTildaLimit_.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
-    const scalarField delta = mag(mesh_.delta());
-    forAll(owner, faceI)
-    {
-        const label i = owner[faceI];
-        const label j = neighbour[faceI];
-        const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
-        const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-        const scalar eps2 = Foam::pow3(K*delta[faceI]);
-        nuTildaLimit_[i] = min(nuTildaLimit_[i], Venkat(nuTildaGrad[i]&delta_i, nuTildaMin[i], nuTildaMax[i], eps2));
-        nuTildaLimit_[j] = min(nuTildaLimit_[j], Venkat(nuTildaGrad[j]&delta_j, nuTildaMin[j], nuTildaMax[j], eps2));
-    }
-    forAll(mesh_.boundary(), patchI)
-    {
-        if(mesh_.boundary()[patchI].coupled())
-        {
-            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-            const vectorField& Cf = mesh_.boundary()[patchI].Cf();
-            const vectorField Cn = mesh_.boundary()[patchI].Cn();
-            const scalarField delta = mag(mesh_.boundary()[patchI].delta());
-            forAll(bfaceCells, faceI)
-            {
-                const label i = bfaceCells[faceI];
-                const vector delta_i = Cf[faceI] - Cn[faceI];
-                const scalar eps2 = Foam::pow3(K*delta[faceI]);
-                nuTildaLimit_[i] = min(nuTildaLimit_[i], Venkat(nuTildaGrad[i]&delta_i, nuTildaMin[i], nuTildaMax[i], eps2));
-            }
-        }
-    }
-    nuTildaLimit_.correctBoundaryConditions();
 }

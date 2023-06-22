@@ -12,6 +12,41 @@ void Foam::eulerSolver::solveFlowLinearSystemByLUSGS
     evaluateMatrixLDU(1.0, L, U, D);
     // Preconditioning step
     precondition(1.0, L, U, D, resRho, resRhoU, resRhoE, dRho_, dRhoU_, dRhoE_);
+    forAll(mesh_.cells(), cellI)
+    {
+        scalar factor  = 1.0;
+        if (0.9*rho_[cellI] + dRho_[cellI] <= 0.0)
+        {
+            factor = min(factor, (-0.9*rho_[cellI])/dRho_[cellI]);
+        }
+        scalar rhoNew  = rho_[cellI] + factor*dRho_[cellI];
+        vector rhoUNew = rhoU_[cellI]+ factor*dRhoU_[cellI];
+        scalar rhoENew = rhoE_[cellI]+ factor*dRhoE_[cellI];
+        scalar pNew = (Gamma-1.0)*(rhoENew - 0.5*magSqr(rhoUNew)/rhoNew);
+        if (pNew <= 0.5*p_[cellI])
+        {
+            factor = min(factor, solveForPressure(rho_[cellI], rhoU_[cellI], rhoE_[cellI],
+                                                  dRho_[cellI], dRhoU_[cellI], dRhoE_[cellI], 0.5*p_[cellI], factor));
+        }
+        if (factor < 1.0)
+        {
+            dRho_[cellI]  *= factor;
+            dRhoU_[cellI] *= factor;
+            dRhoE_[cellI] *= factor;
+            rhoNew  = rho_[cellI] + dRho_[cellI];
+            rhoUNew = rhoU_[cellI]+ dRhoU_[cellI];
+            rhoENew = rhoE_[cellI]+ dRhoE_[cellI];
+            scalar pNew = (Gamma-1.0)*(rhoENew - 0.5*magSqr(rhoUNew)/rhoNew);
+            Pout << "=====================================" << endl
+                 << "Error   at " << mesh_.C()[cellI] << nl
+                 << "Factor   = " << factor << nl
+                 << "Pressure = " << pNew << nl
+                 << "Density  = " << rhoNew << nl
+                 << "Monumont = " << rhoUNew << nl
+                 << "Energy   = " << rhoENew << nl
+                 << "=====================================" << nl << endl;
+        }
+    }
     rho_.primitiveFieldRef()  += dRho_;
     rhoU_.primitiveFieldRef() += dRhoU_;
     rhoE_.primitiveFieldRef() += dRhoE_;
@@ -155,18 +190,18 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
     forAll(mesh_.cells(), cellI)
     {
         scalar factor  = 1.0;
-        if (0.9*rho_[cellI] + dRho_[cellI] <= 0.0)
+        if (0.5*rho_[cellI] + dRho_[cellI] <= 0.0)
         {
-            factor = min(factor, (-0.9*rho_[cellI])/dRho_[cellI]);
+            factor = min(factor, (-0.5*rho_[cellI])/dRho_[cellI]);
         }
         scalar rhoNew  = rho_[cellI] + factor*dRho_[cellI];
         vector rhoUNew = rhoU_[cellI]+ factor*dRhoU_[cellI];
         scalar rhoENew = rhoE_[cellI]+ factor*dRhoE_[cellI];
         scalar pNew = (Gamma-1.0)*(rhoENew - 0.5*magSqr(rhoUNew)/rhoNew);
-        if (pNew <= 0.1*p_[cellI])
+        if (pNew <= 0.5*p_[cellI])
         {
             factor = min(factor, solveForPressure(rho_[cellI], rhoU_[cellI], rhoE_[cellI],
-                                                  dRho_[cellI], dRhoU_[cellI], dRhoE_[cellI], 0.1*p_[cellI], factor));
+                                                  dRho_[cellI], dRhoU_[cellI], dRhoE_[cellI], 0.5*p_[cellI], factor));
         }
         if (factor < 1.0)
         {
@@ -178,12 +213,12 @@ void Foam::eulerSolver::solveFlowLinearSystemByGMRES
             rhoENew = rhoE_[cellI]+ dRhoE_[cellI];
             scalar pNew = (Gamma-1.0)*(rhoENew - 0.5*magSqr(rhoUNew)/rhoNew);
             Pout << "=====================================" << endl
-                 << "Error at " << mesh_.C()[cellI] << nl
-                 << "Delta Limiting factor = " << factor << nl
-                 << "pressure = " << pNew << nl
-                 << "density  = " << rhoNew << nl
-                 << "monumont = " << rhoUNew << nl
-                 << "energy   = " << rhoENew << nl
+                 << "Error   at " << mesh_.C()[cellI] << nl
+                 << "Factor   = " << factor << nl
+                 << "Pressure = " << pNew << nl
+                 << "Density  = " << rhoNew << nl
+                 << "Monumont = " << rhoUNew << nl
+                 << "Energy   = " << rhoENew << nl
                  << "=====================================" << nl << endl;
         }
     }

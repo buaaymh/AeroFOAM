@@ -209,13 +209,6 @@ private:
         const scalarField& v_NuTilda,
         scalarField& y_NuTilda
     ) const;
-
-    void limitNuTildaGrad
-    (
-        const volScalarField& nuTilda,
-        const volVectorField& nuTildaGrad
-    );
-
 };
 
 // Functions
