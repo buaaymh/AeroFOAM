@@ -1,6 +1,5 @@
-const scalar np = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("np", 10);
-std::vector<Mat6X5> d2CoefsLimited(count);
-count = 0;
+std::vector<Mat6X5> d2CoefsLimited(parameter_.nTroubled);
+parameter_.nTroubled = 0;
 forAll(mesh_.cells(), cellI)
 {
     if (!isTrouble_[cellI]) continue;
@@ -21,27 +20,27 @@ forAll(mesh_.cells(), cellI)
             d2CoefsList.emplace_back(transformD2Coefs(coefs_[j].block<6,5>(3,0).transpose(), rDeltaXYZ_[cellI], rDeltaXYZ_[j]));
         }
     }
-    if (characteristic)
+    if (parameter_.characteristic)
     {
-        d2CoefsLimited[count++] = Eigen_WBAP_L2_Limiter<6>(normalList, d2CoefsList, rho_[cellI], rhoU_[cellI], rhoE_[cellI], np).transpose();
+        d2CoefsLimited[parameter_.nTroubled++] = Eigen_WBAP_L2_Limiter<6>(normalList, d2CoefsList, rho_[cellI], rhoU_[cellI], rhoE_[cellI], parameter_.np).transpose();
     }
     else
     {
-        d2CoefsLimited[count++] = WBAP_L2_Limiter<6>(d2CoefsList, np).transpose();
+        d2CoefsLimited[parameter_.nTroubled++] = WBAP_L2_Limiter<6>(d2CoefsList, parameter_.np).transpose();
     }
 }
 /* Update d2 coefficients of polynomials */
-count = 0;
+parameter_.nTroubled = 0;
 forAll(mesh_.cells(), cellI)
 {
     if (isTrouble_[cellI])
     {
-        coefs_[cellI].block<6,5>(3,0) = d2CoefsLimited[count++];
+        coefs_[cellI].block<6,5>(3,0) = d2CoefsLimited[parameter_.nTroubled++];
     }
 }
 /* Limiting d1 coefficients of polynomials */
-std::vector<Mat3X5> d1CoefsLimited(count);
-count = 0;
+std::vector<Mat3X5> d1CoefsLimited(parameter_.nTroubled);
+parameter_.nTroubled = 0;
 forAll(mesh_.cells(), cellI)
 {
     if (!isTrouble_[cellI]) continue;
@@ -67,21 +66,21 @@ forAll(mesh_.cells(), cellI)
             d1CoefsList.emplace_back(transformD1Coefs(coefs_[j].transpose(), d_ij, rDeltaXYZ_[cellI], rDeltaXYZ_[j]));
         }
     }
-    if (characteristic)
+    if (parameter_.characteristic)
     {
-        d1CoefsLimited[count++] = Eigen_WBAP_L2_Limiter<3>(normalList, d1CoefsList, rho_[cellI], rhoU_[cellI], rhoE_[cellI], np).transpose();
+        d1CoefsLimited[parameter_.nTroubled++] = Eigen_WBAP_L2_Limiter<3>(normalList, d1CoefsList, rho_[cellI], rhoU_[cellI], rhoE_[cellI], parameter_.np).transpose();
     }
     else
     {
-        d1CoefsLimited[count++] = WBAP_L2_Limiter<3>(d1CoefsList, np).transpose();
+        d1CoefsLimited[parameter_.nTroubled++] = WBAP_L2_Limiter<3>(d1CoefsList, parameter_.np).transpose();
     }
 }
 /* Update d1 coefficients of polynomials */
-count = 0;
+parameter_.nTroubled = 0;
 forAll(mesh_.cells(), cellI)
 {
     if (isTrouble_[cellI])
     {
-        coefs_[cellI].block<3,5>(0,0) = d1CoefsLimited[count++];
+        coefs_[cellI].block<3,5>(0,0) = d1CoefsLimited[parameter_.nTroubled++];
     }
 }

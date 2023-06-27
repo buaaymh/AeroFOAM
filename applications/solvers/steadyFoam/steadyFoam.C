@@ -53,11 +53,11 @@ int main(int argc, char *argv[])
 
     const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
     const scalar nCells    = scalar(returnReduce(mesh.nCells(), sumOp<label>()));
+    const word method = mesh.solution().subDict("SOLVER").lookupOrDefault<word>("method", "LUSGS");
+    const scalar CFL  = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
 
     while (runTime.run())
     {
-        const word method = mesh.solution().subDict("SOLVER").lookupOrDefault<word>("method", "LUSGS");
-        const scalar CFL  = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
         runTime++;
         Info << "========================================" << nl;
         Info << "# " << method << " # Iteration Step = " << runTime.value() << endl;

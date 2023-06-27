@@ -1,28 +1,22 @@
 void Foam::Reconstruction::limitCoefficients()
 {
     /* Detect trouble cells */
-    const scalar IS = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("IS", 1.0);
     surfaceVectorField normal(mesh_.Sf()/mesh_.magSf());
     vectorField delta_(mesh_.delta());
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbour = mesh_.neighbour();
-    label count = 0;
+    parameter_.nTroubled = 0;
     #include "troubleIndicator.H"
-    const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-    Info << "# Troubled cell          [%] = " << percent << endl;
-
     /* Limiting d2 coefficients of polynomials */
-    const Switch characteristic = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("characteristic", false);
-    const word limiter = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<word>("limiter", "Slope");
-    if (limiter == "Slope")
+    if (parameter_.limiter == "Slope")
     {
         #include "slopeLimiter.H"
     }
-    else if (limiter == "WBAP")
+    else if (parameter_.limiter == "WBAP")
     {
         #include "WBAPLimiter.H"
     }
-    else if (limiter == "New")
+    else if (parameter_.limiter == "New")
     {
         #include "NewWBAPLimiter.H"
     }
@@ -32,16 +26,15 @@ void Foam::Reconstruction::limitCoefficients()
     }
 
     /* Preserve positive coefficients of polynomials */
-    const Switch positive = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);
-    if (positive)
+    if (parameter_.positive)
     {
-        count = 0;
+        parameter_.nNegative = 0;
         forAll(mesh_.C(), cellI)
         {
             scalar factor = 1.0;
             Col5X1 delta = coefs_[cellI].array().abs().matrix().transpose()*polyNorm_[cellI];
-            if (0.5*rho_[cellI]  < delta(0)) factor = min(factor, 0.5*rho_[cellI]/delta(0));
-            if (0.5*rhoE_[cellI] < delta(4)) factor = min(factor, 0.5*rhoE_[cellI]/delta(4));
+            if (0.99*rho_[cellI]  < delta(0)) factor = min(factor, 0.99*rho_[cellI]/delta(0));
+            if (0.99*rhoE_[cellI] < delta(4)) factor = min(factor, 0.99*rhoE_[cellI]/delta(4));
             scalar dRho  = -delta(0);
             vector dRhoU = vector(delta(1),delta(2),delta(3));
             scalar dRhoE = -delta(4);
@@ -55,10 +48,10 @@ void Foam::Reconstruction::limitCoefficients()
             if (factor < 1.0)
             {
                 coefs_[cellI] *= factor;
-                count++;
+                parameter_.nNegative++;
             }
         }
-        const scalar percent = 100*scalar(returnReduce(count, sumOp<label>()))/scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
-        Info << "# Negative cell          [%] = " << percent << endl;
     }
+    Info << "# Troubled [%] = " << setprecision(4) << 100*scalar(returnReduce(parameter_.nTroubled, sumOp<label>()))/parameter_.nCells
+         << ", Negative [%] = " << setprecision(4) << 100*scalar(returnReduce(parameter_.nNegative, sumOp<label>()))/parameter_.nCells << endl;
 }

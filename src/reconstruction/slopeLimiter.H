@@ -22,7 +22,7 @@ forAll(mesh_.cells(), cellI)
             d0_AdjList.emplace_back(Col5X1(rho_[j], rhoU_[j][0], rhoU_[j][1], rhoU_[j][2], rhoE_[j]));
         }
     }
-    if (characteristic)
+    if (parameter_.characteristic)
     {
         coefs_[cellI].block<3,5>(0,0) = slope_Limiter(normalList, deltaList, d0_AdjList, d0_Own, d1_Own, rDeltaXYZ_[cellI]).transpose();
     }

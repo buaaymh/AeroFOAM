@@ -1,6 +1,5 @@
-const Switch indicator = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("indicator", false);
 isTrouble_ = std::vector<bool>(mesh_.nCells(), false);
-if (indicator)
+if (parameter_.indicator)
 {
     scalarField rho_error(mesh_.nCells(), 0.0);
     scalarField rho_max(rho_.primitiveField());
@@ -28,10 +27,10 @@ if (indicator)
     forAll(mesh_.cells(), cellI)
     {
         IS_[cellI] = rho_error[cellI]/(mesh_.cellCells()[cellI].size()*N_h_[cellI]*rho_max[cellI]);
-        if (IS_[cellI] > IS)
+        if (IS_[cellI] > parameter_.IS)
         {
             isTrouble_[cellI] = true;
-            count++;
+            parameter_.nTroubled++;
         }
     }
 }
@@ -63,10 +62,10 @@ else
     forAll(mesh_.cells(), cellI)
     {
         IS_[cellI] = rhoE_error[cellI]/(mesh_.cellCells()[cellI].size()*N_h_[cellI]*rhoE_max[cellI]);
-        if (IS_[cellI] > IS)
+        if (IS_[cellI] > parameter_.IS)
         {
             isTrouble_[cellI] = true;
-            count++;
+            parameter_.nTroubled++;
         }
     }
 }

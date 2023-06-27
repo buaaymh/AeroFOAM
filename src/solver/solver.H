@@ -126,7 +126,6 @@ public:
     void updateLTS()
     {
         scalar CFL = mesh_.solution().subDict("SOLVER").lookupOrDefault<scalar>("CFL", 1.0);
-        Info << "# Local Courant          [-] = " << CFL << endl;
         localDtDv_ = CFL/(volProjections_&(cmptMag(U_.primitiveField())+c_*vector::one));
     }
 

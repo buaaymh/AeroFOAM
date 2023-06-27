@@ -50,15 +50,14 @@ int main(int argc, char *argv[])
     const scalar k11_22 = (3.0-Foam::sqrt(3.0))/6.0;
     const scalar k21    = 1.0/Foam::sqrt(3.0);
     const scalar nCells = scalar(returnReduce(mesh.nCells(), sumOp<label>()));
+    const label innerIter = mesh.solution().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
+    const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
+    const scalar relTol = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
+    const scalar dt = runTime.deltaT().value();
+    const scalarField dt_dv(dt/mesh.V().field());
     
     while (runTime.run())
     {
-        const label innerIter = mesh.solution().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
-        const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
-        const scalar relTol = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
-        const scalar dt = runTime.deltaT().value();
-        const scalarField dt_dv(dt/mesh.V().field());
-
         runTime++;
         Info<< "Time = " << runTime.value() << " s" << nl << endl;
 
@@ -98,6 +97,7 @@ int main(int argc, char *argv[])
             }
         }
         Info << "LUSGS 1 converged in " << count << " iterations, and L1(dRho) = " << L1_deltaRho << endl;
+        Info << "----------------------------------------" << nl;
 
         // Stage 2
         count = 0;
@@ -124,6 +124,7 @@ int main(int argc, char *argv[])
             }
         }
         Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
+        Info << "----------------------------------------" << nl;
 
         solver->rho()  = rho_0  + 0.5 * dt_dv * (resRho_1 + resRho_2);
         solver->rhoU() = rhoU_0 + 0.5 * dt_dv * (resRhoU_1 + resRhoU_2);

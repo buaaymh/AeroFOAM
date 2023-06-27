@@ -18,7 +18,6 @@ void Foam::Reconstruction::iterationStep()
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
-        const scalarField& magSf = mesh_.boundary()[patchI].magSf();
         const word type = mesh_.boundary()[patchI].type();
         if (mesh_.boundary()[patchI].coupled())
         {
@@ -69,7 +68,7 @@ void Foam::Reconstruction::iterationStep()
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                const vector dp = (0.5/d_ij[faceI])*vector(vrWeightSqr_[0], 0, 0);
+                const vector dp = (0.5/d_ij[faceI])*vector(parameter_.vrWeightSqr[0], 0, 0);
                 Mat9X5 b = Mat9X5::Zero();
                 for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
@@ -97,7 +96,7 @@ void Foam::Reconstruction::iterationStep()
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
-                const vector dp = (0.5/d_ij[faceI])*vector(vrWeightSqr_[0], 0, 0);
+                const vector dp = (0.5/d_ij[faceI])*vector(parameter_.vrWeightSqr[0], 0, 0);
                 Mat9X5 b = Mat9X5::Zero();
                 for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
@@ -131,7 +130,7 @@ void Foam::Reconstruction::iterationStep()
     }
     /* Limiting coefficients of polynomials */
     limitCoefficients();
-
+    
     forAll(mesh_.boundary(), patchI)
     {
         if (mesh_.boundary()[patchI].coupled())

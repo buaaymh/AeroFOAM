@@ -46,6 +46,15 @@ Author
 namespace Foam
 {
 
+struct Parameter
+{
+    word   limiter;
+    vector vrWeightSqr;
+    label  nTroubled, nNegative;
+    scalar IS, np, nCells;
+    bool   indicator, positive, characteristic;
+};
+
 class Reconstruction
 {
     // Private Member Functions
@@ -67,7 +76,7 @@ protected:
     volVectorField& rhoU_;
     //- Energy
     volScalarField& rhoE_;
-    vector vrWeightSqr_;
+    Parameter parameter_;
     std::vector<bool> isTrouble_;
     std::vector<Mat9X5> coefs_;
     std::vector<Mat5X9> limitedCoefs_i_;
@@ -109,6 +118,8 @@ public:
         volVectorField& rhoU,
         volScalarField& rhoE
     );
+
+    const Parameter& parameter() { return parameter_; }
     
     void limitCoefficients();
 
