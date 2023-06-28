@@ -331,11 +331,4 @@ Foam::Cell::Cell
     {
         dists[i] = yWall - ((quadPoints[i]-mesh.C()[cellI])&nWall);
     }
-    // scalar vol = 0;
-    // for (label gaussI = 0; gaussI != size(); ++gaussI)
-    // {
-    //     vol += weight(gaussI);
-    //     Info << "point = " << at(gaussI) << ", d = " << distToWall(gaussI) << endl;
-    // }
-    // Info << mesh.V()[cellI] << " == " << vol << endl;
 }
