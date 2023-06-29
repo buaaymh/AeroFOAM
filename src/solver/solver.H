@@ -40,6 +40,7 @@ Author
 #include "processorFvPatch.H"
 #include "boundMinMax.H"
 #include "dbnsFlux.H"
+#include "rotor.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -94,6 +95,7 @@ protected:
     vectorField dRhoU_;
     //- Energy residual
     scalarField dRhoE_;
+    std::vector<Rotor> rotors_;
 
 public:
     // Constructors
@@ -160,6 +162,14 @@ public:
     ) = 0;
 
     virtual void correctFields();
+    
+    virtual void addMomentumSourceTerm
+    (
+        scalar time,
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE
+    );
 
 protected:
 

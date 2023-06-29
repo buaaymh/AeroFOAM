@@ -78,6 +78,10 @@ int main(int argc, char *argv[])
         {
             count++;
             solver->evaluateFlowRes(resRho_1, resRhoU_1, resRhoE_1);
+            if (fluidProps.withSourceTerm)
+            {
+                solver->addMomentumSourceTerm(runTime.value(), resRho_1, resRhoU_1, resRhoE_1);
+            }
             scalarField pseudoResRho((rho_0   - solver->rho()) /dt_dv + k11_22*resRho_1);
             vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_1);
             scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_1);
@@ -105,6 +109,10 @@ int main(int argc, char *argv[])
         {
             count++;
             solver->evaluateFlowRes(resRho_2, resRhoU_2, resRhoE_2);
+            if (fluidProps.withSourceTerm)
+            {
+                solver->addMomentumSourceTerm(runTime.value(), resRho_2, resRhoU_2, resRhoE_2);
+            }
             scalarField pseudoResRho((rho_0   - solver->rho())/dt_dv  + k11_22*resRho_2  + k21*resRho_1);
             vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_2 + k21*resRhoU_1);
             scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_2 + k21*resRhoE_1);

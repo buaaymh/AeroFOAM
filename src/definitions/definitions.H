@@ -33,11 +33,14 @@ Author
 #define definitions_H
 
 #include <array>
+#include <map>
 #include <memory>
 #include <vector>
 #include <Eigen/Dense>
 
 #include "fvCFD.H"
+#include "IOstreams.H"
+#include "IOmanip.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -89,6 +92,7 @@ using Mat9X9 = Eigen::Matrix<scalar, 9, 9>;
 
 struct fluidProperties
 {
+    bool withSourceTerm;
     word simulationType;
 
     scalar AOA,         /* Angle of attack */
@@ -176,6 +180,18 @@ void evaluateEigenMatrix
     const scalar& rhoE,
     const vector& normal
 );
+
+scalar deg2rad(scalar deg);
+
+scalar rad2deg(scalar rad);
+
+std::pair<scalar, scalar> cosSin(scalar deg);
+
+void rotateX(vector& y_unit, vector& z_unit, scalar deg);
+
+void rotateY(vector& x_unit, vector& z_unit, scalar deg);
+
+void rotateZ(vector& x_unit, vector& y_unit, scalar deg);
 
 } // End namespace Foam
 

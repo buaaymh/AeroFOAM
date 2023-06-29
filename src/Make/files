@@ -9,6 +9,7 @@ limiter/limiter.C
 element/element.C
 reconstruction/reconstruction.C
 reconstruction/reconstructionForSA.C
+aircraft/rotor.C
 solver/solver.C
 eulerSolver/eulerSolver.C
 eulerSolver/euler2ndSolver/euler2ndSolver.C

@@ -224,3 +224,41 @@ void Foam::evaluateEigenMatrix
         L.row(4) << -(U.y()-Vn*normal.y())*rnz, -normal.x()*normal.y()*rnz,  (1.0-sqr(normal.y()))*rnz, -normal.y(), 0;
     }
 }
+
+scalar Foam::deg2rad(scalar deg) { return deg * constant::mathematical::pi / 180; }
+
+scalar Foam::rad2deg(scalar rad) { return rad / constant::mathematical::pi * 180; }
+
+std::pair<scalar, scalar> Foam::cosSin(scalar deg)
+{
+    auto rad = deg2rad(deg);
+    return { Foam::cos(rad), Foam::sin(rad) };
+}
+
+
+void Foam::rotateX(vector& y_unit, vector& z_unit, scalar deg)
+{
+    auto con_sin = cosSin(deg);
+    vector new_y = y_unit * con_sin.first + z_unit * con_sin.second;
+    vector new_z = z_unit * con_sin.first - y_unit * con_sin.second;
+    y_unit = new_y;
+    z_unit = new_z;
+}
+
+void Foam::rotateY(vector& x_unit, vector& z_unit, scalar deg) 
+{
+    auto con_sin = cosSin(deg);
+    vector new_x = x_unit * con_sin.first + z_unit * con_sin.second;
+    vector new_z = z_unit * con_sin.first - x_unit * con_sin.second;
+    x_unit = new_x;
+    z_unit = new_z;
+}
+
+void Foam::rotateZ(vector& x_unit, vector& y_unit, scalar deg) 
+{
+    auto con_sin = cosSin(deg);
+    vector new_x = x_unit * con_sin.first + y_unit * con_sin.second;
+    vector new_y = y_unit * con_sin.first - x_unit * con_sin.second;
+    x_unit = new_x;
+    y_unit = new_y;
+}

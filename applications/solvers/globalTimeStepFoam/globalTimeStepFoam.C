@@ -56,6 +56,10 @@ int main(int argc, char *argv[])
 
         // Stage 1
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
+        if (fluidProps.withSourceTerm)
+        {
+            solver.addMomentumSourceTerm(runTime.value(), resRho, resRhoU, resRhoE);
+        }
         solver.rho()  = rho_0  + resRho  * dt_dv;
         solver.rhoU() = rhoU_0 + resRhoU * dt_dv;
         solver.rhoE() = rhoE_0 + resRhoE * dt_dv;
@@ -63,6 +67,10 @@ int main(int argc, char *argv[])
 
         // Stage 2
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
+        if (fluidProps.withSourceTerm)
+        {
+            solver.addMomentumSourceTerm(runTime.value(), resRho, resRhoU, resRhoE);
+        }
         solver.rho()  = 0.75 * rho_0  + 0.25 * (solver.rho()  + resRho  * dt_dv);
         solver.rhoU() = 0.75 * rhoU_0 + 0.25 * (solver.rhoU() + resRhoU * dt_dv);
         solver.rhoE() = 0.75 * rhoE_0 + 0.25 * (solver.rhoE() + resRhoE * dt_dv);
@@ -70,6 +78,10 @@ int main(int argc, char *argv[])
 
         // Stage 3
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
+        if (fluidProps.withSourceTerm)
+        {
+            solver.addMomentumSourceTerm(runTime.value(), resRho, resRhoU, resRhoE);
+        }
         solver.rho()  = 1.0/3 * rho_0  + 2.0/3 * (solver.rho()  + resRho  * dt_dv);
         solver.rhoU() = 1.0/3 * rhoU_0 + 2.0/3 * (solver.rhoU() + resRhoU * dt_dv);
         solver.rhoE() = 1.0/3 * rhoE_0 + 2.0/3 * (solver.rhoE() + resRhoE * dt_dv);

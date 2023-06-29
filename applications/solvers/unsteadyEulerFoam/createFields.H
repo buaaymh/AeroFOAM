@@ -13,6 +13,7 @@ IOdictionary testDict
 fluidProperties fluidProps;
 
 testDict.lookup("simulationType") >> fluidProps.simulationType;
+fluidProps.withSourceTerm = testDict.lookupOrDefault<bool>("withSourceTerm", false);
 
 Info << "=================Fluid Properties===================" << nl
      << "simulationType: "  << fluidProps.simulationType << nl
