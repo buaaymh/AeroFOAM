@@ -170,7 +170,6 @@ void Foam::Rotor::updateSections(scalar time)
     projectedCells_.clear();
     sections_.clear();
     procNo_ = labelList(nPoints_*nLines_, 0);
-    force_ = vectorField(nPoints_*nLines_, vector::zero);
     scalar dAngle = 360.0/nLines_;
     vector x_unit(1, 0, 0), y_unit(0, 1, 0), z_unit(0, 0, 1);
     rotateX(y_unit, z_unit, rotate_.x());

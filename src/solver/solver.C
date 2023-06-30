@@ -274,6 +274,7 @@ void Foam::solver::addMomentumSourceTerm
     for (auto& rotor : rotors_)
     {
         if (mag(time - rotor.t_current_) > 1e-10) rotor.updateSections(time);
+        rotor.force_ = vectorField(rotor.force_.size(), vector::zero);
         for (const auto& [sectionI, section] : rotor.sections_)
         {
             if (rotor.procNo_[sectionI] == Pstream::myProcNo())
