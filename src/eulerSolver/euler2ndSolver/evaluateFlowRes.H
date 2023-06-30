@@ -26,8 +26,8 @@ void Foam::euler2ndSolver::evaluateFlowRes
         const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
         const scalar rho_i = rho_[i] + (rhoGrad_[i]&delta_i)*rhoLimit_[i];
         const scalar rho_j = rho_[j] + (rhoGrad_[j]&delta_j)*rhoLimit_[j];
-        const vector U_i = U_[i] + cmptMultiply(UGrad_[i]&delta_i, ULimit_[i]);;
-        const vector U_j = U_[j] + cmptMultiply(UGrad_[j]&delta_j, ULimit_[j]);;
+        const vector U_i = U_[i] + cmptMultiply(UGrad_[i]&delta_i, ULimit_[i]);
+        const vector U_j = U_[j] + cmptMultiply(UGrad_[j]&delta_j, ULimit_[j]);
         const scalar p_i = p_[i] + (pGrad_[i]&delta_i)*pLimit_[i];
         const scalar p_j = p_[j] + (pGrad_[j]&delta_j)*pLimit_[j];
         riemann_->evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux,
