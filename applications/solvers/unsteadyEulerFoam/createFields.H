@@ -78,6 +78,9 @@ volScalarField p
     mesh
 );
 
+std::unique_ptr<ActuationSource> actuationSource;
+if (fluidProps.withSourceTerm) actuationSource = std::make_unique<ActuationSource>(mesh);
+
 Info << "====================================================" << endl;
 
 std::unique_ptr<solver> solver;

@@ -38,9 +38,9 @@ Author
 #include "emptyFvPatch.H"
 #include "cyclicFvPatch.H"
 #include "processorFvPatch.H"
+#include "actuationSource.H"
 #include "boundMinMax.H"
 #include "dbnsFlux.H"
-#include "rotor.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -95,7 +95,6 @@ protected:
     vectorField dRhoU_;
     //- Energy residual
     scalarField dRhoE_;
-    std::vector<Rotor> rotors_;
 
 public:
     // Constructors
@@ -163,13 +162,25 @@ public:
 
     virtual void correctFields();
     
-    virtual void addMomentumSourceTerm
+    void addMomentumSourceTerm
     (
-        scalar time,
+        ActuationSource* actuationSource,
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
     );
+
+    virtual void evaluateRhoUForForce
+    (
+        scalar& rho,
+        vector& U,
+        const vector& coord,
+        const label& cellI
+    )
+    {
+        rho = rho_[cellI];
+        U = U_[cellI];
+    }
 
 protected:
 

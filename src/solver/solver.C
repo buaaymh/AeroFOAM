@@ -108,18 +108,6 @@ Foam::solver::solver
         riemann_ = std::make_unique<roeFlux>();
     }
     volProjectionsInit();
-    if (fluidProps_.withSourceTerm)
-    {
-        forAll(mesh_.cellZones(), zoneI)
-        {
-            const word name = mesh_.cellZones()[zoneI].name();
-            if (mesh_.solution().isDict(name))
-            {
-                Pout << "# Install a rotor in Zone " << name << endl;
-                rotors_.emplace_back(name, mesh_);
-            }
-        }
-    }
 }
 
 void Foam::solver::volProjectionsInit()
@@ -254,37 +242,36 @@ void Foam::solver::correctFields()
 
 void Foam::solver::addMomentumSourceTerm
 (
-    scalar time,
+    ActuationSource* actuationSource,
     scalarField& resRho,
     vectorField& resRhoU,
     scalarField& resRhoE
 )
 {
-    volVectorField VolumeForce
-    (
-        IOobject
-        (
-            "VolumeForce",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless, vector::zero)
-    );
-    for (auto& rotor : rotors_)
+    actuationSource->VolumeForce_ = vector::zero;
+    for (auto& rotor : actuationSource->rotors_)
     {
-        if (mag(time - rotor.t_current_) > 1e-10) rotor.updateSections(time);
+        if (mag(mesh_.time().value() - rotor.t_current_) > 1e-10) rotor.updateSections(mesh_.time().value());
         rotor.force_ = vectorField(rotor.force_.size(), vector::zero);
+        scalar rho_actuator;
+        vector U_actuator;
         for (const auto& [sectionI, section] : rotor.sections_)
         {
             if (rotor.procNo_[sectionI] == Pstream::myProcNo())
             {
+                evaluateRhoUForForce
+                (
+                    rho_actuator,
+                    U_actuator,
+                    rotor.coords_[sectionI],
+                    section.adjCell
+                );
                 rotor.force_[sectionI]
                 =
                 rotor.getForce
                 (
-                    rho_[section.adjCell],
-                    U_[section.adjCell],
+                    rho_actuator,
+                    U_actuator,
                     section
                 );
             }
@@ -296,12 +283,16 @@ void Foam::solver::addMomentumSourceTerm
             {
                 label i = cells[cellI];
                 scalar d2 = magSqr(rotor.coords_[pointI] - mesh_.C()[i]);
-                VolumeForce[i] += rotor.force_[pointI]*rotor.getProjectedWeight(d2);
+                actuationSource->VolumeForce_[i]
+                +=
+                rotor.force_[pointI]*rotor.getProjectedWeight(d2);
             }
         }
     }
-    resRhoU += VolumeForce.primitiveField() * mesh_.V();
-    resRhoE += rho_.primitiveField()*(VolumeForce.primitiveField()&U_.primitiveField()) * mesh_.V();
+    resRhoU += actuationSource->VolumeForce_.primitiveField() * mesh_.V();
+    resRhoE += rho_.primitiveField()
+             * (actuationSource->VolumeForce_.primitiveField()&U_.primitiveField())
+             * mesh_.V();
 }
 
 // ************************************************************************* //

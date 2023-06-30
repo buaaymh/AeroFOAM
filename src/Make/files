@@ -10,6 +10,7 @@ element/element.C
 reconstruction/reconstruction.C
 reconstruction/reconstructionForSA.C
 aircraft/rotor.C
+aircraft/actuationSource.C
 solver/solver.C
 eulerSolver/eulerSolver.C
 eulerSolver/euler2ndSolver/euler2ndSolver.C
