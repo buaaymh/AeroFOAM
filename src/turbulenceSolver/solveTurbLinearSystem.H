@@ -13,6 +13,23 @@ void Foam::turbulenceSolver::solveTurbLinearSystemByLUSGS
     correctTurbulenceFields();
 }
 
+void Foam::turbulenceSolver::solveTurbPseudoTimeSystem
+(
+    const scalar& dt,
+    const scalar& alpha,
+    const scalarField& resNuTilda
+)
+{
+    updateLTS();
+    scalarField L(mesh_.nInternalFaces());
+    scalarField U(mesh_.nInternalFaces());
+    scalarField D(1.0/localDtDv_ + mesh_.V().field()/dt);
+    evaluateTurbLDU(alpha, L, U, D);
+    precondition(L, U, D, resNuTilda, dNuTilda_);
+    nuTilda_.primitiveFieldRef() += dNuTilda_;
+    correctTurbulenceFields();
+}
+
 void Foam::turbulenceSolver::solveTurbLinearSystemByGMRES
 (
     const scalarField& resNuTilda

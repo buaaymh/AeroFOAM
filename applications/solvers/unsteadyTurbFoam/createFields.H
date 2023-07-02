@@ -13,18 +13,17 @@ IOdictionary testDict
 fluidProperties fluidProps;
 
 testDict.lookup("simulationType") >> fluidProps.simulationType;
-
-fluidProps.gamma = testDict.lookupOrDefault<scalar>("gamma", 1.4);
+fluidProps.withSourceTerm = testDict.lookupOrDefault<bool>("withSourceTerm", false);
 
 Info << "=================Fluid Properties===================" << nl
      << "simulationType: "  << fluidProps.simulationType << nl
-     << "gamma:          "  << fluidProps.gamma << nl
      << "====================================================" << endl;
 
 const dictionary& freeStream = testDict.subDict("freeStream");
 fluidProps.AOA = freeStream.lookup<scalar>("AOA");
-fluidProps.Mach_inf = freeStream.lookup<scalar>("Mach");
-fluidProps.T_inf = freeStream.lookup<scalar>("T");
+fluidProps.Mach_inf = freeStream.lookupOrDefault<scalar>("Mach", 1.0);
+fluidProps.Re_inf = freeStream.lookupOrDefault<scalar>("Re", 10000);
+fluidProps.T_inf = freeStream.lookupOrDefault<scalar>("T", 288);
 fluidProps.p_inf = freeStream.lookupOrDefault<scalar>("Pressure", 101325.0);
 
 Info << "===============Free-stream Definition================" << nl
@@ -79,12 +78,12 @@ volScalarField p
     mesh
 );
 
-Info<< "Reading field nuTilde" << endl;
-volScalarField nuTilde
+Info<< "Reading field nuTilda" << endl;
+volScalarField nuTilda
 (
     IOobject
     (
-        "nuTilde",
+        "nuTilda",
         runTime.timeName(),
         mesh,
         IOobject::MUST_READ,
@@ -92,28 +91,21 @@ volScalarField nuTilde
     ),
     mesh
 );
-rho.correctBoundaryConditions();
-U.correctBoundaryConditions();
-p.correctBoundaryConditions();
-nuTilde.correctBoundaryConditions();
+
+std::unique_ptr<ActuationSource> actuationSource;
+if (fluidProps.withSourceTerm) actuationSource = std::make_unique<ActuationSource>(mesh);
 
 Info << "====================================================" << endl;
 
-turb3rdSolver solver
-(
-    fluidProps,
-    rho,
-    U,
-    p,
-    nuTilde
-);
-solver.correctFields();
+std::unique_ptr<turbulenceSolver> solver;
+label order = mesh.schemes().lookup<label>("order");
+
+if (order == 2) solver = std::make_unique<turbulence2ndSolver>(fluidProps, rho, U, p, nuTilda);
+else if (order == 3) solver = std::make_unique<turbulence3rdSolver>(fluidProps, rho, U, p, nuTilda);
+
+solver->correctFields();
 // Resident
 scalarField resRho_1(mesh.nCells());
 vectorField resRhoU_1(mesh.nCells());
 scalarField resRhoE_1(mesh.nCells());
-scalarField resNuTilde_1(mesh.nCells());
-// L, U, D
-scalarField L_turb(mesh.nInternalFaces());
-scalarField U_turb(mesh.nInternalFaces());
-scalarField D_turb(mesh.nCells());
+scalarField resNuTilda_1(mesh.nCells());

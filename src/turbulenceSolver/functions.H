@@ -128,11 +128,10 @@ void Foam::turbulenceSolver::evaluateTurbLDU
             }
         }
     }
-    const volScalarField& y = wallDist::New(mesh_).y();
     forAll(mesh_.C(), cellI)
     {
         const scalar Omega = mag(vorticity(UGrad_[cellI]));
-        scalar source_Jacobian = evaluateSourceJacobian(y[cellI], Omega, nuLam_[cellI], nuTilda_[cellI], mesh_.V()[cellI]);
+        scalar source_Jacobian = evaluateSourceJacobian(dist_[cellI], Omega, nuLam_[cellI], nuTilda_[cellI], mesh_.V()[cellI]);
         D[cellI] -= 0.5*alpha*(source_Jacobian-mag(source_Jacobian));
     }
 }

@@ -93,6 +93,14 @@ public:
         scalarField& resRhoE,
         scalarField& resNuTilda
     );
+    
+    virtual void evaluateRhoUForForce
+    (
+        scalar& rho,
+        vector& U,
+        const vector& coord,
+        const label& cellI
+    );
 
 };
 

@@ -58,7 +58,7 @@ namespace SA
     static constexpr scalar Cn1 = 16.0;
     static constexpr scalar Ct3 = 1.2;
     static constexpr scalar Ct4 = 0.5;
-
+    static constexpr scalar constDES = 0.65;
 }
 
 class turbulenceSolver: public navierStokesSolver
@@ -78,10 +78,14 @@ class turbulenceSolver: public navierStokesSolver
         volScalarField muTurb_;
         //- nuTilda grad
         volVectorField nuTildaGrad_;
-        //- nuTilda limit
-        volScalarField nuTildaLimit_;
+        //- vorticity
+        volVectorField Omega_;
         //- nuTilda residual
         scalarField dNuTilda_;
+        //- wall distance
+        scalarField dist_;
+        //- DES distance
+        scalarField maxDelta_;
 
 public:
     // Constructors
@@ -98,6 +102,10 @@ public:
     virtual ~turbulenceSolver() {};
 
     // Member Functions
+    const scalarField& nuTilda()  const { return nuTilda_.primitiveFieldRef(); }
+
+    scalarField& nuTilda()  { return nuTilda_.primitiveFieldRef(); }
+
     const scalarField& dNuTilda()  const { return dNuTilda_; }
 
     virtual void evaluateFlowRes
@@ -127,6 +135,13 @@ public:
 
     void solveTurbLinearSystemByGMRES
     (
+        const scalarField& resNuTilda
+    );
+    
+    virtual void solveTurbPseudoTimeSystem
+    (
+        const scalar& dt,
+        const scalar& alpha,
         const scalarField& resNuTilda
     );
     

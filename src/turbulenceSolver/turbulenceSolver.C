@@ -69,19 +69,42 @@ Foam::turbulenceSolver::turbulenceSolver
         mesh_,
         dimensionedVector(dimless/dimLength, vector::zero)
     ),
-    nuTildaLimit_
+    Omega_
     (
         IOobject
         (
-            "nuTildaLimit",
+            "vorticity",
             mesh_.time().timeName(),
-            mesh_
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
         ),
         mesh_,
-        dimensionedScalar(dimless, 1)
+        dimensionedVector(dimless/dimLength, vector::zero)
     ),
-    dNuTilda_(scalarField(mesh_.nCells()))
-{}
+    dNuTilda_(scalarField(mesh_.nCells())),
+    maxDelta_(scalarField(mesh_.nCells()))
+{
+    dist_ = wallDist::New(mesh_).y().primitiveField();
+    if (fluidProps.simulationType == "DES")
+    {
+        forAll(mesh_.C(), cellI)
+        {
+            scalar deltaMaxTmp = 0.0;
+            const labelList& cFaces = mesh_.cells()[cellI];
+            const point& centrevector = mesh_.C()[cellI];
+            forAll(cFaces, faceI)
+            {
+                label facei = cFaces[faceI];
+                const point& facevector = mesh_.Cf()[facei];
+                scalar tmp = mag(facevector - centrevector);
+                deltaMaxTmp = max(tmp, deltaMaxTmp);
+            }
+            maxDelta_[cellI] = deltaMaxTmp;
+        }
+        dist_ = min(dist_, maxDelta_*SA::constDES);
+    }
+}
 
 void Foam::turbulenceSolver::correctTurbulenceFields()
 {
@@ -108,6 +131,8 @@ void Foam::turbulenceSolver::correctFields()
 {
     navierStokesSolver::correctFields();
     correctTurbulenceFields();
+    UGrad_ = fvc::grad(U_);
+    forAll(mesh_.C(), cellI) Omega_[cellI] = vorticity(UGrad_[cellI]);
 }
 
 #include "functions.H"

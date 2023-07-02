@@ -30,8 +30,9 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "solver.H"
-#include "turb3rdSolver.H"
+#include "turbulenceSolver.H"
+#include "turbulence2ndSolver.H"
+#include "turbulence3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -46,26 +47,29 @@ int main(int argc, char *argv[])
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    const scalar k11_22 = (3.0 - Foam::sqrt(3.0)) / 6.0;
-
-    const label innerIter = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
-    const scalar tolerance = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
-    const scalar relTol = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
+    const scalar k11_22 = (3.0-Foam::sqrt(3.0))/6.0;
+    const scalar k21    = 1.0/Foam::sqrt(3.0);
+    const scalar nCells = scalar(returnReduce(mesh.nCells(), sumOp<label>()));
+    const label innerIter = mesh.solution().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
+    const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
+    const scalar relTol = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
+    const scalar dt = runTime.deltaT().value();
+    const scalarField dt_dv(dt/mesh.V().field());
     
     while (runTime.run())
     {
-        const scalar dt = runTime.deltaT().value();
-        const scalarField dt_dv(dt/mesh.V().field());
+        runTime++;
+        Info<< "Time = " << runTime.value() << " s" << nl << endl;
 
-        scalarField rho_0(solver.rho());
-        vectorField rhoU_0(solver.rhoU());
-        scalarField rhoE_0(solver.rhoE());
-        scalarField nuTilde_0(solver.nuTilde());
+        scalarField rho_0(solver->rho());
+        vectorField rhoU_0(solver->rhoU());
+        scalarField rhoE_0(solver->rhoE());
+        scalarField nuTilda_0(solver->nuTilda());
 
         scalarField resRho_2(resRho_1);
         vectorField resRhoU_2(resRhoU_1);
         scalarField resRhoE_2(resRhoE_1);
-        scalarField resNuTilde_2(resNuTilde_1);
+        scalarField resNuTilda_2(resNuTilda_1);
 
         scalar L1_deltaRho_0 = 0.0;
         scalar L1_deltaRho   = 0.0;
@@ -75,73 +79,75 @@ int main(int argc, char *argv[])
         for (int i = 0; i < innerIter; ++i)
         {
             count++;
-            solver.evaluateFlowRes(resRho_1, resRhoU_1, resRhoE_1);
-            solver.evaluateTurbRes(resNuTilde_1, L_turb, U_turb, D_turb);
-            scalarField pseudoResRho((rho_0 - solver.rho())/dt_dv    + k11_22* resRho_1);
-            vectorField pseudoResRhoU((rhoU_0 - solver.rhoU())/dt_dv + k11_22*resRhoU_1);
-            scalarField pseudoResRhoE((rhoE_0 - solver.rhoE())/dt_dv + k11_22*resRhoE_1);
-            scalarField pseudoResNuTilde((nuTilde_0 - solver.nuTilde())/dt_dv + k11_22* resNuTilde_1);
+            solver->evaluateFlowRes(resRho_1, resRhoU_1, resRhoE_1, resNuTilda_1);
+            if (fluidProps.withSourceTerm)
+            {
+                solver->addMomentumSourceTerm(actuationSource.get(), resRho_1, resRhoU_1, resRhoE_1);
+            }
+            scalarField pseudoResRho((rho_0   - solver->rho()) /dt_dv + k11_22*resRho_1);
+            vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_1);
+            scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_1);
+            scalarField pseudoResNuTilda((nuTilda_0 - solver->nuTilda())/dt_dv + k11_22* resNuTilda_1);
             if (i == 0)
             {
-                solver.solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
-                solver.solveTurbPseudoTimeSystem(dt, k11_22, pseudoResNuTilde, L_turb, U_turb, D_turb);
-                solver.correctFields();
-                if (L1_deltaRho_0 < tolerance)
-                {
-                    L1_deltaRho = L1_deltaRho_0;
-                    break;
-                }
+                solver->solveTurbPseudoTimeSystem(dt, k11_22, pseudoResNuTilda);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
+                solver->correctFields();
+                L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
+                if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
             {
-                solver.solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
-                solver.solveTurbPseudoTimeSystem(dt, k11_22, pseudoResNuTilde, L_turb, U_turb, D_turb);
-                solver.correctFields();
+                solver->solveTurbPseudoTimeSystem(dt, k11_22, pseudoResNuTilda);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
+                solver->correctFields();
+                L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
                 if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
             }
         }
-        Info << "LUSGS 1 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
+        Info << "LUSGS 1 converged in " << count << " iterations, and L1(dRho) = " << L1_deltaRho << endl;
+        Info << "----------------------------------------" << nl;
 
         // Stage 2
         count = 0;
         for (int i = 0; i < innerIter; ++i)
         {
             count++;
-            solver.evaluateFlowRes(resRho_2, resRhoU_2, resRhoE_2);
-            solver.evaluateTurbRes(resNuTilde_2, L_turb, U_turb, D_turb);
-            scalarField pseudoResRho((rho_0 - solver.rho())/dt_dv    + k11_22*(resRho_1+resRho_2));
-            vectorField pseudoResRhoU((rhoU_0 - solver.rhoU())/dt_dv + k11_22*(resRhoU_1+resRhoU_2));
-            scalarField pseudoResRhoE((rhoE_0 - solver.rhoE())/dt_dv + k11_22*(resRhoE_1+resRhoE_2));
-            scalarField pseudoResNuTilde((nuTilde_0 - solver.nuTilde())/dt_dv + k11_22*(resNuTilde_1+resNuTilde_2));
+            solver->evaluateFlowRes(resRho_2, resRhoU_2, resRhoE_2, resNuTilda_2);
+            if (fluidProps.withSourceTerm)
+            {
+                solver->addMomentumSourceTerm(actuationSource.get(), resRho_2, resRhoU_2, resRhoE_2);
+            }
+            scalarField pseudoResRho((rho_0   - solver->rho())/dt_dv  + k11_22*resRho_2  + k21*resRho_1);
+            vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_2 + k21*resRhoU_1);
+            scalarField pseudoResRhoE((rhoE_0 - solver->rhoE())/dt_dv + k11_22*resRhoE_2 + k21*resRhoE_1);
+            scalarField pseudoResNuTilda((nuTilda_0 - solver->nuTilda())/dt_dv + k11_22*resNuTilda_2 + k21*resNuTilda_1);
             if (i == 0)
             {
-                solver.solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho_0);
-                solver.solveTurbPseudoTimeSystem(dt, k11_22, pseudoResNuTilde, L_turb, U_turb, D_turb);
-                solver.correctFields();
-                if (L1_deltaRho_0 < tolerance)
-                {
-                    L1_deltaRho = L1_deltaRho_0;
-                    break;
-                }
+                solver->solveTurbPseudoTimeSystem(dt, k11_22, pseudoResNuTilda);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
+                solver->correctFields();
+                L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
+                if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
             {
-                solver.solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE, L1_deltaRho);
-                solver.solveTurbPseudoTimeSystem(dt, k11_22, pseudoResNuTilde, L_turb, U_turb, D_turb);
-                solver.correctFields();
-                if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance) break;
+                solver->solveTurbPseudoTimeSystem(dt, k11_22, pseudoResNuTilda);
+                solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
+                solver->correctFields();
+                L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
+                if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
             }
         }
         Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
+        Info << "----------------------------------------" << nl;
 
-        solver.rho()     = rho_0     + 0.5 * dt_dv * (resRho_1    + resRho_2);
-        solver.rhoU()    = rhoU_0    + 0.5 * dt_dv * (resRhoU_1   + resRhoU_2);
-        solver.rhoE()    = rhoE_0    + 0.5 * dt_dv * (resRhoE_1   + resRhoE_2);
-        solver.nuTilde() = nuTilde_0 + 0.5 * dt_dv * (resNuTilde_1+ resNuTilde_2);
+        solver->rho()  = rho_0  + 0.5 * dt_dv * (resRho_1 + resRho_2);
+        solver->rhoU() = rhoU_0 + 0.5 * dt_dv * (resRhoU_1 + resRhoU_2);
+        solver->rhoE() = rhoE_0 + 0.5 * dt_dv * (resRhoE_1 + resRhoE_2);
+        solver->nuTilda() = nuTilda_0 + 0.5 * dt_dv * (resNuTilda_1+ resNuTilda_2);
         
-        runTime++;
-        Info<< "Time = " << runTime.value() << " s" << nl;
-        solver.correctFields();
+        solver->correctFields();
         runTime.write();
 	
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"

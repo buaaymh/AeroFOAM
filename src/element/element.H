@@ -510,6 +510,11 @@ public:
 
     const scalar& distToWall(label i) const { return dists[i]; };
 
+    void modifyDistToWallForDES(scalar distDES)
+    {
+         for (auto& dist : dists) dist = min(dist, distDES);
+    }
+
     scalar weight(label i) const { return weights[i]; };
     
     const vector& at(label i) const { return quadPoints[i]; };

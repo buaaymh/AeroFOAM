@@ -40,12 +40,39 @@ Foam::turbulence3rdSolver::turbulence3rdSolver
     turbulenceSolver(fluidProps, rho, U, p, nuTilda),
     ReconstructionForSA(fluidProps, rho, rhoU_, rhoE_, nuTilda)
 
-{}
+{
+    if (fluidProps.simulationType == "DES")
+    {
+        forAll(mesh_.C(), cellI)
+        {
+            cellQuad_[cellI].modifyDistToWallForDES(maxDelta_[cellI]*SA::constDES);
+        }
+    }
+}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 #include "evaluateFlowRes.H"
 
 #include "functions.H"
+
+void Foam::turbulence3rdSolver::evaluateRhoUForForce
+(
+    scalar& rho,
+    vector& U,
+    const vector& coord,
+    const label& cellI
+)
+{
+    scalar rhoE; vector rhoU;
+    const vector delta = coord - mesh_.C()[cellI];
+    evaluateVars
+    (
+        rho, rhoU, rhoE,
+        rho_[cellI], rhoU_[cellI], rhoE_[cellI], coefs_[cellI],
+        basisMean_[cellI], rDeltaXYZ_[cellI], delta
+    );
+    U = rhoU/rho;
+}
 
 // ************************************************************************* //

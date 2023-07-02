@@ -67,4 +67,17 @@ Foam::turbulence2ndSolver::turbulence2ndSolver
 
 #include "evaluateFlowRes.H"
 
+void Foam::turbulence2ndSolver::evaluateRhoUForForce
+(
+    scalar& rho,
+    vector& U,
+    const vector& coord,
+    const label& cellI
+)
+{
+    const vector delta = coord - mesh_.C()[cellI];
+    rho = rho_[cellI] + (rhoGrad_[cellI]&delta)*rhoLimit_[cellI];
+    U   = U_[cellI] + cmptMultiply(UGrad_[cellI]&delta, ULimit_[cellI]);
+}
+
 // ************************************************************************* //

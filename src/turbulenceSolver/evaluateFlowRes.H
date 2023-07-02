@@ -6,7 +6,6 @@ void Foam::turbulenceSolver::evaluateFlowResForGMRES
 )
 {
     eulerSolver::evaluateFlowResForGMRES(resRho, resRhoU, resRhoE);
-    UGrad_   = fvc::grad(U_);
     TGrad_   = fvc::grad(T_);
     forAll(mesh_.owner(), faceI)
     {

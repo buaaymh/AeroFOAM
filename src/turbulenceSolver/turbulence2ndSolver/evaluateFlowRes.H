@@ -6,7 +6,6 @@ void Foam::turbulence2ndSolver::evaluateFlowRes
 )
 {
     rhoGrad_ = fvc::grad(rho_);
-    UGrad_   = fvc::grad(U_);
     pGrad_   = fvc::grad(p_);
     TGrad_   = fvc::grad(T_);
     const word limiter = mesh_.schemes().subDict("gradSchemes").lookupOrDefault<word>("Limiter", "Venkat");
