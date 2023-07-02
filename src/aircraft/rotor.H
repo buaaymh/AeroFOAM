@@ -57,6 +57,7 @@ class Rotor
 
 public:
     //- Reference to mesh
+    word name_;
     const fvMesh& mesh_;
     label zoneI_;
     scalar t_current_;

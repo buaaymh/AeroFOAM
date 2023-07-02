@@ -31,6 +31,7 @@ Foam::Rotor::Rotor
     const fvMesh& mesh
 )
 :
+    name_(name),
     mesh_(mesh),
     t_current_(0.0)
 {
@@ -84,7 +85,7 @@ Foam::Rotor::Rotor
         {
             coords_[i] = origin_ + y_value * y_unit;
             std::vector<scalar> coord{coords_[i][0], coords_[i][1], coords_[i][2]};
-            auto neighIds = tree_->neighborhood_indices(coord, 2.63*width_);
+            auto neighIds = tree_->neighborhood_indices(coord, 2.15*width_);
             if (!neighIds.empty())
             {
                 for (auto& id : neighIds) id = mesh_.cellZones()[zoneI_][id];
