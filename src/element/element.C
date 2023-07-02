@@ -316,9 +316,7 @@ void Foam::build2ndCell
 Foam::Cell::Cell
 (
     const fvMesh& mesh,
-    const label& cellI,
-    const scalar& yWall,
-    const vector& nWall
+    const label& cellI
 )
 {
     const label nNodes = mesh.cellShapes()[cellI].size();
@@ -326,9 +324,4 @@ Foam::Cell::Cell
     else if (nNodes == 6) gaussPrism6(mesh, cellI, weights, quadPoints);
     else if (nNodes == 4) gaussTetra4(mesh, cellI, weights, quadPoints);
     else Info << "Wrong element type!" << endl;
-    dists.resize(nNodes);
-    for (label i = 0; i != nNodes; ++i)
-    {
-        dists[i] = yWall - ((quadPoints[i]-mesh.C()[cellI])&nWall);
-    }
 }

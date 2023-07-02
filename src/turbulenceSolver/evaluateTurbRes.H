@@ -5,7 +5,6 @@ void Foam::turbulenceSolver::evaluateTurbRes
 {
     resNuTilda  = scalarField(mesh_.nCells(), 0.0);
     nuTildaGrad_ = fvc::grad(nuTilda_);
-    nuLam_ = muLam_/rho_;
     forAll(mesh_.owner(), faceI)
     {
         scalar nuTildaFlux = 0;

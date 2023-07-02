@@ -113,14 +113,6 @@ public:
         scalarField& resRho,
         vectorField& resRhoU,
         scalarField& resRhoE
-    );
-
-    virtual void evaluateFlowRes
-    (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
-        scalarField& resNuTilda
     ) = 0;
 
     virtual void evaluateTurbRes

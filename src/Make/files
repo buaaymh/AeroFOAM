@@ -8,7 +8,6 @@ bound/boundMinMax.C
 limiter/limiter.C
 element/element.C
 reconstruction/reconstruction.C
-reconstruction/reconstructionForSA.C
 aircraft/rotor.C
 aircraft/actuationSource.C
 solver/solver.C

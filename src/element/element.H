@@ -500,20 +500,11 @@ public:
     Cell
     (
         const fvMesh& mesh,
-        const label& cellI, 
-        const scalar& yWall,
-        const vector& nWall
+        const label& cellI
     );
 
     // Member Functions
     label size() const { return weights.size(); };
-
-    const scalar& distToWall(label i) const { return dists[i]; };
-
-    void modifyDistToWallForDES(scalar distDES)
-    {
-         for (auto& dist : dists) dist = min(dist, distDES);
-    }
 
     scalar weight(label i) const { return weights[i]; };
     
@@ -521,7 +512,6 @@ public:
     
 private:
     std::vector<scalar> weights;
-    std::vector<scalar> dists;
     std::vector<vector> quadPoints;
 };
 

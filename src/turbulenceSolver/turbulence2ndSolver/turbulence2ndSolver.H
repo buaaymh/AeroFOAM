@@ -86,14 +86,6 @@ public:
         scalarField& resRhoE
     );
     
-    virtual void evaluateFlowRes
-    (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE,
-        scalarField& resNuTilda
-    );
-    
     virtual void evaluateRhoUForForce
     (
         scalar& rho,

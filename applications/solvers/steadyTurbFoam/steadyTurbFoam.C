@@ -58,7 +58,8 @@ int main(int argc, char *argv[])
         Info << "========================================" << nl;
         Info << "# " << method << " # Iteration Step = " << runTime.value() << endl;
         Info << "========================================" << nl;
-        solver->evaluateFlowRes(resRho, resRhoU, resRhoE, resNuTilda);
+        solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
+        solver->evaluateTurbRes(resNuTilda);
         Info << "# Local Courant          [-] = " << CFL << endl;
         Info << "----------------------------------------" << nl;
 

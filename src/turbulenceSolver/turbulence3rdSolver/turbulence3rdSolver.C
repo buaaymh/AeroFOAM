@@ -38,17 +38,8 @@ Foam::turbulence3rdSolver::turbulence3rdSolver
 )
 :
     turbulenceSolver(fluidProps, rho, U, p, nuTilda),
-    ReconstructionForSA(fluidProps, rho, rhoU_, rhoE_, nuTilda)
-
-{
-    if (fluidProps.simulationType == "DES")
-    {
-        forAll(mesh_.C(), cellI)
-        {
-            cellQuad_[cellI].modifyDistToWallForDES(maxDelta_[cellI]*SA::constDES);
-        }
-    }
-}
+    Reconstruction(fluidProps, rho, rhoU_, rhoE_)
+{}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
