@@ -161,26 +161,6 @@ public:
     ) = 0;
 
     virtual void correctFields();
-    
-    void addMomentumSourceTerm
-    (
-        ActuationSource* actuationSource,
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE
-    );
-
-    virtual void evaluateRhoUForForce
-    (
-        scalar& rho,
-        vector& U,
-        const vector& coord,
-        const label& cellI
-    )
-    {
-        rho = rho_[cellI];
-        U = U_[cellI];
-    }
 
 protected:
 

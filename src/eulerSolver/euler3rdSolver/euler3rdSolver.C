@@ -77,23 +77,4 @@ void Foam::euler3rdSolver::evaluateFlux
 
 #include "evaluateFlowRes.H"
 
-void Foam::euler3rdSolver::evaluateRhoUForForce
-(
-    scalar& rho,
-    vector& U,
-    const vector& coord,
-    const label& cellI
-)
-{
-    scalar rhoE; vector rhoU;
-    const vector delta = coord - mesh_.C()[cellI];
-    evaluateVars
-    (
-        rho, rhoU, rhoE,
-        rho_[cellI], rhoU_[cellI], rhoE_[cellI], coefs_[cellI],
-        basisMean_[cellI], rDeltaXYZ_[cellI], delta
-    );
-    U = rhoU/rho;
-}
-
 // ************************************************************************* //

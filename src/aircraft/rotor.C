@@ -56,7 +56,6 @@ Foam::Rotor::Rotor
     scalarField minDist2Local(nPoints_*nLines_, GREAT);
     // Initialize Sections
     procNo_ = labelList(nPoints_*nLines_, 0);
-    force_ = vectorField(nPoints_*nLines_, vector::zero);
         
     // Build KDTree
     zoneI_ = mesh_.cellZones().findZoneID(name);
@@ -68,7 +67,10 @@ Foam::Rotor::Rotor
     {   
         vector point = mesh_.C()[cellListOfZone[cellI]];
         if (cellListOfZone[cellI] >= 0)
+        {
             points.push_back(std::vector<scalar>{point[0], point[1], point[2]});
+            cells_[cellListOfZone[cellI]] = Cell(mesh_, cellListOfZone[cellI]);
+        }
     }
     tree_ = std::make_unique<KDTree>(points);
 
@@ -115,7 +117,7 @@ Foam::vector Foam::Rotor::getForce
     scalar rho,
     vector velocity_rel,
     const Section& section
-) const
+)
 {
     velocity_rel -= section.y_value * radOmega_ * (-section.x_unit);
     vector x_unit = section.x_unit;
@@ -130,6 +132,8 @@ Foam::vector Foam::Rotor::getForce
     scalar c_x = c_d * con_sin.first - c_l * con_sin.second;
     vector force = c_z * section.z_unit + c_x * x_unit;
     force *= -0.5 * rho * (sqr(u) + sqr(w)) * (chord_*dSpan_*sigma_);
+    thrust_ -= force&section.z_unit;
+    torque_ -= (force&x_unit)*section.y_value;
     return force;
 }
 

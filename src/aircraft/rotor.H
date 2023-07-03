@@ -37,6 +37,7 @@ Author
 
 #include "airfoil.H"
 #include "definitions.H"
+#include "element.H"
 #include "KDTree.H"
 #include "Map.H"
 
@@ -60,7 +61,7 @@ public:
     word name_;
     const fvMesh& mesh_;
     label zoneI_;
-    scalar t_current_;
+    scalar t_current_, thrust_, torque_;
     vector origin_, rotate_;
     scalar degOmega_, radOmega_, twist_, chord_;
     scalar interiorRadius_, exteriorRadius_;
@@ -74,10 +75,14 @@ public:
     vectorField coords_;
     //- force of all actuator points
     vectorField force_;
+    //- force of all actuator points
+    scalarField energy_;
     //- nearest cell
     std::map<size_t, Section> sections_;
     //- cell within radius
     std::map<size_t, labelList> projectedCells_;
+    //- nearest cell
+    std::map<size_t, Cell> cells_;
 
     // Constructors
     Rotor
@@ -95,7 +100,7 @@ public:
     // Member Functions
     void updateSections(scalar time);
 
-    vector getForce(scalar rho, vector velocity_rel, const Section& section) const;
+    vector getForce(scalar rho, vector velocity_rel, const Section& section);
 
     scalar getAngleOfAttack(scalar u, scalar w) const;
 

@@ -60,6 +60,10 @@ int main(int argc, char *argv[])
         Info << "========================================" << nl;
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
         solver->evaluateTurbRes(resNuTilda);
+        if (fluidProps.withSourceTerm)
+        {
+            actuationSource->addSourceTerms(0, resRho, resRhoU, resRhoE);
+        }
         Info << "# Local Courant          [-] = " << CFL << endl;
         Info << "----------------------------------------" << nl;
 
@@ -84,6 +88,8 @@ int main(int argc, char *argv[])
         Info << "# Energy     residual    [-] = " << resRhoE << endl;
         Info << "# Turbulence residual    [-] = " << resNuTilda << endl;
         Info << "----------------------------------------" << nl;
+
+        if (fluidProps.withSourceTerm) actuationSource->write();
 
         if (Pstream::master())
         {

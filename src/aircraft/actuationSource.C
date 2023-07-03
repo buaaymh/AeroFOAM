@@ -25,14 +25,42 @@ License
 
 #include "actuationSource.H"
 
-Foam::ActuationSource::ActuationSource(const fvMesh& mesh)
+Foam::ActuationSource::ActuationSource
+(
+    volScalarField& rho,
+    volVectorField& U
+)
 :
-    mesh_(mesh),
-    VolumeForce_
+    mesh_(rho.mesh()),
+    rho_(rho),
+    U_(U),
+    rhoGrad_
     (
         IOobject
         (
-            "VolumeForce",
+            "rhoGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector(dimless/dimLength, vector::zero)
+    ),
+    UGrad_
+    (
+        IOobject
+        (
+            "UGrad",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedTensor(dimless/dimLength, tensor::zero)
+    ),
+    ForceSource_
+    (
+        IOobject
+        (
+            "ForceSource",
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
@@ -40,6 +68,32 @@ Foam::ActuationSource::ActuationSource(const fvMesh& mesh)
         ),
         mesh_,
         dimensionedVector(dimless, vector::zero)
+    ),
+    EnergySource_
+    (
+        IOobject
+        (
+            "EnergySource",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar(dimless, 0.0)
+    ),
+    Q_
+    (
+        IOobject
+        (
+            "Q",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar(dimless/dimArea, 0.0)
     )
 {
     forAll(mesh_.cellZones(), zoneI)
@@ -50,6 +104,78 @@ Foam::ActuationSource::ActuationSource(const fvMesh& mesh)
             Pout << "# Install a rotor in Zone " << name << endl;
             rotors_.emplace_back(name, mesh_);
         }
+    }
+}
+
+void Foam::ActuationSource::addSourceTerms
+(
+    scalar time,
+    scalarField& resRho,
+    vectorField& resRhoU,
+    scalarField& resRhoE
+)
+{
+    ForceSource_ = vector::zero;
+    EnergySource_ = 0.0;
+    rhoGrad_ = fvc::grad(rho_);
+    UGrad_ = fvc::grad(U_);
+    for (auto& rotor : rotors_)
+    {
+        if (mag(time - rotor.t_current_) > 1e-10) rotor.updateSections(time);
+        rotor.force_ = vectorField(rotor.procNo_.size(), vector::zero);
+        rotor.energy_ = scalarField(rotor.procNo_.size(), 0.0);
+        rotor.thrust_ = 0; rotor.torque_ = 0;
+        for (const auto& [pointI, section] : rotor.sections_)
+        {
+            if (rotor.procNo_[pointI] == Pstream::myProcNo())
+            {
+                const label i = section.adjCell;
+                const vector delta = rotor.coords_[pointI] - mesh_.C()[i];
+                const scalar rho = rho_[i] + (rhoGrad_[i]&delta);
+                const vector U   = U_[i]   + (UGrad_[i]&delta);
+                rotor.force_[pointI] = rotor.getForce(rho, U, section);
+                rotor.energy_[pointI] = rotor.force_[pointI]&U;
+            }
+        }
+        rotor.force_ = returnReduce(rotor.force_, sumOp<vectorField>());
+        rotor.energy_ = returnReduce(rotor.energy_, sumOp<scalarField>());
+        reduce(rotor.thrust_, sumOp<scalar>());
+        reduce(rotor.torque_, sumOp<scalar>());
+        for (const auto& [pointI, cells] : rotor.projectedCells_)
+        {
+            forAll(cells, cellI)
+            {
+                label i = cells[cellI];
+                const Cell& cell = rotor.cells_[i];
+                for (label gaussI = 0; gaussI < cell.size(); gaussI++)
+                {
+                    const scalar weight = rotor.getProjectedWeight(magSqr(rotor.coords_[pointI] - cell.at(gaussI)));
+                    ForceSource_[i]  += rotor.force_[pointI] *weight*cell.weight(gaussI);
+                    EnergySource_[i] += rotor.energy_[pointI]*weight*cell.weight(gaussI);
+                }
+            }
+        }
+    }
+    resRhoU += ForceSource_.primitiveField();
+    resRhoE += EnergySource_.primitiveField();
+}
+
+void Foam::ActuationSource::write()
+{
+    if (mesh_.time().outputTime())
+    {
+        ForceSource_.primitiveFieldRef()  /= mesh_.V();
+        EnergySource_.primitiveFieldRef() /= mesh_.V();
+        Q_ = 0.5*(sqr(tr(UGrad_)) - tr(UGrad_&UGrad_));
+        for (const auto& rotor : rotors_)
+        {
+            scalar CT = 2.0*rotor.thrust_/(sqr(rotor.radOmega_*rotor.exteriorRadius_)*sqr(rotor.exteriorRadius_)*constant::mathematical::pi);
+            scalar CM = 2.0*rotor.torque_/(sqr(rotor.radOmega_*rotor.exteriorRadius_)*pow3(rotor.exteriorRadius_)*constant::mathematical::pi);
+            Info << "# ------ " << rotor.name_ << " ------ #" << nl
+                 << "# CT   [-] = " << setprecision(4) << CT << nl
+                 << "# CM   [-] = " << setprecision(4) << CM << endl;
+        }
+        Info << "----------------------------------------" << nl;
     }
 }
 

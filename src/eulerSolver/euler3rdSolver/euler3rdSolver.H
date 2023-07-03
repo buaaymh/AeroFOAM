@@ -102,14 +102,6 @@ public:
         scalarField& resRhoE
     );
 
-    virtual void evaluateRhoUForForce
-    (
-        scalar& rho,
-        vector& U,
-        const vector& coord,
-        const label& cellI
-    );
-
 };
 
 } // End namespace Foam

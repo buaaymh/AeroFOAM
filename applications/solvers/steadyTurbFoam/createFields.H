@@ -13,6 +13,7 @@ IOdictionary testDict
 fluidProperties fluidProps;
 
 testDict.lookup("simulationType") >> fluidProps.simulationType;
+fluidProps.withSourceTerm = testDict.lookupOrDefault<bool>("withSourceTerm", false);
 
 Info << "=================Fluid Properties===================" << nl
      << "simulationType: "  << fluidProps.simulationType << nl
@@ -108,6 +109,9 @@ if (Pstream::master())
                     << "Energy" << tab
                     << "Turbulence" << endl;
 }
+
+std::unique_ptr<ActuationSource> actuationSource;
+if (fluidProps.withSourceTerm) actuationSource = std::make_unique<ActuationSource>(rho, U);
 
 Info << "====================================================" << endl;
 

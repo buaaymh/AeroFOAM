@@ -48,11 +48,41 @@ class ActuationSource
 public:
     //- Reference to mesh
     const fvMesh& mesh_;
-    volVectorField VolumeForce_;
+    //- Density
+    volScalarField& rho_;
+    //- Velocity
+    volVectorField& U_;
+    //- Density grad
+    volVectorField rhoGrad_;
+    //- Velocity grad
+    volTensorField UGrad_;
+    
+    volVectorField ForceSource_;
+
+    volScalarField EnergySource_;
+
+    //- second-invariant
+    volScalarField Q_;
+
     std::vector<Rotor> rotors_;
 
     // Constructors
-    ActuationSource(const fvMesh& mesh);
+    ActuationSource
+    (
+        volScalarField& rho,
+        volVectorField& U
+    );
+
+    // Member Functions
+    void addSourceTerms
+    (
+        scalar time,
+        scalarField& resRho,
+        vectorField& resRhoU,
+        scalarField& resRhoE
+    );
+    
+    void write();
 
 };
 
