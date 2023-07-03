@@ -132,7 +132,6 @@ void Foam::turbulenceSolver::correctFields()
     navierStokesSolver::correctFields();
     correctTurbulenceFields();
     UGrad_ = fvc::grad(U_);
-    forAll(mesh_.C(), cellI) Omega_[cellI] = vorticity(UGrad_[cellI]);
 }
 
 #include "functions.H"

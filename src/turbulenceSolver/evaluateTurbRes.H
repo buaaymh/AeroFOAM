@@ -54,7 +54,6 @@ void Foam::turbulenceSolver::evaluateTurbRes
                 const scalar nu_e = nu(nuTilda_ij, nu_ij);
                 nuTildaFlux -= Ma_Re_*nu_e*((dx_L*nuTildaGrad_[i]+dx_R*nuTildaGrad_neigh[faceI])&Sf[faceI])/SA::sigma;
                 resNuTilda[i] -= nuTildaFlux;
-
             }
         }
         if (type == "wall")
@@ -86,6 +85,7 @@ void Foam::turbulenceSolver::evaluateTurbRes
     }
     forAll(mesh_.C(), cellI)
     {
+        Omega_[cellI] = vorticity(UGrad_[cellI]);
         const scalar Omega = mag(Omega_[cellI]);
         resNuTilda[cellI] += evaluateSource(dist_[cellI], Omega, nuLam_[cellI], nuTilda_[cellI],
                                             nuTildaGrad_[cellI], mesh_.V()[cellI]);

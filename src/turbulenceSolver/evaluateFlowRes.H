@@ -6,7 +6,7 @@ void Foam::turbulenceSolver::evaluateFlowResForGMRES
 )
 {
     eulerSolver::evaluateFlowResForGMRES(resRho, resRhoU, resRhoE);
-    TGrad_   = fvc::grad(T_);
+    TGrad_ = fvc::grad(T_);
     forAll(mesh_.owner(), faceI)
     {
         vector rhoUFlux = vector::zero;
