@@ -35,7 +35,7 @@ Author
 #ifndef rotor_H
 #define rotor_H
 
-#include "airfoil.H"
+#include "blade.H"
 #include "definitions.H"
 #include "element.H"
 #include "KDTree.H"
@@ -49,7 +49,8 @@ namespace Foam
 struct Section
 {
     label  adjCell;
-    scalar y_value;
+    scalar y_value, eps;
+    labelList projectedCells;
     vector x_unit, y_unit, z_unit;
 };
 
@@ -60,14 +61,13 @@ public:
     //- Reference to mesh
     word name_;
     const fvMesh& mesh_;
+    const Blade& blade_;
     label zoneI_;
+    label nBlades_, nSections_;
     scalar t_current_, thrust_, torque_;
     vector origin_, rotate_;
-    scalar degOmega_, radOmega_, twist_, chord_;
-    scalar interiorRadius_, exteriorRadius_;
-    label nBlades_, nPoints_, nLines_;
-    scalar width_, dSpan_, sigma_;
-    std::unique_ptr<Airfoil> airfoil_;
+    scalar frequence_, degOmega_, radOmega_;
+    scalar sigma_;
     std::unique_ptr<KDTree> tree_;
     //- processor No of all actuator points
     labelList procNo_;
@@ -75,20 +75,19 @@ public:
     vectorField coords_;
     //- force of all actuator points
     vectorField force_;
-    //- force of all actuator points
+    //- energy of all actuator points
     scalarField energy_;
     //- nearest cell
     std::map<size_t, Section> sections_;
-    //- cell within radius
-    std::map<size_t, labelList> projectedCells_;
-    //- nearest cell
-    std::map<size_t, Cell> cells_;
+    //- Gauss cell
+    std::map<size_t, Cell> quads_;
 
     // Constructors
     Rotor
     (
         const word& name,
-        const fvMesh& mesh
+        const fvMesh& mesh,
+        const Blade& blade
     );
 
     Rotor(const Rotor&) = delete;
@@ -104,7 +103,7 @@ public:
 
     scalar getAngleOfAttack(scalar u, scalar w) const;
 
-    scalar getProjectedWeight(scalar d2) const;
+    scalar getProjectedWeight(scalar d2, scalar eps) const;
 
 };
 

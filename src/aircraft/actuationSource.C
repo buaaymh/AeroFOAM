@@ -96,13 +96,14 @@ Foam::ActuationSource::ActuationSource
         dimensionedScalar(dimless/dimArea, 0.0)
     )
 {
+    blade_ = std::make_unique<Rectangle<SC1095>>(mesh_);
     forAll(mesh_.cellZones(), zoneI)
     {
         const word name = mesh_.cellZones()[zoneI].name();
         if (mesh_.solution().isDict(name))
         {
             Pout << "# Install a rotor in Zone " << name << endl;
-            rotors_.emplace_back(name, mesh_);
+            rotors_.emplace_back(name, mesh_, *blade_);
         }
     }
 }
@@ -141,17 +142,18 @@ void Foam::ActuationSource::addSourceTerms
         rotor.energy_ = returnReduce(rotor.energy_, sumOp<scalarField>());
         reduce(rotor.thrust_, sumOp<scalar>());
         reduce(rotor.torque_, sumOp<scalar>());
-        for (const auto& [pointI, cells] : rotor.projectedCells_)
+        for (const auto& [pointI, section] : rotor.sections_)
         {
-            forAll(cells, cellI)
+            forAll(section.projectedCells, cellI)
             {
-                label i = cells[cellI];
-                const Cell& cell = rotor.cells_[i];
-                for (label gaussI = 0; gaussI < cell.size(); gaussI++)
+                label i = section.projectedCells[cellI];
+                const Cell& quad = rotor.quads_[i];
+                for (label gaussI = 0; gaussI < quad.size(); gaussI++)
                 {
-                    const scalar weight = rotor.getProjectedWeight(magSqr(rotor.coords_[pointI] - cell.at(gaussI)));
-                    ForceSource_[i]  += rotor.force_[pointI] *weight*cell.weight(gaussI);
-                    EnergySource_[i] += rotor.energy_[pointI]*weight*cell.weight(gaussI);
+                    const scalar d2 = magSqr(rotor.coords_[pointI] - quad.at(gaussI));
+                    const scalar weight = rotor.getProjectedWeight(d2, section.eps);
+                    ForceSource_[i]  += rotor.force_[pointI] *weight*quad.weight(gaussI);
+                    EnergySource_[i] += rotor.energy_[pointI]*weight*quad.weight(gaussI);
                 }
             }
         }
@@ -169,8 +171,8 @@ void Foam::ActuationSource::write()
         Q_ = 0.5*(sqr(tr(UGrad_)) - tr(UGrad_&UGrad_));
         for (const auto& rotor : rotors_)
         {
-            scalar CT = 2.0*rotor.thrust_/(sqr(rotor.radOmega_*rotor.exteriorRadius_)*sqr(rotor.exteriorRadius_)*constant::mathematical::pi);
-            scalar CM = 2.0*rotor.torque_/(sqr(rotor.radOmega_*rotor.exteriorRadius_)*pow3(rotor.exteriorRadius_)*constant::mathematical::pi);
+            scalar CT = 2.0*rotor.thrust_/(sqr(rotor.radOmega_*blade_->maxRadius())*sqr(blade_->maxRadius())*constant::mathematical::pi);
+            scalar CM = 2.0*rotor.torque_/(sqr(rotor.radOmega_*blade_->maxRadius())*pow3(blade_->maxRadius())*constant::mathematical::pi);
             Info << "# ------ " << rotor.name_ << " ------ #" << nl
                  << "# CT   [-] = " << setprecision(4) << CT << nl
                  << "# CM   [-] = " << setprecision(4) << CM << endl;

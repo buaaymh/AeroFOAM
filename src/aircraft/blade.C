@@ -23,62 +23,44 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "navierStokesSolver.H"
+#include "blade.H"
 
-Foam::navierStokesSolver::navierStokesSolver
+Foam::Blade::Blade
 (
-    const fluidProperties& fluidProps,
-    volScalarField& rho,
-    volVectorField& U,
-    volScalarField& p
+    const fvMesh& mesh
 )
 :
-    eulerSolver(fluidProps, rho, U, p),
-    Ma_Re_(fluidProps.Mach_inf/fluidProps.Re_inf),
-    S_T_(110.4/fluidProps.T_inf),
-    muLam_
-    (
-        IOobject
-        (
-            "laminarViscosity",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 0)
-    ),
-    UGrad_
-    (
-        IOobject
-        (
-            "UGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedTensor(dimless/dimLength, tensor::zero)
-    ),
-    TGrad_
-    (
-        IOobject
-        (
-            "TGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-    delta_(mesh_.delta())
-{}
-
-void Foam::navierStokesSolver::correctFields()
+    mesh_(mesh)
 {
-    solver::correctFields();
-    muLam_ = muLam(T_, S_T_);
+    nSpans_ = mesh_.solution().subDict("blade").lookup<label>("nSpans");
+    minRadius_ = mesh_.solution().subDict("blade").lookup<scalar>("minRadius");
+    maxRadius_ = mesh_.solution().subDict("blade").lookup<scalar>("maxRadius");
+    chord_ = mesh_.solution().subDict("blade").lookup<scalar>("chord");
+    aspectRatio_ = mesh_.solution().subDict("blade").lookup<scalar>("aspectRatio");
+    twist_ = mesh_.solution().subDict("blade").lookup<scalar>("twist");
+    dSpan_ = (maxRadius_ - minRadius_) / nSpans_;
+    eps_cStar_ = 0.02*aspectRatio_*constant::mathematical::pi;
+    c0_ = 4*chord_/constant::mathematical::pi;
+    eps0_ = eps_cStar_*c0_;
 }
 
-#include "evaluateFlowRes.H"
+scalar Foam::Blade::GaussianRadius
+(
+    scalar r
+) const
+{
+    r -= 0.5 * maxRadius_;
+    const scalar dx = dSpan_/1.5;
+    const scalar cStar = c0_*sqrt(1.0-sqr(2*r/maxRadius_));
+    const scalar eps = eps_cStar_ * cStar;
+    return max(eps, dx);
+}
 
-#include "functions.H"
-
+template<class Airfoil>
+Foam::Rectangle<Airfoil>::Rectangle
+(
+    const fvMesh& mesh
+)
+:
+    Blade(mesh)
+{}

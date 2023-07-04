@@ -64,6 +64,8 @@ public:
     //- second-invariant
     volScalarField Q_;
 
+    std::unique_ptr<Blade> blade_;
+
     std::vector<Rotor> rotors_;
 
     // Constructors

@@ -46,57 +46,6 @@ namespace Foam
                            Airfoil Class Declaration
 \*---------------------------------------------------------------------------*/
 
-class Airfoil
-{
-    // Private Member Functions
-    //- Disallow default bitwise copy construct
-    Airfoil(const Airfoil&);
-    //- Disallow default bitwise assignment
-    void operator=(const Airfoil&);
-
-public:
-    // Constructors - default
-    Airfoil() {};
-
-    // Destructor - default
-    virtual ~Airfoil() {};
-
-    virtual scalar cLift(scalar deg) const = 0;
-    virtual scalar cDrag(scalar deg) const = 0;
-};
-
-template<class Data>
-class Airfoil2D: public Airfoil
-{
-public:
-    // Constructors - default
-    Airfoil2D() = default;
-    
-    // Destructor - default
-    ~Airfoil2D() noexcept = default;
-
-    scalar cLift(scalar deg) const
-    {
-        return lift_[(deg + 180) / 2];
-    }
-
-    scalar cDrag(scalar deg) const
-    {
-        return drag_[(deg + 180) / 2];
-    }
-
-    static const std::array<scalar, 181> lift_;
-    static const std::array<scalar, 181> drag_;
-};
-
-template<class Data>
-const std::array<scalar, 181> Airfoil2D<Data>::lift_
-    = Data::getLiftCoefficients();
-
-template<class Data>
-const std::array<scalar, 181> Airfoil2D<Data>::drag_
-    = Data::getDragCoefficients();
-
 class SC1095
 {
 public:
