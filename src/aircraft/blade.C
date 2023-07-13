@@ -38,6 +38,7 @@ Foam::Blade::Blade
     chord_ = mesh_.solution().subDict("blade").lookup<scalar>("chord");
     aspectRatio_ = mesh_.solution().subDict("blade").lookup<scalar>("aspectRatio");
     twist_ = mesh_.solution().subDict("blade").lookup<scalar>("twist");
+    dx_ = mesh_.solution().subDict("blade").lookup<scalar>("dx");
     dSpan_ = (maxRadius_ - minRadius_) / nSpans_;
     eps_cStar_ = 0.02*aspectRatio_*constant::mathematical::pi;
     c0_ = 4*chord_/constant::mathematical::pi;
@@ -50,10 +51,9 @@ scalar Foam::Blade::GaussianRadius
 ) const
 {
     r -= 0.5 * maxRadius_;
-    const scalar dx = dSpan_/1.5;
     const scalar cStar = c0_*sqrt(1.0-sqr(2*r/maxRadius_));
     const scalar eps = eps_cStar_ * cStar;
-    return max(eps, dx);
+    return max(eps, dx_);
 }
 
 template<class Airfoil>

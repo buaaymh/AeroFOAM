@@ -69,19 +69,6 @@ Foam::ActuationSource::ActuationSource
         mesh_,
         dimensionedVector(dimless, vector::zero)
     ),
-    EnergySource_
-    (
-        IOobject
-        (
-            "EnergySource",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar(dimless, 0.0)
-    ),
     Q_
     (
         IOobject
@@ -117,15 +104,14 @@ void Foam::ActuationSource::addSourceTerms
 )
 {
     ForceSource_ = vector::zero;
-    EnergySource_ = 0.0;
     rhoGrad_ = fvc::grad(rho_);
     UGrad_ = fvc::grad(U_);
     for (auto& rotor : rotors_)
     {
         if (mag(time - rotor.t_current_) > 1e-10) rotor.updateSections(time);
         rotor.force_ = vectorField(rotor.procNo_.size(), vector::zero);
-        rotor.energy_ = scalarField(rotor.procNo_.size(), 0.0);
         rotor.thrust_ = 0; rotor.torque_ = 0;
+        rotor.spanInfo_.clear();
         for (const auto& [pointI, section] : rotor.sections_)
         {
             if (rotor.procNo_[pointI] == Pstream::myProcNo())
@@ -134,12 +120,12 @@ void Foam::ActuationSource::addSourceTerms
                 const vector delta = rotor.coords_[pointI] - mesh_.C()[i];
                 const scalar rho = rho_[i] + (rhoGrad_[i]&delta);
                 const vector U   = U_[i]   + (UGrad_[i]&delta);
-                rotor.force_[pointI] = rotor.getForce(rho, U, section);
-                rotor.energy_[pointI] = rotor.force_[pointI]&U;
+                auto span_info = rotor.getForce(rho, U, section);
+                if (pointI < blade_->numOfSpans()) rotor.spanInfo_[pointI] = span_info;
+                rotor.force_[pointI] = span_info.force;
             }
         }
         rotor.force_ = returnReduce(rotor.force_, sumOp<vectorField>());
-        rotor.energy_ = returnReduce(rotor.energy_, sumOp<scalarField>());
         reduce(rotor.thrust_, sumOp<scalar>());
         reduce(rotor.torque_, sumOp<scalar>());
         for (const auto& [pointI, section] : rotor.sections_)
@@ -152,25 +138,47 @@ void Foam::ActuationSource::addSourceTerms
                 {
                     const scalar d2 = magSqr(rotor.coords_[pointI] - quad.at(gaussI));
                     const scalar weight = rotor.getProjectedWeight(d2, section.eps);
-                    ForceSource_[i]  += rotor.force_[pointI] *weight*quad.weight(gaussI);
-                    EnergySource_[i] += rotor.energy_[pointI]*weight*quad.weight(gaussI);
+                    ForceSource_[i] += rotor.force_[pointI] *weight*quad.weight(gaussI);
                 }
             }
         }
     }
     resRhoU += ForceSource_.primitiveField();
-    resRhoE += EnergySource_.primitiveField();
 }
 
 void Foam::ActuationSource::write()
 {
     if (mesh_.time().outputTime())
     {
-        ForceSource_.primitiveFieldRef()  /= mesh_.V();
-        EnergySource_.primitiveFieldRef() /= mesh_.V();
+        ForceSource_.primitiveFieldRef() /= mesh_.V();
         Q_ = 0.5*(sqr(tr(UGrad_)) - tr(UGrad_&UGrad_));
         for (const auto& rotor : rotors_)
         {
+            scalarField F_z(blade_->numOfSpans(),0.0);
+            for (const auto& [pointI, span_info] : rotor.spanInfo_)
+            {
+                if (rotor.procNo_[pointI] == Pstream::myProcNo())
+                {
+                    F_z[pointI] = span_info.Fz;
+                }
+            }
+            reduce(F_z, sumOp<scalarField>());
+            if (Pstream::master())
+            {
+                fileName outputDir = mesh_.time().timePath();
+                mkDir(outputDir);
+                // File pointer to direct the output to
+                autoPtr<OFstream> outputFilePtr;
+                // Open the file in the newly created directory
+                outputFilePtr.reset(new OFstream(outputDir/"spanInfo.dat"));
+                outputFilePtr() << "#r/R" << tab << "Fz" << endl;
+                forAll(F_z, spanI)
+                {
+                    scalar r_R = (blade_->minRadius()+spanI*blade_->dSpan()+0.5*blade_->dSpan())/blade_->maxRadius();
+                    outputFilePtr() << r_R << tab << F_z[spanI] << endl;
+                }
+            }
+
             scalar CT = 2.0*rotor.thrust_/(sqr(rotor.radOmega_*blade_->maxRadius())*sqr(blade_->maxRadius())*constant::mathematical::pi);
             scalar CM = 2.0*rotor.torque_/(sqr(rotor.radOmega_*blade_->maxRadius())*pow3(blade_->maxRadius())*constant::mathematical::pi);
             Info << "# ------ " << rotor.name_ << " ------ #" << nl

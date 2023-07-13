@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
                 L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
+                Info << "# L1(dRho_0) = " << setprecision(4) << L1_deltaRho_0 << endl;
                 if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
@@ -103,10 +104,11 @@ int main(int argc, char *argv[])
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
                 L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
+                Info << "# L1(dRho) [-] = "            << setprecision(4) << L1_deltaRho
+                     << ", L1(dRho)/L1(dRho_0) [-] = " << setprecision(4) << L1_deltaRho/L1_deltaRho_0 << endl;
                 if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
             }
         }
-        Info << "LUSGS 1 converged in " << count << " iterations, and L1(dRho) = " << L1_deltaRho << endl;
         Info << "----------------------------------------" << nl;
 
         // Stage 2
@@ -130,6 +132,7 @@ int main(int argc, char *argv[])
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
                 L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
+                Info << "# L1(dRho_0) = " << setprecision(4) << L1_deltaRho_0 << endl;
                 if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
@@ -138,10 +141,11 @@ int main(int argc, char *argv[])
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
                 L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
+                Info << "# L1(dRho) [-] = "            << setprecision(4) << L1_deltaRho
+                     << ", L1(dRho)/L1(dRho_0) [-] = " << setprecision(4) << L1_deltaRho/L1_deltaRho_0 << endl;
                 if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
             }
         }
-        Info << "LUSGS 2 converged in " << count << " iterations, and final L1(dRho) = " << L1_deltaRho << endl;
         Info << "----------------------------------------" << nl;
 
         solver->rho()  = rho_0  + 0.5 * dt_dv * (resRho_1 + resRho_2);

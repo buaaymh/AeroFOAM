@@ -54,6 +54,14 @@ struct Section
     vector x_unit, y_unit, z_unit;
 };
 
+struct SpanInfo
+{
+    scalar Fz;
+    scalar Fx;
+    scalar AOA;
+    vector force;
+};
+
 class Rotor
 {
 
@@ -75,12 +83,12 @@ public:
     vectorField coords_;
     //- force of all actuator points
     vectorField force_;
-    //- energy of all actuator points
-    scalarField energy_;
-    //- nearest cell
+    
     std::map<size_t, Section> sections_;
     //- Gauss cell
     std::map<size_t, Cell> quads_;
+
+    std::map<size_t, SpanInfo> spanInfo_;
 
     // Constructors
     Rotor
@@ -99,7 +107,7 @@ public:
     // Member Functions
     void updateSections(scalar time);
 
-    vector getForce(scalar rho, vector velocity_rel, const Section& section);
+    SpanInfo getForce(scalar rho, vector velocity_rel, const Section& section);
 
     scalar getAngleOfAttack(scalar u, scalar w) const;
 

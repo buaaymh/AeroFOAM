@@ -80,6 +80,10 @@ volScalarField p
 rho.correctBoundaryConditions();
 U.correctBoundaryConditions();
 p.correctBoundaryConditions();
+
+std::unique_ptr<ActuationSource> actuationSource;
+if (fluidProps.withSourceTerm) actuationSource = std::make_unique<ActuationSource>(rho, U);
+
 Info << "====================================================" << endl;
 euler2ndSolver solver
 (

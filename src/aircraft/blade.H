@@ -63,6 +63,7 @@ public:
     scalar chord_;
     scalar aspectRatio_;
     scalar twist_;
+    scalar dx_;
     scalar dSpan_;
     scalar eps_cStar_;
     scalar c0_;
@@ -89,7 +90,7 @@ public:
 
     scalar chord() const { return chord_; }
 
-    scalar eps0() const { return eps0_; }
+    scalar eps0() const { return max(eps0_, dx_); }
 
     virtual scalar Cl(scalar r, scalar deg) const = 0;
     virtual scalar Cd(scalar r, scalar deg) const = 0;

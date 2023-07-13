@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
         if (fluidProps.withSourceTerm)
         {
-            solver.addMomentumSourceTerm(runTime.value(), resRho, resRhoU, resRhoE);
+            actuationSource->addSourceTerms(runTime.value(), resRho, resRhoU, resRhoE);
         }
         solver.rho()  = rho_0  + resRho  * dt_dv;
         solver.rhoU() = rhoU_0 + resRhoU * dt_dv;
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
         if (fluidProps.withSourceTerm)
         {
-            solver.addMomentumSourceTerm(runTime.value(), resRho, resRhoU, resRhoE);
+            actuationSource->addSourceTerms(runTime.value(), resRho, resRhoU, resRhoE);
         }
         solver.rho()  = 0.75 * rho_0  + 0.25 * (solver.rho()  + resRho  * dt_dv);
         solver.rhoU() = 0.75 * rhoU_0 + 0.25 * (solver.rhoU() + resRhoU * dt_dv);
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
         if (fluidProps.withSourceTerm)
         {
-            solver.addMomentumSourceTerm(runTime.value(), resRho, resRhoU, resRhoE);
+            actuationSource->addSourceTerms(runTime.value(), resRho, resRhoU, resRhoE);
         }
         solver.rho()  = 1.0/3 * rho_0  + 2.0/3 * (solver.rho()  + resRho  * dt_dv);
         solver.rhoU() = 1.0/3 * rhoU_0 + 2.0/3 * (solver.rhoU() + resRhoU * dt_dv);
@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
 
         runTime++;
         Info<< "Time = " << runTime.value() << " s" << nl;
+        if (fluidProps.withSourceTerm) actuationSource->write();
         runTime.write();
 	
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"

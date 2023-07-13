@@ -59,8 +59,6 @@ public:
     
     volVectorField ForceSource_;
 
-    volScalarField EnergySource_;
-
     //- second-invariant
     volScalarField Q_;
 
