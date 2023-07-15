@@ -87,7 +87,7 @@ Foam::ActuationSource::ActuationSource
     forAll(mesh_.cellZones(), zoneI)
     {
         const word name = mesh_.cellZones()[zoneI].name();
-        if (mesh_.solution().isDict(name))
+        if (mesh_.solutionDict().isDict(name))
         {
             Pout << "# Install a rotor in Zone " << name << endl;
             rotors_.emplace_back(name, mesh_, *blade_);

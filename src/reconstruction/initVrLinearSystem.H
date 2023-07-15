@@ -17,7 +17,7 @@ void Foam::Reconstruction::initVrLinearSystem()
         faceQuad_.emplace_back(std::move(faceQuad));
     }
     // Boundary face quadrature points Init
-    const Switch curvedWall = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("curvedWall", false);
+    const Switch curvedWall = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("curvedWall", false);
     forAll(mesh_.boundary(), patchI)
     {
         const label start = mesh_.boundary()[patchI].start();

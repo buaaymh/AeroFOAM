@@ -37,11 +37,11 @@ Foam::Rotor::Rotor
     blade_(blade),
     t_current_(0.0)
 {
-    origin_  = mesh_.solution().subDict(name).lookup<vector>("origin");
-    rotate_  = mesh_.solution().subDict(name).lookup<vector>("rotate");
-    nBlades_ = mesh_.solution().subDict(name).lookup<label>("nBlades");
-    nSections_  = mesh_.solution().subDict(name).lookup<label>("nSections");
-    frequence_ = mesh_.solution().subDict(name).lookup<scalar>("frequence");
+    origin_  = mesh_.solutionDict().subDict(name).lookup<vector>("origin");
+    rotate_  = mesh_.solutionDict().subDict(name).lookup<vector>("rotate");
+    nBlades_ = mesh_.solutionDict().subDict(name).lookup<label>("nBlades");
+    nSections_  = mesh_.solutionDict().subDict(name).lookup<label>("nSections");
+    frequence_ = mesh_.solutionDict().subDict(name).lookup<scalar>("frequence");
     sigma_ = scalar(nBlades_)/scalar(nSections_);
     degOmega_ = frequence_ * 360.0;
     radOmega_ = frequence_ * 2 * constant::mathematical::pi;

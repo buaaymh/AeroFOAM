@@ -176,14 +176,14 @@ Foam::Reconstruction::Reconstruction
         dimensionedSymmTensor(dimless, symmTensor::zero)
     )
 {
-    const vector vrWeight = mesh_.schemes().subDict("vrSchemes").lookup<vector>("weightList");
+    const vector vrWeight = mesh_.schemesDict().subDict("vrSchemes").lookup<vector>("weightList");
     parameter_.vrWeightSqr = cmptMultiply(vrWeight, vrWeight);
-    parameter_.limiter = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<word>("limiter", "WBAP");
-    parameter_.characteristic = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("characteristic", false);
-    parameter_.IS = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("IS", 1.0);
-    parameter_.np = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<scalar>("np", 1.0);
-    parameter_.positive = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);
-    parameter_.indicator = mesh_.schemes().subDict("vrSchemes").lookupOrDefault<Switch>("indicator", false);
+    parameter_.limiter = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<word>("limiter", "WBAP");
+    parameter_.characteristic = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("characteristic", false);
+    parameter_.IS = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("IS", 1.0);
+    parameter_.np = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<scalar>("np", 1.0);
+    parameter_.positive = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("positive", false);
+    parameter_.indicator = mesh_.schemesDict().subDict("vrSchemes").lookupOrDefault<Switch>("indicator", false);
     parameter_.nCells = scalar(returnReduce(mesh_.nCells(), sumOp<label>()));
     parameter_.nTroubled = 0, parameter_.nNegative = 0;
     initVrLinearSystem();

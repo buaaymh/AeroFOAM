@@ -55,9 +55,9 @@ int main(int argc, char *argv[])
 
     while (runTime.run())
     {
-        const label innerIter = mesh.solution().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
-        const scalar tolerance = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
-        const scalar relTol = mesh.solution().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
+        const label innerIter = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<label>("innerIter", 20);
+        const scalar tolerance = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("tolerance", 1e-6);
+        const scalar relTol = mesh.solutionDict().subDict("SOLVER").lookupOrDefault<scalar>("relTol", 0.001);
         const scalar dt = runTime.deltaT().value();
         const scalarField dt_dv(dt/mesh.V().field());
 

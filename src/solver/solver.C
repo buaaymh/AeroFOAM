@@ -94,7 +94,7 @@ Foam::solver::solver
     dRhoE_(scalarField(mesh_.nCells()))
 {
     Info << "=================Solver Information==================" << endl;
-    word flux = mesh_.schemes().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");
+    word flux = mesh_.schemesDict().subDict("divSchemes").lookupOrDefault<word>("flux", "roe");
     Info << "# Flux scheme            [-] = " << flux << endl;
     if (flux == "hllc")
         riemann_ = std::make_unique<hllcFlux>();

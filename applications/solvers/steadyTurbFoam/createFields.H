@@ -116,7 +116,7 @@ if (fluidProps.withSourceTerm) actuationSource = std::make_unique<ActuationSourc
 Info << "====================================================" << endl;
 
 std::unique_ptr<turbulenceSolver> solver;
-label order = mesh.schemes().lookup<label>("order");
+label order = mesh.schemesDict().lookup<label>("order");
 
 if (order == 2) solver = std::make_unique<turbulence2ndSolver>(fluidProps, rho, U, p, nuTilda);
 else if (order == 3) solver = std::make_unique<turbulence3rdSolver>(fluidProps, rho, U, p, nuTilda);

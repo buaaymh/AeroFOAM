@@ -138,7 +138,7 @@ void Foam::Limiter::limiterVenkatakrishnan
 )
 {
     
-    const scalar K = mesh_.schemes().subDict("gradSchemes").lookupOrDefault<scalar>("Venkat", 1);
+    const scalar K = mesh_.schemesDict().subDict("gradSchemes").lookupOrDefault<scalar>("Venkat", 1);
     scalarField rhoMin = rho.field();
     scalarField rhoMax = rho.field();
     vectorField UMin = U.field();

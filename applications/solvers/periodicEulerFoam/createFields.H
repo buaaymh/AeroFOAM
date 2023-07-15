@@ -146,11 +146,35 @@ volScalarField rhoRef
     ),
     rho
 );
+volVectorField URef
+(
+    IOobject
+    (
+        "URef",
+        mesh.time().timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    U
+);
+volScalarField pRef
+(
+    IOobject
+    (
+        "pRef",
+        mesh.time().timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    p
+);
 
 Info << "====================================================" << endl;
 
 std::unique_ptr<solver> solver;
-label order = mesh.schemes().lookup<label>("order");
+label order = mesh.schemesDict().lookup<label>("order");
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
