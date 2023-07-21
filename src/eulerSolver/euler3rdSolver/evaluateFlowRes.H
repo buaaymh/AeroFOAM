@@ -87,16 +87,21 @@ void Foam::euler3rdSolver::evaluateFlowRes
             const std::vector<std::unique_ptr<Face>>& boundaryQuad = patch2ndQuad_[patchI];
             forAll(bfaceCells, faceI)
             {
+                scalar rhoFlux  = 0.0;
                 vector rhoUFlux = vector::zero;
+                scalar rhoEFlux = 0.0;
                 const label i = bfaceCells[faceI];
                 for (label gaussI = 0; gaussI != boundaryQuad[faceI]->size(); ++gaussI)
                 {
                     const vector delta_i = boundaryQuad[faceI]->at(gaussI) - Cn[faceI];
                     evaluateVars(rho_i, rhoU_i, rhoE_i, rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                    const scalar p = (rhoE_i-0.5*magSqr(rhoU_i)/rho_i)*(Gamma-1.0);
-                    rhoUFlux += p * boundaryQuad[faceI]->normal(gaussI) * boundaryQuad[faceI]->weight(gaussI);
+                    rhoU_j = rhoU_i - 2*(rhoU_i&boundaryQuad[faceI]->normal(gaussI))*boundaryQuad[faceI]->normal(gaussI);
+                    evaluateFlux(rhoFlux, rhoUFlux, rhoEFlux, rho_i, rho_i, rhoU_i, rhoU_j, rhoE_i, rhoE_i,
+                                 boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
                 }
+                resRho[i]  -= rhoFlux;
                 resRhoU[i] -= rhoUFlux;
+                resRhoE[i] -= rhoEFlux;
             }
         }
         if (name == "inlet" || name == "outlet" || name == "farField")
