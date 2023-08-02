@@ -57,17 +57,6 @@ class Blade
 public:
     // Protected Member
     const fvMesh& mesh_;
-    label  nSpans_;
-    scalar minRadius_;
-    scalar maxRadius_;
-    scalar chord_;
-    scalar aspectRatio_;
-    scalar twist_;
-    scalar dx_;
-    scalar dSpan_;
-    scalar eps_cStar_;
-    scalar c0_;
-    scalar eps0_;
 
     // Constructors
     Blade(const fvMesh& mesh);
@@ -76,21 +65,11 @@ public:
     virtual ~Blade() {};
     
     // Member Functions
-    label  numOfSpans() const { return nSpans_; }
+    virtual scalar minRadius() const = 0;
 
-    scalar dSpan() const { return dSpan_; }
+    virtual scalar maxRadius() const = 0;
 
-    scalar minRadius() const { return minRadius_; }
-
-    scalar maxRadius() const { return maxRadius_; }
-
-    scalar GaussianRadius(scalar r) const;
-
-    scalar twist() const { return twist_; }
-
-    scalar chord() const { return chord_; }
-
-    scalar eps0() const { return max(eps0_, dx_); }
+    virtual scalar chord(scalar r) const = 0;
 
     virtual scalar Cl(scalar r, scalar deg) const = 0;
     virtual scalar Cd(scalar r, scalar deg) const = 0;
@@ -105,6 +84,12 @@ public:
     
     // Destructor - default
     ~Rectangle() noexcept = default;
+
+    scalar minRadius() const { return 0.1; }
+
+    scalar maxRadius() const { return 1.0; }
+
+    scalar chord(scalar r) const { return 0.1; }
 
     scalar Cl(scalar r, scalar deg) const
     {

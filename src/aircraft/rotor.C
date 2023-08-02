@@ -42,13 +42,17 @@ Foam::Rotor::Rotor
     nBlades_ = mesh_.solutionDict().subDict(name).lookup<label>("nBlades");
     nSections_  = mesh_.solutionDict().subDict(name).lookup<label>("nSections");
     frequence_ = mesh_.solutionDict().subDict(name).lookup<scalar>("frequence");
+    nSpans_ = mesh_.solutionDict().subDict(name).lookup<scalar>("nSpansPerBlade");
+    twist_ = mesh_.solutionDict().subDict(name).lookup<scalar>("twist");
+    eps_ = mesh_.solutionDict().subDict(name).lookup<scalar>("eps");
+    dSpan_ = (blade_.maxRadius() - blade_.minRadius()) / nSpans_;
     sigma_ = scalar(nBlades_)/scalar(nSections_);
     degOmega_ = frequence_ * 360.0;
     radOmega_ = frequence_ * 2 * constant::mathematical::pi;
-    coords_ = vectorField(blade_.numOfSpans()*nSections_);
-    scalarField minDist2Local(blade_.numOfSpans()*nSections_, GREAT);
+    coords_ = vectorField(nSpans_*nSections_);
+    scalarField minDist2Local(nSpans_*nSections_, GREAT);
     // Initialize Sections
-    procNo_ = labelList(blade_.numOfSpans()*nSections_, 0);
+    procNo_ = labelList(nSpans_*nSections_, 0);
     // Build KDTree
     zoneI_ = mesh_.cellZones().findZoneID(name);
     std::vector<std::vector<scalar>> points;
@@ -74,12 +78,12 @@ Foam::Rotor::Rotor
     label i = 0;
     for (label lineI = 0; lineI < nSections_; lineI++)
     {
-        scalar y_value = blade_.minRadius() + 0.5 * blade_.dSpan();
-        for (label pointI = 0; pointI < blade_.numOfSpans(); pointI++)
+        scalar y_value = blade_.minRadius() + 0.5 * dSpan_;
+        for (label pointI = 0; pointI < nSpans_; pointI++)
         {
             coords_[i] = origin_ + y_value * y_unit;
             std::vector<scalar> coord{coords_[i][0], coords_[i][1], coords_[i][2]};
-            auto neighIds = tree_->neighborhood_indices(coord, 2.15*blade_.eps0());
+            auto neighIds = tree_->neighborhood_indices(coord, 2.15*eps_);
             if (!neighIds.empty())
             {
                 for (auto& id : neighIds) id = mesh_.cellZones()[zoneI_][id];
@@ -87,12 +91,12 @@ Foam::Rotor::Rotor
                 sections_[i] = Section();
                 sections_[i].adjCell = mesh_.cellZones()[zoneI_][adjId];
                 sections_[i].y_value = y_value;
-                sections_[i].eps = blade_.GaussianRadius(y_value);
+                sections_[i].eps = eps_;
                 sections_[i].projectedCells = labelList(neighIds.begin(), neighIds.end());
                 sections_[i].x_unit = x_unit; sections_[i].y_unit = y_unit; sections_[i].z_unit = z_unit;
                 minDist2Local[i] = magSqr(mesh_.C()[sections_[i].adjCell] - coords_[i]);
             }
-            y_value += blade_.dSpan();
+            y_value += dSpan_;
             i++;
         }
         rotateZ(x_unit, y_unit, dAngle);
@@ -118,17 +122,17 @@ Foam::SpanInfo Foam::Rotor::getForce
     if (degOmega_ < 0) x_unit = -section.x_unit;
     scalar u = velocity_rel&x_unit;
     scalar w = velocity_rel&section.z_unit;
-    scalar tmp = 0.5 * rho * (sqr(u) + sqr(w)) * blade_.chord();
+    scalar tmp = 0.5 * rho * (sqr(u) + sqr(w)) * blade_.chord(section.y_value);
     span_info.AOA = getAngleOfAttack(u, w);
     scalar c_l = blade_.Cl(section.y_value, span_info.AOA);
     scalar c_d = blade_.Cd(section.y_value, span_info.AOA);
-    auto con_sin = cosSin(span_info.AOA - blade_.twist());// angle of inflow
+    auto con_sin = cosSin(span_info.AOA - twist_);// angle of inflow
     scalar c_z = c_l * con_sin.first + c_d * con_sin.second;
     scalar c_x = c_d * con_sin.first - c_l * con_sin.second;
     span_info.Fz = tmp*c_z;
     span_info.Fx = tmp*c_x;
     span_info.force = c_z * section.z_unit + c_x * x_unit;
-    span_info.force *= -tmp * sigma_* blade_.dSpan();
+    span_info.force *= -tmp * sigma_* dSpan_;
     thrust_ -= span_info.force&section.z_unit;
     torque_ -= (span_info.force&x_unit)*section.y_value;
     return span_info;
@@ -149,7 +153,7 @@ Foam::scalar Foam::Rotor::getAngleOfAttack
       }
     }
     // deg := angle of inflow
-    deg += blade_.twist();
+    deg += twist_;
     // deg := angle of attack
     if (deg < -180 || 180 < deg) {
       deg += (deg < 0 ? 360 : -360);
@@ -171,23 +175,23 @@ void Foam::Rotor::updateSections(scalar time)
 {
     t_current_ = time;
     sections_.clear();
-    procNo_ = labelList(blade_.numOfSpans()*nSections_, 0);
+    procNo_ = labelList(nSpans_*nSections_, 0);
     scalar dAngle = 360.0/nSections_;
     vector x_unit(1, 0, 0), y_unit(0, 1, 0), z_unit(0, 0, 1);
     rotateX(y_unit, z_unit, rotate_.x());
     rotateY(x_unit, z_unit, rotate_.y());
     rotateZ(x_unit, y_unit, rotate_.z());
     rotateZ(x_unit, y_unit, degOmega_*t_current_); // Rotate for Actuator Lines
-    scalarField minDist2Local(blade_.numOfSpans()*nSections_, GREAT);
+    scalarField minDist2Local(nSpans_*nSections_, GREAT);
     label i = 0;
     for (label lineI = 0; lineI < nSections_; lineI++)
     {
-        scalar y_value = blade_.minRadius() + 0.5 * blade_.dSpan();
-        for (label pointI = 0; pointI < blade_.numOfSpans(); pointI++)
+        scalar y_value = blade_.minRadius() + 0.5 * dSpan_;
+        for (label pointI = 0; pointI < nSpans_; pointI++)
         {
             coords_[i] = origin_ + y_value * y_unit;
             std::vector<scalar> coord{coords_[i][0], coords_[i][1], coords_[i][2]};
-            auto neighIds = tree_->neighborhood_indices(coord, 2.15*blade_.eps0());
+            auto neighIds = tree_->neighborhood_indices(coord, 2.15*eps_);
             if (!neighIds.empty())
             {
                 for (auto& id : neighIds) id = mesh_.cellZones()[zoneI_][id];
@@ -195,12 +199,12 @@ void Foam::Rotor::updateSections(scalar time)
                 sections_[i] = Section();
                 sections_[i].adjCell = mesh_.cellZones()[zoneI_][adjId];
                 sections_[i].y_value = y_value;
-                sections_[i].eps = blade_.GaussianRadius(y_value);
+                sections_[i].eps = eps_;
                 sections_[i].projectedCells = labelList(neighIds.begin(), neighIds.end());
                 sections_[i].x_unit = x_unit; sections_[i].y_unit = y_unit; sections_[i].z_unit = z_unit;
                 minDist2Local[i] = magSqr(mesh_.C()[sections_[i].adjCell] - coords_[i]);
             }
-            y_value += blade_.dSpan();
+            y_value += dSpan_;
             i++;
         }
         rotateZ(x_unit, y_unit, dAngle);

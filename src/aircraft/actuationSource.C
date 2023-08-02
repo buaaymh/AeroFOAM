@@ -34,28 +34,6 @@ Foam::ActuationSource::ActuationSource
     mesh_(rho.mesh()),
     rho_(rho),
     U_(U),
-    rhoGrad_
-    (
-        IOobject
-        (
-            "rhoGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
-    ),
-    UGrad_
-    (
-        IOobject
-        (
-            "UGrad",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedTensor(dimless/dimLength, tensor::zero)
-    ),
     ForceSource_
     (
         IOobject
@@ -104,8 +82,6 @@ void Foam::ActuationSource::addSourceTerms
 )
 {
     ForceSource_ = vector::zero;
-    rhoGrad_ = fvc::grad(rho_);
-    UGrad_ = fvc::grad(U_);
     for (auto& rotor : rotors_)
     {
         if (mag(time - rotor.t_current_) > 1e-10) rotor.updateSections(time);
@@ -117,11 +93,8 @@ void Foam::ActuationSource::addSourceTerms
             if (rotor.procNo_[pointI] == Pstream::myProcNo())
             {
                 const label i = section.adjCell;
-                const vector delta = rotor.coords_[pointI] - mesh_.C()[i];
-                const scalar rho = rho_[i] + (rhoGrad_[i]&delta);
-                const vector U   = U_[i]   + (UGrad_[i]&delta);
-                auto span_info = rotor.getForce(rho, U, section);
-                if (pointI < blade_->numOfSpans()) rotor.spanInfo_[pointI] = span_info;
+                auto span_info = rotor.getForce(rho_[i], U_[i], section);
+                if (pointI < rotor.nSpans_) rotor.spanInfo_[pointI] = span_info;
                 rotor.force_[pointI] = span_info.force;
             }
         }
@@ -133,6 +106,9 @@ void Foam::ActuationSource::addSourceTerms
             forAll(section.projectedCells, cellI)
             {
                 label i = section.projectedCells[cellI];
+                // const scalar d2 = magSqr(rotor.coords_[pointI] - mesh_.C()[i]);
+                // const scalar weight = rotor.getProjectedWeight(d2, section.eps);
+                // ForceSource_[i] += rotor.force_[pointI]*weight*mesh_.V()[i];
                 const Cell& quad = rotor.quads_[i];
                 for (label gaussI = 0; gaussI < quad.size(); gaussI++)
                 {
@@ -141,6 +117,7 @@ void Foam::ActuationSource::addSourceTerms
                     ForceSource_[i] += rotor.force_[pointI] *weight*quad.weight(gaussI);
                 }
             }
+            
         }
     }
     resRhoU += ForceSource_.primitiveField();
@@ -151,10 +128,11 @@ void Foam::ActuationSource::write()
     if (mesh_.time().outputTime())
     {
         ForceSource_.primitiveFieldRef() /= mesh_.V();
-        Q_ = 0.5*(sqr(tr(UGrad_)) - tr(UGrad_&UGrad_));
+        volTensorField UGrad = fvc::grad(U_);
+        Q_ = 0.5*(sqr(tr(UGrad)) - tr(UGrad&UGrad));
         for (const auto& rotor : rotors_)
         {
-            scalarField F_z(blade_->numOfSpans(),0.0);
+            scalarField F_z(rotor.nSpans_,0.0);
             for (const auto& [pointI, span_info] : rotor.spanInfo_)
             {
                 if (rotor.procNo_[pointI] == Pstream::myProcNo())
@@ -174,7 +152,7 @@ void Foam::ActuationSource::write()
                 outputFilePtr() << "#r/R" << tab << "Fz" << endl;
                 forAll(F_z, spanI)
                 {
-                    scalar r_R = (blade_->minRadius()+spanI*blade_->dSpan()+0.5*blade_->dSpan())/blade_->maxRadius();
+                    scalar r_R = (blade_->minRadius()+spanI*rotor.dSpan_+0.5*rotor.dSpan_)/blade_->maxRadius();
                     outputFilePtr() << r_R << tab << F_z[spanI] << endl;
                 }
             }

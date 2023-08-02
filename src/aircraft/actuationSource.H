@@ -52,10 +52,6 @@ public:
     volScalarField& rho_;
     //- Velocity
     volVectorField& U_;
-    //- Density grad
-    volVectorField rhoGrad_;
-    //- Velocity grad
-    volTensorField UGrad_;
     
     volVectorField ForceSource_;
 

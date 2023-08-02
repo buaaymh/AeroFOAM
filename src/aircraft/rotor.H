@@ -75,6 +75,7 @@ public:
     scalar t_current_, thrust_, torque_;
     vector origin_, rotate_;
     scalar frequence_, degOmega_, radOmega_;
+    scalar nSpans_, twist_, eps_, dSpan_;
     scalar sigma_;
     std::unique_ptr<KDTree> tree_;
     //- processor No of all actuator points

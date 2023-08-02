@@ -31,30 +31,7 @@ Foam::Blade::Blade
 )
 :
     mesh_(mesh)
-{
-    nSpans_ = mesh_.solutionDict().subDict("blade").lookup<label>("nSpans");
-    minRadius_ = mesh_.solutionDict().subDict("blade").lookup<scalar>("minRadius");
-    maxRadius_ = mesh_.solutionDict().subDict("blade").lookup<scalar>("maxRadius");
-    chord_ = mesh_.solutionDict().subDict("blade").lookup<scalar>("chord");
-    aspectRatio_ = mesh_.solutionDict().subDict("blade").lookup<scalar>("aspectRatio");
-    twist_ = mesh_.solutionDict().subDict("blade").lookup<scalar>("twist");
-    dx_ = mesh_.solutionDict().subDict("blade").lookup<scalar>("dx");
-    dSpan_ = (maxRadius_ - minRadius_) / nSpans_;
-    eps_cStar_ = 0.02*aspectRatio_*constant::mathematical::pi;
-    c0_ = 4*chord_/constant::mathematical::pi;
-    eps0_ = eps_cStar_*c0_;
-}
-
-scalar Foam::Blade::GaussianRadius
-(
-    scalar r
-) const
-{
-    r -= 0.5 * maxRadius_;
-    const scalar cStar = c0_*sqrt(1.0-sqr(2*r/maxRadius_));
-    const scalar eps = eps_cStar_ * cStar;
-    return max(eps, dx_);
-}
+{}
 
 template<class Airfoil>
 Foam::Rectangle<Airfoil>::Rectangle
