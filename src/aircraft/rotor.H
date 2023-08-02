@@ -56,8 +56,8 @@ struct Section
 
 struct SpanInfo
 {
-    scalar Fz;
-    scalar Fx;
+    scalar Cl;
+    scalar Cd;
     scalar AOA;
     vector force;
 };

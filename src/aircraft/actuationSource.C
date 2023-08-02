@@ -132,15 +132,15 @@ void Foam::ActuationSource::write()
         Q_ = 0.5*(sqr(tr(UGrad)) - tr(UGrad&UGrad));
         for (const auto& rotor : rotors_)
         {
-            scalarField F_z(rotor.nSpans_,0.0);
+            scalarField Cl(rotor.nSpans_,0.0);
             for (const auto& [pointI, span_info] : rotor.spanInfo_)
             {
                 if (rotor.procNo_[pointI] == Pstream::myProcNo())
                 {
-                    F_z[pointI] = span_info.Fz;
+                    Cl[pointI] = span_info.Cl;
                 }
             }
-            reduce(F_z, sumOp<scalarField>());
+            reduce(Cl, sumOp<scalarField>());
             if (Pstream::master())
             {
                 fileName outputDir = mesh_.time().timePath();
@@ -149,11 +149,11 @@ void Foam::ActuationSource::write()
                 autoPtr<OFstream> outputFilePtr;
                 // Open the file in the newly created directory
                 outputFilePtr.reset(new OFstream(outputDir/"spanInfo.dat"));
-                outputFilePtr() << "#r/R" << tab << "Fz" << endl;
-                forAll(F_z, spanI)
+                outputFilePtr() << "#r/R" << tab << "Cl" << endl;
+                forAll(Cl, spanI)
                 {
                     scalar r_R = (blade_->minRadius()+spanI*rotor.dSpan_+0.5*rotor.dSpan_)/blade_->maxRadius();
-                    outputFilePtr() << r_R << tab << F_z[spanI] << endl;
+                    outputFilePtr() << r_R << tab << Cl[spanI] << endl;
                 }
             }
 

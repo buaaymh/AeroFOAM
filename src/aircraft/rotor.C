@@ -122,17 +122,14 @@ Foam::SpanInfo Foam::Rotor::getForce
     if (degOmega_ < 0) x_unit = -section.x_unit;
     scalar u = velocity_rel&x_unit;
     scalar w = velocity_rel&section.z_unit;
-    scalar tmp = 0.5 * rho * (sqr(u) + sqr(w)) * blade_.chord(section.y_value);
+    scalar Ma = sqrt(sqr(u) + sqr(w));
     span_info.AOA = getAngleOfAttack(u, w);
-    scalar c_l = blade_.Cl(section.y_value, span_info.AOA);
-    scalar c_d = blade_.Cd(section.y_value, span_info.AOA);
-    auto con_sin = cosSin(span_info.AOA - twist_);// angle of inflow
-    scalar c_z = c_l * con_sin.first + c_d * con_sin.second;
-    scalar c_x = c_d * con_sin.first - c_l * con_sin.second;
-    span_info.Fz = tmp*c_z;
-    span_info.Fx = tmp*c_x;
-    span_info.force = c_z * section.z_unit + c_x * x_unit;
-    span_info.force *= -tmp * sigma_* dSpan_;
+    auto [Cl, Cd] = blade_.Cl_Cd(Ma, section.y_value, span_info.AOA);
+    auto [cos, sin] = cosSin(span_info.AOA - twist_);// angle of inflow
+    span_info.Cl = Cl * cos + Cd * sin;
+    span_info.Cd = Cd * cos - Cl * sin;
+    span_info.force = span_info.Cl * section.z_unit + span_info.Cd * x_unit;
+    span_info.force *= -0.5 * rho * sqr(Ma) * blade_.chord(section.y_value) * sigma_* dSpan_;
     thrust_ -= span_info.force&section.z_unit;
     torque_ -= (span_info.force&x_unit)*section.y_value;
     return span_info;

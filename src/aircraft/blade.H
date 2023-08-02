@@ -71,9 +71,28 @@ public:
 
     virtual scalar chord(scalar r) const = 0;
 
-    virtual scalar Cl(scalar r, scalar deg) const = 0;
-    virtual scalar Cd(scalar r, scalar deg) const = 0;
+    virtual std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const = 0;
 };
+
+// class CaradonnaTung : public Blada
+// {
+// public:
+//     CaradonnaTung(const fvMesh& mesh);
+
+//     // Destructor - default
+//     ~CaradonnaTung() noexcept = default;
+
+//     scalar minRadius() const { return 0.21717; }
+
+//     scalar maxRadius() const { return 1.143; }
+
+//     scalar chord(scalar r) const { return 0.191; }
+
+//     std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const
+//     {
+//         return { 1, 1 };
+//     }
+// };
 
 template<class Airfoil>
 class Rectangle: public Blade
@@ -91,14 +110,9 @@ public:
 
     scalar chord(scalar r) const { return 0.1; }
 
-    scalar Cl(scalar r, scalar deg) const
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const
     {
-        return lift_[(deg + 180) / 2];
-    }
-
-    scalar Cd(scalar r, scalar deg) const
-    {
-        return drag_[(deg + 180) / 2];
+        return { lift_[(deg + 180) / 2], drag_[(deg + 180) / 2] };
     }
 
     static const std::array<scalar, 181> lift_;
