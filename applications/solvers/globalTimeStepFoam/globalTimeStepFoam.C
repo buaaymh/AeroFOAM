@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
         if (fluidProps.withSourceTerm)
         {
-            actuationSource->addSourceTerms(runTime.value(), resRho, resRhoU, resRhoE);
+            actuationSource->addSourceTerms(runTime.value()+runTime.deltaT().value()/3.0, resRho, resRhoU, resRhoE);
         }
         solver.rho()  = 0.75 * rho_0  + 0.25 * (solver.rho()  + resRho  * dt_dv);
         solver.rhoU() = 0.75 * rhoU_0 + 0.25 * (solver.rhoU() + resRhoU * dt_dv);
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
         solver.evaluateFlowRes(resRho, resRhoU, resRhoE);
         if (fluidProps.withSourceTerm)
         {
-            actuationSource->addSourceTerms(runTime.value(), resRho, resRhoU, resRhoE);
+            actuationSource->addSourceTerms(runTime.value()+2.0*runTime.deltaT().value()/3.0, resRho, resRhoU, resRhoE);
         }
         solver.rho()  = 1.0/3 * rho_0  + 2.0/3 * (solver.rho()  + resRho  * dt_dv);
         solver.rhoU() = 1.0/3 * rhoU_0 + 2.0/3 * (solver.rhoU() + resRhoU * dt_dv);

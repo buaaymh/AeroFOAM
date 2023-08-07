@@ -61,7 +61,7 @@ Foam::ActuationSource::ActuationSource
         dimensionedScalar(dimless/dimArea, 0.0)
     )
 {
-    blade_ = std::make_unique<Rectangle<SC1095>>(mesh_);
+    blade_ = std::make_unique<CaradonnaTung>();
     forAll(mesh_.cellZones(), zoneI)
     {
         const word name = mesh_.cellZones()[zoneI].name();
@@ -82,6 +82,8 @@ void Foam::ActuationSource::addSourceTerms
 )
 {
     ForceSource_ = vector::zero;
+    volVectorField rhoGrad = fvc::grad(rho_);
+    volTensorField UGrad = fvc::grad(U_);
     for (auto& rotor : rotors_)
     {
         if (mag(time - rotor.t_current_) > 1e-10) rotor.updateSections(time);
@@ -93,7 +95,10 @@ void Foam::ActuationSource::addSourceTerms
             if (rotor.procNo_[pointI] == Pstream::myProcNo())
             {
                 const label i = section.adjCell;
-                auto span_info = rotor.getForce(rho_[i], U_[i], section);
+                const vector delta = rotor.coords_[pointI] - mesh_.C()[i];
+                const scalar rho = rho_[i] + (rhoGrad[i]&delta);
+                const vector U   = U_[i]   + (UGrad[i]&delta);
+                auto span_info = rotor.getForce(rho, U, section);
                 if (pointI < rotor.nSpans_) rotor.spanInfo_[pointI] = span_info;
                 rotor.force_[pointI] = span_info.force;
             }
@@ -156,14 +161,16 @@ void Foam::ActuationSource::write()
                     outputFilePtr() << r_R << tab << Cl[spanI] << endl;
                 }
             }
-
-            scalar CT = 2.0*rotor.thrust_/(sqr(rotor.radOmega_*blade_->maxRadius())*sqr(blade_->maxRadius())*constant::mathematical::pi);
-            scalar CM = 2.0*rotor.torque_/(sqr(rotor.radOmega_*blade_->maxRadius())*pow3(blade_->maxRadius())*constant::mathematical::pi);
-            Info << "# ------ " << rotor.name_ << " ------ #" << nl
-                 << "# CT   [-] = " << setprecision(4) << CT << nl
-                 << "# CM   [-] = " << setprecision(4) << CM << endl;
         }
-        Info << "----------------------------------------" << nl;
     }
+    for (const auto& rotor : rotors_)
+    {
+        scalar CT = rotor.thrust_/(sqr(rotor.radOmega_*blade_->maxRadius())*sqr(blade_->maxRadius())*constant::mathematical::pi);
+        scalar CM = rotor.torque_/(sqr(rotor.radOmega_*blade_->maxRadius())*pow3(blade_->maxRadius())*constant::mathematical::pi);
+        Info << "# ------ " << rotor.name_ << " ------ #" << nl
+                << "# CT   [-] = " << setprecision(4) << CT << nl
+                << "# CM   [-] = " << setprecision(4) << CM << endl;
+    }
+    Info << "----------------------------------------" << nl;
 }
 

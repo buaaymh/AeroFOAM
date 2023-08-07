@@ -55,12 +55,8 @@ class Blade
     void operator=(const Blade&);
 
 public:
-    // Protected Member
-    const fvMesh& mesh_;
-
     // Constructors
-    Blade(const fvMesh& mesh);
-
+    Blade() {};
     // Destructor - default
     virtual ~Blade() {};
     
@@ -74,35 +70,34 @@ public:
     virtual std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const = 0;
 };
 
-// class CaradonnaTung : public Blada
-// {
-// public:
-//     CaradonnaTung(const fvMesh& mesh);
+class CaradonnaTung: public Blade
+{
+public:
+    // Constructors
+    CaradonnaTung();
+    // Destructor - default
+    ~CaradonnaTung() noexcept = default;
 
-//     // Destructor - default
-//     ~CaradonnaTung() noexcept = default;
+    scalar minRadius() const { return 0.21717; }
 
-//     scalar minRadius() const { return 0.21717; }
+    scalar maxRadius() const { return 1.143; }
 
-//     scalar maxRadius() const { return 1.143; }
+    scalar chord(scalar r) const { return 0.191; }
 
-//     scalar chord(scalar r) const { return 0.191; }
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
 
-//     std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const
-//     {
-//         return { 1, 1 };
-//     }
-// };
+    static const std::array<scalar, 16> lift_;
+    static const std::array<scalar, 16> drag_;
+};
 
-template<class Airfoil>
-class Rectangle: public Blade
+class UH60A: public Blade
 {
 public:
     
-    Rectangle(const fvMesh& mesh);
+    UH60A();
     
     // Destructor - default
-    ~Rectangle() noexcept = default;
+    ~UH60A() noexcept = default;
 
     scalar minRadius() const { return 0.1; }
 
@@ -110,24 +105,11 @@ public:
 
     scalar chord(scalar r) const { return 0.1; }
 
-    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const
-    {
-        return { lift_[(deg + 180) / 2], drag_[(deg + 180) / 2] };
-    }
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
 
     static const std::array<scalar, 181> lift_;
     static const std::array<scalar, 181> drag_;
 };
-
-template<class Airfoil>
-const std::array<scalar, 181> Rectangle<Airfoil>::lift_
-    = Airfoil::getLiftCoefficients();
-
-template<class Airfoil>
-const std::array<scalar, 181> Rectangle<Airfoil>::drag_
-    = Airfoil::getDragCoefficients();
-
-template class Rectangle<SC1095>;
 
 } // End namespace Foam
 

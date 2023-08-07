@@ -25,19 +25,59 @@ License
 
 #include "blade.H"
 
-Foam::Blade::Blade
-(
-    const fvMesh& mesh
-)
+Foam::UH60A::UH60A()
 :
-    mesh_(mesh)
+    Blade()
 {}
 
-template<class Airfoil>
-Foam::Rectangle<Airfoil>::Rectangle
-(
-    const fvMesh& mesh
-)
+const std::array<scalar, 181> UH60A::lift_
+    = SC1095::getLiftCoefficients();
+
+const std::array<scalar, 181> UH60A::drag_
+    = SC1095::getDragCoefficients();
+
+std::pair<scalar, scalar> Foam::UH60A::Cl_Cd(scalar Ma, scalar r, scalar deg) const
+{
+    return { lift_[(deg + 180) / 2], drag_[(deg + 180) / 2] };
+}
+
+Foam::CaradonnaTung::CaradonnaTung()
 :
-    Blade(mesh)
+    Blade()
 {}
+
+const std::array<scalar, 16> CaradonnaTung::lift_
+    = NACA0012::getLiftCoefficients();
+
+const std::array<scalar, 16> CaradonnaTung::drag_
+    = NACA0012::getDragCoefficients();
+
+std::pair<scalar, scalar> Foam::CaradonnaTung::Cl_Cd(scalar Ma, scalar r, scalar deg) const
+{
+    scalar Cl, Cd;
+    scalar index = 0.5*mag(deg);
+    if (index >= 15)
+    {
+        Cl = lift_[15];
+        Cd = drag_[15];
+    }
+    else
+    {
+        label deg_floor = floor(index);
+        label deg_ceil = ceil(index);
+        if (deg_floor != deg_ceil)
+        {
+            Cl = (index - deg_floor)*lift_[deg_floor] +
+                 (deg_ceil - index) *lift_[deg_ceil];
+            Cd = (index - deg_floor)*drag_[deg_floor] +
+                 (deg_ceil - index) *drag_[deg_ceil];
+        }
+        else
+        {
+            Cl = lift_[deg_floor];
+            Cd = drag_[deg_floor];
+        }
+    }
+    if (deg < 0) Cl = - Cl;
+    return { Cl, Cd };
+}
