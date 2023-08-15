@@ -21,11 +21,8 @@ License
     You should have received a copy of the GNU General Public License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
-Class
-    Face
-
 Description
-    Face for 3rd order solver.
+    Blade.
 
 Author
     Minghao Yang
@@ -66,6 +63,8 @@ public:
     virtual scalar maxRadius() const = 0;
 
     virtual scalar chord(scalar r) const = 0;
+    
+    virtual scalar twist(scalar r) const = 0;
 
     virtual std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const = 0;
 };
@@ -83,6 +82,8 @@ public:
     scalar maxRadius() const { return 1.143; }
 
     scalar chord(scalar r) const { return 0.191; }
+    
+    scalar twist(scalar r) const { return 0; }
 
     std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
 
@@ -104,6 +105,8 @@ public:
     scalar maxRadius() const { return 1.0; }
 
     scalar chord(scalar r) const { return 0.1; }
+    
+    scalar twist(scalar r) const { return 0; }
 
     std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
 

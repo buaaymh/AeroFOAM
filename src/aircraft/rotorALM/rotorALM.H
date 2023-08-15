@@ -22,62 +22,55 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    rotor
-
-Description
-    Encompasses variables and functions related to the flow solver.
+    standard rotor ALM
 
 Author
     Minghao Yang
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef actuationSource_H
-#define actuationSource_H
+#ifndef rotorALM_H
+#define rotorALM_H
 
-#include "rotor.H"
+#include "model.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
 namespace Foam
 {
 
-class ActuationSource
+class RotorALM: public Model
 {
+    label  nBlades_, nSpans_;
+    scalar time_, thrust_, torque_;
+    vector origin_, rotate_;
+    scalar frequence_, degOmega_, radOmega_;
+    scalar twist_, eps_, dSpan_, dSector_;
+    std::unique_ptr<KDTree> tree_;
+    //- section info of all actuator points
+    scalarField sectionCount_;
+    scalarField sectionWeight_;
+    vectorField sectionForce_;
+    scalarField sectionAOA_;
+    scalarField sectionCz_;
+    scalarField sectionUy_;
+    //- section of all actuator points
+    std::map<size_t, Section> sections_;
 
 public:
-    //- Reference to mesh
-    const fvMesh& mesh_;
-    //- Density
-    volScalarField& rho_;
-    //- Velocity
-    volVectorField& U_;
-    
-    volVectorField ForceSource_;
-
-    //- second-invariant
-    volScalarField Q_;
-
-    std::unique_ptr<Blade> blade_;
-
-    std::vector<Rotor> rotors_;
-
     // Constructors
-    ActuationSource
+    RotorALM
     (
-        volScalarField& rho,
-        volVectorField& U
+        const word& name,
+        const volScalarField& rho,
+        const volVectorField& U,
+        volVectorField& force
     );
 
     // Member Functions
-    void addSourceTerms
-    (
-        scalar time,
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE
-    );
-    
+    void updatePosition(scalar time);
+
+    void evaluateForce();
+
     void write();
 
 };

@@ -8,9 +8,10 @@ bound/boundMinMax.C
 limiter/limiter.C
 element/element.C
 reconstruction/reconstruction.C
-aircraft/blade.C
-aircraft/rotor.C
-aircraft/actuationSource.C
+aircraft/source.C
+aircraft/blade/blade.C
+aircraft/rotorALM/rotorALM.C
+aircraft/model/model.C
 solver/solver.C
 eulerSolver/eulerSolver.C
 eulerSolver/euler2ndSolver/euler2ndSolver.C

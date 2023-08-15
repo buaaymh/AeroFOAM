@@ -38,7 +38,7 @@ Author
 #include "emptyFvPatch.H"
 #include "cyclicFvPatch.H"
 #include "processorFvPatch.H"
-#include "actuationSource.H"
+#include "source.H"
 #include "boundMinMax.H"
 #include "dbnsFlux.H"
 
