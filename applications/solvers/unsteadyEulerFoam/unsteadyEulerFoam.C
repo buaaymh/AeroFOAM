@@ -30,7 +30,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "solver.H"
+#include "source.H"
 #include "euler2ndSolver.H"
 #include "euler3rdSolver.H"
 
@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
     {
         runTime++;
         Info<< "Time = " << runTime.value() << " s" << nl << endl;
+        if (fluidProps.withSourceTerm) source->updatePosition(runTime.value());
 
         scalarField rho_0(solver->rho());
         vectorField rhoU_0(solver->rhoU());
@@ -80,7 +81,8 @@ int main(int argc, char *argv[])
             solver->evaluateFlowRes(resRho_1, resRhoU_1, resRhoE_1);
             if (fluidProps.withSourceTerm)
             {
-                actuationSource->addSourceTerms(runTime.value(), resRho_1, resRhoU_1, resRhoE_1);
+                source->evaluateForce(solver.get());
+                resRhoU_1 += source->force();
             }
             scalarField pseudoResRho((rho_0   - solver->rho()) /dt_dv + k11_22*resRho_1);
             vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_1);
@@ -113,7 +115,8 @@ int main(int argc, char *argv[])
             solver->evaluateFlowRes(resRho_2, resRhoU_2, resRhoE_2);
             if (fluidProps.withSourceTerm)
             {
-                actuationSource->addSourceTerms(runTime.value(), resRho_2, resRhoU_2, resRhoE_2);
+                source->evaluateForce(solver.get());
+                resRhoU_1 += source->force();
             }
             scalarField pseudoResRho((rho_0   - solver->rho())/dt_dv  + k11_22*resRho_2  + k21*resRho_1);
             vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_2 + k21*resRhoU_1);
@@ -143,7 +146,7 @@ int main(int argc, char *argv[])
         solver->rhoE() = rhoE_0 + 0.5 * dt_dv * (resRhoE_1 + resRhoE_2);
 
         solver->correctFields();
-        if (fluidProps.withSourceTerm) actuationSource->write();
+        if (fluidProps.withSourceTerm) source->write();
         runTime.write();
 
 	

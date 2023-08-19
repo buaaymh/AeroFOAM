@@ -22,59 +22,54 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Source
+    wing ALM
 
 Author
     Minghao Yang
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef source_H
-#define source_H
+#ifndef wingALM_H
+#define wingALM_H
 
-#include "solver.H"
 #include "model.H"
-#include "rotorALM.H"
-#include "wingALM.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 namespace Foam
 {
 
-class Source
+class WingALM: public Model
 {
+    bool isChordBased_;
+    label  nSpans_;
+    vector origin_, rotate_;
+    scalar refU_, twist_, epsParameter_, dx_, dSpan_;
+    std::unique_ptr<KDTree> tree_;
+    //- section info of all actuator points
+    scalarField sectionCount_;
+    scalarField sectionWeight_;
+    vectorField sectionForce_;
+    scalarField sectionAOA_;
+    scalarField sectionCz_;
+    scalarField sectionCir_;
+    //- section of all actuator points
+    std::map<size_t, Section> sections_;
 
-friend class Model;
-
-private:
-    //- Reference to mesh
-    const fvMesh& mesh_;
-    //- Density
-    volScalarField& rho_;
-    //- Velocity
-    volVectorField& U_;
-    //- ForceSource
-    volVectorField force_;
-    //- second-invariant
-    volScalarField Q_;
-    //- model
-    std::vector<std::unique_ptr<Model>> models_;
+    scalar gaussRadius(scalar r) const;
 
 public:
     // Constructors
-    Source
+    WingALM
     (
-        volScalarField& rho,
-        volVectorField& U
+        const word& name,
+        const volScalarField& rho,
+        const volVectorField& U,
+        volVectorField& force
     );
 
     // Member Functions
-    void updatePosition(scalar time);
-
     void evaluateForce(const solver* solver);
 
-    const vectorField& force() const { return force_.primitiveField(); }
-    
     void write();
 
 };

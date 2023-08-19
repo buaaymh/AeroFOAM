@@ -38,7 +38,6 @@ Author
 #include "emptyFvPatch.H"
 #include "cyclicFvPatch.H"
 #include "processorFvPatch.H"
-#include "source.H"
 #include "boundMinMax.H"
 #include "dbnsFlux.H"
 
@@ -161,6 +160,8 @@ public:
     ) = 0;
 
     virtual void correctFields();
+    
+    virtual vector sampleVelocity(label cellI, const vector& point) const { return U_[cellI]; }
 
 protected:
 

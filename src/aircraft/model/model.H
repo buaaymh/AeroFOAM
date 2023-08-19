@@ -32,6 +32,7 @@ Author
 #ifndef model_H
 #define model_H
 
+#include "solver.H"
 #include "blade.H"
 #include "definitions.H"
 #include "element.H"
@@ -88,15 +89,9 @@ public:
     // Member Functions
     virtual void updatePosition(scalar time) {};
 
-    virtual void evaluateForce() = 0;
+    virtual void evaluateForce(const solver* solver) = 0;
 
     virtual void write() = 0;
-
-    bool empty() const
-    {
-        if (mesh_.cellZones()[zoneI_].size() > 0) return false;
-        else return true;
-    }
 
 };
 

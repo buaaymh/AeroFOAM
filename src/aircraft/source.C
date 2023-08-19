@@ -71,10 +71,10 @@ Foam::Source::Source
             {
                 models_.emplace_back(std::make_unique<RotorALM>(name, rho_, U_, force_));
             }
-            // else if (model == "ACM")
-            // {
-            //     models_.emplace_back(std::make_unique<ACM>(name, *this));
-            // }
+            else if (model == "wingALM")
+            {
+                models_.emplace_back(std::make_unique<WingALM>(name, rho_, U_, force_));
+            }
             // else if (model == "ADM")
             // {
             //     models_.emplace_back(std::make_unique<ADM>(name, *this));
@@ -88,6 +88,7 @@ Foam::Source::Source
                 Info << "Error in model type" << nl
                      << "(" << nl
                      << " rotorALM" << nl
+                     << " wingALM"  << nl
                      << ")" << nl
                      << endl;
             }
@@ -103,12 +104,12 @@ void Foam::Source::updatePosition(scalar time)
     }
 }
 
-void Foam::Source::evaluateForce()
+void Foam::Source::evaluateForce(const solver* solver)
 {
     force_ = vector::zero; 
     for (auto& model : models_)
     { 
-        model->evaluateForce();
+        model->evaluateForce(solver);
     }
 }
 
@@ -120,98 +121,4 @@ void Foam::Source::write()
     for (auto& model : models_) { model->write(); }
     Info << "----------------------------------------" << endl;
 }
-
-// void Foam::Source::addSourceTerms
-// (
-//     scalar time,
-//     scalarField& resRho,
-//     vectorField& resRhoU,
-//     scalarField& resRhoE
-// )
-// {
-//     ForceSource_ = vector::zero;
-//     volVectorField rhoGrad = fvc::grad(rho_);
-//     volTensorField UGrad = fvc::grad(U_);
-//     for (auto& rotor : rotors_)
-//     {
-//         if (mag(time - rotor.t_current_) > 1e-10) rotor.updateSections(time);
-//         rotor.force_ = vectorField(rotor.procNo_.size(), vector::zero);
-//         rotor.thrust_ = 0; rotor.torque_ = 0;
-//         rotor.spanInfo_.clear();
-//         for (const auto& [pointI, section] : rotor.sections_)
-//         {
-//             if (rotor.procNo_[pointI] == Pstream::myProcNo())
-//             {
-//                 const label i = section.adjCell;
-//                 const vector delta = rotor.coords_[pointI] - mesh_.C()[i];
-//                 const scalar rho = rho_[i] + (rhoGrad[i]&delta);
-//                 const vector U   = U_[i]   + (UGrad[i]&delta);
-//                 auto span_info = rotor.getForce(rho, U, section);
-//                 if (pointI < rotor.nSpans_) rotor.spanInfo_[pointI] = span_info;
-//                 rotor.force_[pointI] = span_info.force;
-//             }
-//         }
-//         rotor.force_ = returnReduce(rotor.force_, sumOp<vectorField>());
-//         reduce(rotor.thrust_, sumOp<scalar>());
-//         reduce(rotor.torque_, sumOp<scalar>());
-//         for (const auto& [pointI, section] : rotor.sections_)
-//         {
-//             forAll(section.projectedCells, cellI)
-//             {
-//                 label i = section.projectedCells[cellI];
-//                 const scalar d2 = magSqr(rotor.coords_[pointI] - mesh_.C()[i]);
-//                 const scalar weight = rotor.getProjectedWeight(d2, section.eps);
-//                 ForceSource_[i] += rotor.force_[pointI]*weight*mesh_.V()[i];
-//             }
-            
-//         }
-//     }
-//     resRhoU += ForceSource_.primitiveField();
-// }
-
-// void Foam::Source::write()
-// {
-    // if (mesh_.time().outputTime())
-    // {
-    //     ForceSource_.primitiveFieldRef() /= mesh_.V();
-    //     volTensorField UGrad = fvc::grad(U_);
-    //     Q_ = 0.5*(sqr(tr(UGrad)) - tr(UGrad&UGrad));
-    //     for (const auto& rotor : rotors_)
-    //     {
-    //         scalarField Cl(rotor.nSpans_,0.0);
-    //         for (const auto& [pointI, span_info] : rotor.spanInfo_)
-    //         {
-    //             if (rotor.procNo_[pointI] == Pstream::myProcNo())
-    //             {
-    //                 Cl[pointI] = span_info.Cl;
-    //             }
-    //         }
-    //         reduce(Cl, sumOp<scalarField>());
-    //         if (Pstream::master())
-    //         {
-    //             fileName outputDir = mesh_.time().timePath();
-    //             mkDir(outputDir);
-    //             // File pointer to direct the output to
-    //             autoPtr<OFstream> outputFilePtr;
-    //             // Open the file in the newly created directory
-    //             outputFilePtr.reset(new OFstream(outputDir/"spanInfo.dat"));
-    //             outputFilePtr() << "#r/R" << tab << "Cl" << endl;
-    //             forAll(Cl, spanI)
-    //             {
-    //                 scalar r_R = (blade_->minRadius()+spanI*rotor.dSpan_+0.5*rotor.dSpan_)/blade_->maxRadius();
-    //                 outputFilePtr() << r_R << tab << Cl[spanI] << endl;
-    //             }
-    //         }
-    //     }
-    // }
-    // for (const auto& rotor : rotors_)
-    // {
-    //     scalar CT = rotor.thrust_/(sqr(rotor.radOmega_*blade_->maxRadius())*sqr(blade_->maxRadius())*constant::mathematical::pi);
-    //     scalar CM = rotor.torque_/(sqr(rotor.radOmega_*blade_->maxRadius())*pow3(blade_->maxRadius())*constant::mathematical::pi);
-    //     Info << "# ------ " << rotor.name_ << " ------ #" << nl
-    //             << "# CT   [-] = " << setprecision(4) << CT << nl
-    //             << "# CM   [-] = " << setprecision(4) << CM << endl;
-    // }
-    // Info << "----------------------------------------" << nl;
-// }
 

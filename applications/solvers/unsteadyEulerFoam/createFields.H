@@ -77,11 +77,10 @@ volScalarField p
     ),
     mesh
 );
-
-std::unique_ptr<ActuationSource> actuationSource;
-if (fluidProps.withSourceTerm) actuationSource = std::make_unique<ActuationSource>(rho, U);
-
 Info << "====================================================" << endl;
+
+std::unique_ptr<Source> source;
+if (fluidProps.withSourceTerm) source = std::make_unique<Source>(rho, U);
 
 std::unique_ptr<solver> solver;
 label order = mesh.schemesDict().lookup<label>("order");

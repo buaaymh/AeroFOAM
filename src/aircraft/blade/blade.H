@@ -63,10 +63,54 @@ public:
     virtual scalar maxRadius() const = 0;
 
     virtual scalar chord(scalar r) const = 0;
+
+    virtual scalar aspectRatio() const = 0;
     
     virtual scalar twist(scalar r) const = 0;
 
     virtual std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const = 0;
+};
+
+class RectangularWing: public Blade
+{
+public:
+    // Constructors
+    RectangularWing();
+    // Destructor - default
+    ~RectangularWing() noexcept = default;
+
+    scalar minRadius() const { return -0.5; }
+
+    scalar maxRadius() const { return  0.5; }
+    
+    scalar aspectRatio() const { return  8; }
+
+    scalar chord(scalar r) const { return 0.125; }
+    
+    scalar twist(scalar r) const { return 0; }
+
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
+};
+
+class EllipticWing: public Blade
+{
+public:
+    // Constructors
+    EllipticWing();
+    // Destructor - default
+    ~EllipticWing() noexcept = default;
+
+    scalar minRadius() const { return -0.5; }
+
+    scalar maxRadius() const { return  0.5; }
+    
+    scalar aspectRatio() const { return  32.0/constant::mathematical::pi; }
+
+    scalar chord(scalar r) const { return 0.125*sqrt(1.0-sqr(2.0*r)); }
+    
+    scalar twist(scalar r) const { return 0; }
+
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
 };
 
 class CaradonnaTung: public Blade
@@ -77,11 +121,13 @@ public:
     // Destructor - default
     ~CaradonnaTung() noexcept = default;
 
-    scalar minRadius() const { return 0.21717; }
+    scalar minRadius() const { return 0.1143; }
 
     scalar maxRadius() const { return 1.143; }
 
     scalar chord(scalar r) const { return 0.191; }
+    
+    scalar aspectRatio() const { return  6; }
     
     scalar twist(scalar r) const { return 0; }
 
@@ -105,6 +151,8 @@ public:
     scalar maxRadius() const { return 1.0; }
 
     scalar chord(scalar r) const { return 0.1; }
+    
+    scalar aspectRatio() const { return  10; }
     
     scalar twist(scalar r) const { return 0; }
 

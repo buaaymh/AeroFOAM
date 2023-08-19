@@ -30,6 +30,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
+#include "source.H"
 #include "turbulenceSolver.H"
 #include "turbulence2ndSolver.H"
 #include "turbulence3rdSolver.H"
@@ -60,8 +61,7 @@ int main(int argc, char *argv[])
     {
         runTime++;
         Info<< "Time = " << runTime.value() << " s" << nl << endl;
-        source->updatePosition(runTime.value());
-        // source->evaluateForce();
+        if (fluidProps.withSourceTerm) source->updatePosition(runTime.value());
 
         scalarField rho_0(solver->rho());
         vectorField rhoU_0(solver->rhoU());
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
             solver->evaluateTurbRes(resNuTilda_1);
             if (fluidProps.withSourceTerm)
             {
-                source->evaluateForce();
+                source->evaluateForce(solver.get());
                 resRhoU_1 += source->force();
             }
             scalarField pseudoResRho((rho_0   - solver->rho()) /dt_dv + k11_22*resRho_1);
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
             solver->evaluateTurbRes(resNuTilda_2);
             if (fluidProps.withSourceTerm)
             {
-                source->evaluateForce();
+                source->evaluateForce(solver.get());
                 resRhoU_2 += source->force();
             }
             scalarField pseudoResRho((rho_0   - solver->rho())/dt_dv  + k11_22*resRho_2  + k21*resRho_1);

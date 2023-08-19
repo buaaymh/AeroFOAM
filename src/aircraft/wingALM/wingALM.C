@@ -23,9 +23,9 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "rotorALM.H"
+#include "wingALM.H"
 
-Foam::RotorALM::RotorALM
+Foam::WingALM::WingALM
 (
     const word& name,
     const volScalarField& rho,
@@ -35,23 +35,20 @@ Foam::RotorALM::RotorALM
 :
     Model(name, rho, U, force)
 {
-    Info << "Install rotor ALM model in Zone " << name << endl;
+    Info << "Install wing ALM model in Zone " << name << endl;
+    isChordBased_ = mesh_.solutionDict().subDict(name).lookup<Switch>("isChordBased");
     origin_  = mesh_.solutionDict().subDict(name).lookup<vector>("origin");
     rotate_  = mesh_.solutionDict().subDict(name).lookup<vector>("rotate");
-    nBlades_ = mesh_.solutionDict().subDict(name).lookup<label>("nBlades");
     nSpans_ = mesh_.solutionDict().subDict(name).lookup<label>("nActuatorPoints");
-    frequence_ = mesh_.solutionDict().subDict(name).lookup<scalar>("frequence");
+    refU_ = mesh_.solutionDict().subDict(name).lookup<scalar>("referenceVelocity");
     twist_ = mesh_.solutionDict().subDict(name).lookup<scalar>("twist");
-    eps_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gaussRadius");
+    dx_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gridSize");
+    epsParameter_ = mesh_.solutionDict().subDict(name).lookup<scalar>("smearParameter");
     dSpan_ = (blade_->maxRadius() - blade_->minRadius()) / nSpans_;
-    dSector_ = 360.0/nBlades_;
-    degOmega_ = frequence_ * 360.0;
-    radOmega_ = frequence_ * 2 * constant::mathematical::pi;
-    sectionWeight_ = scalarField(nSpans_*nBlades_);
-    sectionForce_ = vectorField(nSpans_*nBlades_);
-    sectionAOA_ = scalarField(nSpans_*nBlades_);
-    sectionCz_ = scalarField(nSpans_*nBlades_);
-    sectionUy_ = scalarField(nSpans_*nBlades_);
+    sectionForce_ = vectorField(nSpans_);
+    sectionAOA_ = scalarField(nSpans_);
+    sectionCz_ = scalarField(nSpans_);
+    sectionCir_ = scalarField(nSpans_);
     // Build KDTree
     std::vector<std::vector<scalar>> points;
     points.reserve(mesh_.cellZones()[zoneI_].size());
@@ -66,66 +63,51 @@ Foam::RotorALM::RotorALM
         }
     }
     tree_ = std::make_unique<KDTree>(points);
-}
-
-void Foam::RotorALM::updatePosition(scalar time)
-{ 
-    time_ = time;
-    sectionWeight_ = 0;
+    // Build SphereCell
+    sectionWeight_ = scalarField(nSpans_, 0);
     vector x_unit(1, 0, 0), y_unit(0, 1, 0), z_unit(0, 0, 1);
     // Rotate for Frame
     rotateX(y_unit, z_unit, rotate_.x());
     rotateY(x_unit, z_unit, rotate_.y());
     rotateZ(x_unit, y_unit, rotate_.z());
-    // Rotate for Actuator Lines
-    rotateZ(x_unit, y_unit, degOmega_*time_);
-
-    for (label bladeI = 0; bladeI < nBlades_; bladeI++)
+    scalar y_value = blade_->minRadius() + 0.5*dSpan_;
+    for (label sectionI = 0; sectionI < nSpans_; sectionI++)
     {
-        scalar y_value = blade_->minRadius() + 0.5*dSpan_;
-        for (label pointI = 0; pointI < nSpans_; pointI++)
+        vector coordTmp = origin_ + y_value * y_unit;
+        std::vector<scalar> coord{coordTmp[0], coordTmp[1], coordTmp[2]};
+        const scalar eps = gaussRadius(y_value);
+        auto neighIds = tree_->neighborhood_indices(coord, 3*eps);
+        if (!neighIds.empty())
         {
-            vector coordTmp = origin_ + y_value * y_unit;
-            std::vector<scalar> coord{coordTmp[0], coordTmp[1], coordTmp[2]};
-            auto neighIds = tree_->neighborhood_indices(coord, 3*eps_);
-            if (!neighIds.empty())
+            std::vector<label> cellIs; cellIs.reserve(neighIds.size());
+            std::vector<scalar> weights; weights.reserve(neighIds.size());
+            for (auto& cellI : neighIds)
             {
-                const size_t sectionI = nSpans_*bladeI + pointI;
-                std::vector<label> cellIs; cellIs.reserve(neighIds.size());
-                std::vector<scalar> weights; weights.reserve(neighIds.size());
-                for (auto& cellI : neighIds)
-                {
-                    cellI = mesh_.cellZones()[zoneI_][cellI];
-                    const scalar r = mag((mesh_.C()[cellI]-origin_)&y_unit);
-                    if (r <= blade_->maxRadius() && r >= blade_->minRadius())
-                    {
-                        const scalar d2 = magSqr(coordTmp - mesh_.C()[cellI]);
-                        const scalar weight = get3DGaussWeight(d2, eps_) * mesh_.V()[cellI];
-                        cellIs.push_back(cellI);
-                        weights.push_back(weight);
-                        sectionWeight_[sectionI] += weight;
-                    }
-                }
-                sections_[sectionI] = Section();
-                sections_[sectionI].coord = coordTmp;
-                sections_[sectionI].projectedCells = labelList(cellIs.begin(), cellIs.end());
-                sections_[sectionI].weights = scalarList(weights.begin(), weights.end());
-                sections_[sectionI].x_unit = x_unit;
-                sections_[sectionI].y_unit = y_unit;
-                sections_[sectionI].z_unit = z_unit;
+                cellI = mesh_.cellZones()[zoneI_][cellI];
+                const scalar d2 = magSqr(coordTmp - mesh_.C()[cellI]);
+                const scalar weight = get3DGaussWeight(d2, eps) * mesh_.V()[cellI];
+                cellIs.push_back(cellI);
+                weights.push_back(weight);
+                sectionWeight_[sectionI] += weight;
             }
-            y_value += dSpan_;
+            sections_[sectionI] = Section();
+            sections_[sectionI].coord = coordTmp;
+            sections_[sectionI].projectedCells = labelList(cellIs.begin(), cellIs.end());
+            sections_[sectionI].weights = scalarList(weights.begin(), weights.end());
+            sections_[sectionI].x_unit = x_unit;
+            sections_[sectionI].y_unit = y_unit;
+            sections_[sectionI].z_unit = z_unit;
         }
-        rotateZ(x_unit, y_unit, dSector_);
+        y_value += dSpan_;
     }
     sectionWeight_ = returnReduce(sectionWeight_, sumOp<scalarField>());
 }
 
-void Foam::RotorALM::evaluateForce(const solver* solver)
+void Foam::WingALM::evaluateForce(const solver* solver)
 {
     // Sample rho and U
-    scalarField sectionRho(nSpans_*nBlades_, 0);
-    vectorField sectionU(nSpans_*nBlades_, vector::zero);
+    scalarField sectionRho(nSpans_, 0);
+    vectorField sectionU(nSpans_, vector::zero);
     for (const auto& [sectionI, section] : sections_)
     {
         forAll(section.projectedCells, cellI)
@@ -141,14 +123,12 @@ void Foam::RotorALM::evaluateForce(const solver* solver)
     sectionForce_ = vector::zero;
     sectionAOA_ = 0;
     sectionCz_ = 0;
+    sectionCir_ = 0;
     for (const auto& [sectionI, section] : sections_)
     {
         scalar r = mag(section.coord - origin_);
-        vector velocity_rel = sectionU[sectionI] + r*radOmega_*section.x_unit;
-        vector x_unit = section.x_unit;
-        if (degOmega_ < 0) x_unit = -section.x_unit;
-        scalar u = velocity_rel&x_unit;
-        scalar w = velocity_rel&section.z_unit;
+        scalar u = sectionU[sectionI]&section.x_unit;
+        scalar w = sectionU[sectionI]&section.z_unit;
         scalar U_in = sqrt(sqr(u) + sqr(w));
         scalar twist = twist_ + blade_->twist(r);
         sectionAOA_[sectionI] = getAngleOfAttack(u, w, twist);
@@ -156,7 +136,8 @@ void Foam::RotorALM::evaluateForce(const solver* solver)
         auto [cos, sin] = cosSin(sectionAOA_[sectionI] - twist); // angle of inflow
         sectionCz_[sectionI] = Cl * cos + Cd * sin;
         scalar Cx = Cd * cos - Cl * sin;
-        sectionForce_[sectionI]  = sectionCz_[sectionI]*section.z_unit + Cx*x_unit;
+        sectionCir_[sectionI] = 0.5*U_in*blade_->chord(r)*sectionCz_[sectionI];
+        sectionForce_[sectionI]  = sectionCz_[sectionI]*section.z_unit + Cx*section.x_unit;
         sectionForce_[sectionI] *= -0.5*sectionRho[sectionI]*sqr(U_in)*blade_->chord(r)*dSpan_;
         forAll(section.projectedCells, cellI)
         {
@@ -166,48 +147,60 @@ void Foam::RotorALM::evaluateForce(const solver* solver)
     }
 }
 
-void Foam::RotorALM::write()
+void Foam::WingALM::write()
 {
-    scalarField sectionCount(nSpans_*nBlades_, 0);
+    scalarField sectionCount(nSpans_, 0);
     for (const auto& [sectionI, section] : sections_) sectionCount[sectionI] = 1.0;
     sectionCount = returnReduce(sectionCount, sumOp<scalarField>());
-    scalar thrust = 0, torque = 0;
+    scalar lift = 0, drag = 0;
     for (const auto& [sectionI, section] : sections_)
     { 
         scalar r = mag(section.coord - origin_);
-        thrust += - (sectionForce_[sectionI]&section.z_unit)  /sectionCount[sectionI];
-        torque += - (sectionForce_[sectionI]&section.x_unit)*r/sectionCount[sectionI];
+        lift += - (sectionForce_[sectionI]&section.z_unit)/sectionCount[sectionI];
+        drag += - (sectionForce_[sectionI]&section.x_unit)/sectionCount[sectionI];
     }
-    thrust = returnReduce(thrust, sumOp<scalar>());
-    torque = returnReduce(torque, sumOp<scalar>());
-    scalar CT = thrust/(sqr(radOmega_*blade_->maxRadius())*sqr(blade_->maxRadius()) *constant::mathematical::pi);
-    scalar CM = torque/(sqr(radOmega_*blade_->maxRadius())*pow3(blade_->maxRadius())*constant::mathematical::pi);
+    lift = returnReduce(lift, sumOp<scalar>());
+    drag = returnReduce(drag, sumOp<scalar>());
+    const scalar area = sqr(blade_->maxRadius()-blade_->minRadius())/blade_->aspectRatio();
+    scalar Cl = lift/(0.5*sqr(refU_)*area);
+    scalar Cd = drag/(0.5*sqr(refU_)*area);
     Info << "# ------ " << name_ << " ------ #" << nl
-         << "# CT   [-] = " << setprecision(4) << CT << nl
-         << "# CM   [-] = " << setprecision(4) << CM << endl;
+         << "# Cl   [-] = " << setprecision(4) << Cl << nl
+         << "# Cd   [-] = " << setprecision(4) << Cd << endl;
 
     if (mesh_.time().outputTime())
     {
         sectionAOA_ = returnReduce(sectionAOA_, sumOp<scalarField>());
         sectionCz_  = returnReduce(sectionCz_, sumOp<scalarField>());
+        sectionCir_ = returnReduce(sectionCir_, sumOp<scalarField>());
         if (Pstream::master())
         {
             sectionAOA_ /= sectionCount;
             sectionCz_  /= sectionCount;
+            sectionCir_ /= sectionCount;
             fileName outputDir = mesh_.time().timePath();
             mkDir(outputDir);
             // File pointer to direct the output to
             autoPtr<OFstream> outputFilePtr;
             // Open the file in the newly created directory
             outputFilePtr.reset(new OFstream(outputDir/"sectionInfo.dat"));
-            outputFilePtr() << "#r/R" << tab << "Cl" << tab << "AOA" << endl;
+            outputFilePtr() << "#r/R" << tab << "Cl" << tab << "AOA" << tab << "Cir" << endl;
             for (label pointI = 0; pointI < nSpans_; pointI++)
             {
                 scalar r_R = (blade_->minRadius()+(pointI+0.5)*dSpan_)/blade_->maxRadius();
                 outputFilePtr() << r_R << tab
                                 << sectionCz_[pointI] << tab
-                                << sectionAOA_[pointI] << endl;
+                                << sectionAOA_[pointI] << tab
+                                << sectionCir_[pointI] << endl;
             }
         }
     }
 }
+
+scalar Foam::WingALM::gaussRadius(scalar r) const
+{
+    if (isChordBased_)
+        return max(epsParameter_*blade_->chord(r), dx_);
+    else
+        return epsParameter_*dx_;
+}   

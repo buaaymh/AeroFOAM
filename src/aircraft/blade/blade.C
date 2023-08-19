@@ -41,6 +41,26 @@ std::pair<scalar, scalar> Foam::UH60A::Cl_Cd(scalar Ma, scalar r, scalar deg) co
     return { lift_[(deg + 180) / 2], drag_[(deg + 180) / 2] };
 }
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+Foam::RectangularWing::RectangularWing() : Blade() {}
+
+std::pair<scalar, scalar> Foam::RectangularWing::Cl_Cd(scalar Ma, scalar r, scalar deg) const
+{
+    return { 2*sqr(constant::mathematical::pi)*deg/180, 0 };
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+Foam::EllipticWing::EllipticWing() : Blade() {}
+
+std::pair<scalar, scalar> Foam::EllipticWing::Cl_Cd(scalar Ma, scalar r, scalar deg) const
+{
+    return { 2*sqr(constant::mathematical::pi)*deg/180, 0 };
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 Foam::CaradonnaTung::CaradonnaTung()
 :
     Blade()

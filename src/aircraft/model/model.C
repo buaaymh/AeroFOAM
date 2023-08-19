@@ -49,6 +49,14 @@ Foam::Model::Model
     {
         blade_ = std::make_unique<UH60A>();
     }
+    else if (blade == "RectangularWing")
+    {
+        blade_ = std::make_unique<RectangularWing>();
+    }
+    else if (blade == "EllipticWing")
+    {
+        blade_ = std::make_unique<EllipticWing>();
+    }
     else
     {
         Info << "Error in blade type" << nl

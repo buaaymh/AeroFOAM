@@ -69,7 +69,7 @@ public:
     // Member Functions
     void updatePosition(scalar time);
 
-    void evaluateForce();
+    void evaluateForce(const solver* solver);
 
     void write();
 

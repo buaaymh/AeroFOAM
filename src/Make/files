@@ -11,6 +11,7 @@ reconstruction/reconstruction.C
 aircraft/source.C
 aircraft/blade/blade.C
 aircraft/rotorALM/rotorALM.C
+aircraft/wingALM/wingALM.C
 aircraft/model/model.C
 solver/solver.C
 eulerSolver/eulerSolver.C
