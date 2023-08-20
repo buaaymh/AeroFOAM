@@ -101,6 +101,8 @@ public:
         vectorField& resRhoU,
         scalarField& resRhoE
     );
+    
+    vector sampleVelocity(label cellI, const vector& point) const;
 
 };
 

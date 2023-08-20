@@ -13,6 +13,7 @@ IOdictionary testDict
 fluidProperties fluidProps;
 
 testDict.lookup("simulationType") >> fluidProps.simulationType;
+fluidProps.withSourceTerm = testDict.lookupOrDefault<bool>("withSourceTerm", false);
 
 Info << "=================Fluid Properties===================" << nl
      << "simulationType: "  << fluidProps.simulationType << nl
@@ -95,8 +96,11 @@ if (Pstream::master())
 
 Info << "====================================================" << endl;
 
-std::unique_ptr<solver> solver;
+std::unique_ptr<Source> source;
+if (fluidProps.withSourceTerm) source = std::make_unique<Source>(rho, U);
+
 label order = mesh.schemesDict().lookup<label>("order");
+std::unique_ptr<solver> solver;
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);

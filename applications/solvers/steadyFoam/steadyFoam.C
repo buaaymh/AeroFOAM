@@ -30,7 +30,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "solver.H"
+#include "source.H"
 #include "eulerSolver.H"
 #include "euler2ndSolver.H"
 #include "euler3rdSolver.H"
@@ -63,6 +63,11 @@ int main(int argc, char *argv[])
         Info << "# " << method << " # Iteration Step = " << runTime.value() << endl;
         Info << "========================================" << nl;
         solver->evaluateFlowRes(resRho, resRhoU, resRhoE);
+        if (fluidProps.withSourceTerm)
+        {
+            source->evaluateForce(solver.get());
+            resRhoU += source->force();
+        }
         Info << "# Local Courant          [-] = " << CFL << endl;
         Info << "----------------------------------------" << nl;
         
@@ -86,6 +91,7 @@ int main(int argc, char *argv[])
                             << resRhoU << tab
                             << resRhoE << endl;
         }
+        if (fluidProps.withSourceTerm) source->write();
         if (resRho < tolerance) runTime.writeAndEnd();
         else runTime.write();
 	

@@ -22,72 +22,54 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    euler2ndSolver
-
-Description
-    2nd order solver for Euler flow.
+    2D ALM
 
 Author
     Minghao Yang
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef euler2ndSolver_H
-#define euler2ndSolver_H
+#ifndef ALM2D_H
+#define ALM2D_H
 
-#include "eulerSolver.H"
-#include "limiter.H"
+#include "model.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
 namespace Foam
 {
 
-/*---------------------------------------------------------------------------*\
-                           Class euler2ndSolver Declaration
-\*---------------------------------------------------------------------------*/
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-class euler2ndSolver: public eulerSolver, public Limiter
+class ALM2D: public Model
 {
-    using eulerSolver::mesh_;
-    // Private Data
-    volVectorField rhoGrad_;
-    //- Velocity grad
-    volTensorField UGrad_;
-    //- temperature grad
-    volVectorField pGrad_;
-
-    // Private Member Functions
-    //- Disallow default bitwise copy construct
-    euler2ndSolver(const euler2ndSolver&);
-    //- Disallow default bitwise assignment
-    void operator=(const euler2ndSolver&);
+    word simplingType_;
+    bool isNormalized_, isSimplingP0_;
+    vector origin_, refU_;
+    scalar refRho_, eps_;
+    std::unique_ptr<KDTree> tree_;
+    labelList projectedCells_;
+    //- section info of all actuator points
+    scalar sectionWeight_, sectionAOA_;
+    vector sectionVelocity_, sectionForce_;
 
 public:
-
-    // Constructors - default
-    euler2ndSolver
+    // Constructors
+    ALM2D
     (
-        const fluidProperties& fluidProps,
-        volScalarField& rho,
-        volVectorField& U,
-        volScalarField& p
+        const word& name,
+        const volScalarField& rho,
+        const volVectorField& U,
+        volVectorField& force
     );
-
-    // Destructor - default
-    virtual ~euler2ndSolver() {};
 
     // Member Functions
-    virtual void evaluateFlowRes
-    (
-        scalarField& resRho,
-        vectorField& resRhoU,
-        scalarField& resRhoE
-    );
+    void evaluateForce(const solver* solver);
+
+    void getDefinedSamplingForce(const solver* solver);
     
-    vector sampleVelocity(label cellI, const vector& point) const;
+    void getPointSamplingForce(const solver* solver);
+    
+    void getIntegralSamplingForce(const solver* solver);
+
+    void write();
 
 };
 

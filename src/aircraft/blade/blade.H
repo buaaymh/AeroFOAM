@@ -71,6 +71,27 @@ public:
     virtual std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const = 0;
 };
 
+class Airfoil2D: public Blade
+{
+public:
+    // Constructors
+    Airfoil2D();
+    // Destructor - default
+    ~Airfoil2D() noexcept = default;
+
+    scalar minRadius() const { return -GREAT; }
+
+    scalar maxRadius() const { return  GREAT; }
+    
+    scalar aspectRatio() const { return GREAT; }
+
+    scalar chord(scalar r) const { return 1; }
+    
+    scalar twist(scalar r) const { return 0; }
+
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const { return {1, 0}; }
+};
+
 class RectangularWing: public Blade
 {
 public:

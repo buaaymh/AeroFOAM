@@ -77,4 +77,13 @@ Foam::euler2ndSolver::euler2ndSolver
 
 #include "evaluateFlowRes.H"
 
+vector Foam::euler2ndSolver::sampleVelocity
+(
+    label cellI,
+    const vector& point
+) const
+{
+    return U_[cellI] + (UGrad_[cellI]&(point-mesh_.C()[cellI]));
+}
+
 // ************************************************************************* //

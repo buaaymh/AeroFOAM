@@ -43,6 +43,10 @@ std::pair<scalar, scalar> Foam::UH60A::Cl_Cd(scalar Ma, scalar r, scalar deg) co
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+Foam::Airfoil2D::Airfoil2D() : Blade() {}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 Foam::RectangularWing::RectangularWing() : Blade() {}
 
 std::pair<scalar, scalar> Foam::RectangularWing::Cl_Cd(scalar Ma, scalar r, scalar deg) const

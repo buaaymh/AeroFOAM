@@ -75,6 +75,19 @@ void Foam::euler3rdSolver::evaluateFlux
     rhoEFlux += magSf * rhoEFluxTemp;
 }
 
+vector Foam::euler3rdSolver::sampleVelocity
+(
+    label cellI,
+    const vector& point
+) const
+{
+    const vector delta = point-mesh_.C()[cellI];
+    scalar rho, rhoE; vector rhoU;
+    evaluateVars(rho, rhoU, rhoE, rho_[cellI], rhoU_[cellI], rhoE_[cellI],
+                 coefs_[cellI], basisMean_[cellI], rDeltaXYZ_[cellI], delta);
+    return rhoU/rho;
+}
+
 #include "evaluateFlowRes.H"
 
 // ************************************************************************* //

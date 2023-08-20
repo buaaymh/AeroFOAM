@@ -57,6 +57,10 @@ Foam::Model::Model
     {
         blade_ = std::make_unique<EllipticWing>();
     }
+    else if (blade == "Airfoil2D")
+    {
+        blade_ = std::make_unique<Airfoil2D>();
+    }
     else
     {
         Info << "Error in blade type" << nl

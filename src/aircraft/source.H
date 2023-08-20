@@ -36,6 +36,7 @@ Author
 #include "model.H"
 #include "rotorALM.H"
 #include "wingALM.H"
+#include "ALM2D.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 namespace Foam

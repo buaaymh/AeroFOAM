@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
             if (fluidProps.withSourceTerm)
             {
                 source->evaluateForce(solver.get());
-                resRhoU_1 += source->force();
+                resRhoU_2 += source->force();
             }
             scalarField pseudoResRho((rho_0   - solver->rho())/dt_dv  + k11_22*resRho_2  + k21*resRho_1);
             vectorField pseudoResRhoU((rhoU_0 - solver->rhoU())/dt_dv + k11_22*resRhoU_2 + k21*resRhoU_1);

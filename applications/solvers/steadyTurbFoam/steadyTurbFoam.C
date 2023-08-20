@@ -30,6 +30,7 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
+#include "source.H"
 #include "turbulenceSolver.H"
 #include "turbulence2ndSolver.H"
 #include "turbulence3rdSolver.H"
@@ -62,7 +63,8 @@ int main(int argc, char *argv[])
         solver->evaluateTurbRes(resNuTilda);
         if (fluidProps.withSourceTerm)
         {
-            actuationSource->addSourceTerms(0, resRho, resRhoU, resRhoE);
+            source->evaluateForce(solver.get());
+            resRhoU += source->force();
         }
         Info << "# Local Courant          [-] = " << CFL << endl;
         Info << "----------------------------------------" << nl;
@@ -89,8 +91,6 @@ int main(int argc, char *argv[])
         Info << "# Turbulence residual    [-] = " << resNuTilda << endl;
         Info << "----------------------------------------" << nl;
 
-        if (fluidProps.withSourceTerm) actuationSource->write();
-
         if (Pstream::master())
         {
             outputFilePtr() << runTime.value() << tab
@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
                             << resRhoE << tab
                             << resNuTilda << endl;
         }
+        if (fluidProps.withSourceTerm) source->write();
         if (resRho < tolerance) runTime.writeAndEnd();
         else runTime.write();
 	
