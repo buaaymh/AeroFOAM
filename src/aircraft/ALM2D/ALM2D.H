@@ -41,9 +41,9 @@ namespace Foam
 class ALM2D: public Model
 {
     word simplingType_;
-    bool isNormalized_, isSimplingP0_;
+    bool isNormalized_, isSimplingP0_, isCorreForCd_;
     vector origin_, refU_;
-    scalar refRho_, eps_;
+    scalar refRho_, Cl_, Cd_, eps_;
     std::unique_ptr<KDTree> tree_;
     labelList projectedCells_;
     //- section info of all actuator points
