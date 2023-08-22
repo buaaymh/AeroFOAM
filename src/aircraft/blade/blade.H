@@ -104,13 +104,13 @@ public:
 
     scalar maxRadius() const { return  0.5; }
     
-    scalar aspectRatio() const { return  8; }
+    scalar aspectRatio() const { return  10; }
 
-    scalar chord(scalar r) const { return 0.125; }
+    scalar chord(scalar r) const { return 0.1; }
     
     scalar twist(scalar r) const { return 0; }
 
-    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const { return {1, 0}; }
 };
 
 class EllipticWing: public Blade

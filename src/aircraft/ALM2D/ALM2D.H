@@ -48,7 +48,7 @@ class ALM2D: public Model
     labelList projectedCells_;
     //- section info of all actuator points
     scalar sectionWeight_, sectionAOA_;
-    vector sectionVelocity_, sectionForce_;
+    vector sectionU_, sectionForce_;
 
 public:
     // Constructors

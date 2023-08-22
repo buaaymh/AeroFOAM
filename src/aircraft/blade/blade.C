@@ -49,11 +49,6 @@ Foam::Airfoil2D::Airfoil2D() : Blade() {}
 
 Foam::RectangularWing::RectangularWing() : Blade() {}
 
-std::pair<scalar, scalar> Foam::RectangularWing::Cl_Cd(scalar Ma, scalar r, scalar deg) const
-{
-    return { 2*sqr(constant::mathematical::pi)*deg/180, 0 };
-}
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::EllipticWing::EllipticWing() : Blade() {}

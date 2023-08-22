@@ -97,8 +97,8 @@ void Foam::ALM2D::evaluateForce(const solver* solver)
 
 void Foam::ALM2D::getDefinedSamplingForce(const solver* solver)
 {
-    sectionVelocity_ = refU_;
-    sectionAOA_ = getAngleOfAttack(sectionVelocity_.x(), sectionVelocity_.y(), 0);
+    sectionU_ = refU_;
+    sectionAOA_ = getAngleOfAttack(sectionU_.x(), sectionU_.y(), 0);
     scalar refAOA = getAngleOfAttack(refU_.x(), refU_.y(), 0);
     auto [cos, sin] = cosSin(refAOA); // angle of inflow
     scalar Cx = Cd_ * cos - Cl_ * sin;
@@ -123,16 +123,16 @@ void Foam::ALM2D::getPointSamplingForce(const solver* solver)
     label procNo = 0;
     if (d2 == minDist2) procNo = Pstream::myProcNo();
     procNo = returnReduce(d2, maxOp<label>());
-    sectionVelocity_ = vector::zero;
+    sectionU_ = vector::zero;
     if (procNo == Pstream::myProcNo())
     {
-        if (isSimplingP0_) sectionVelocity_ = U_[simplingCellI];
-        else sectionVelocity_ = solver->sampleVelocity(simplingCellI, origin_);
+        if (isSimplingP0_) sectionU_ = U_[simplingCellI];
+        else sectionU_ = solver->sampleVelocity(simplingCellI, origin_);
     }
-    sectionVelocity_ = returnReduce(sectionVelocity_, sumOp<vector>());
+    sectionU_ = returnReduce(sectionU_, sumOp<vector>());
     // Correction for Cd
-    if (isCorreForCd_) sectionVelocity_ /= (1.0 - Cd_*blade_->chord(0)/(4*sqrt(constant::mathematical::pi)*eps_));
-    sectionAOA_ = getAngleOfAttack(sectionVelocity_.x(), sectionVelocity_.y(), 0);
+    if (isCorreForCd_) sectionU_ /= (1.0 - Cd_*blade_->chord(0)/(4*sqrt(constant::mathematical::pi)*eps_));
+    sectionAOA_ = getAngleOfAttack(sectionU_.x(), sectionU_.y(), 0);
     scalar refAOA = getAngleOfAttack(refU_.x(), refU_.y(), 0);
     auto [cos, sin] = cosSin(refAOA); // angle of inflow
     scalar Cx = Cd_ * cos - Cl_ * sin;
@@ -149,18 +149,18 @@ void Foam::ALM2D::getPointSamplingForce(const solver* solver)
 
 void Foam::ALM2D::getIntegralSamplingForce(const solver* solver)
 {
-    sectionVelocity_ = vector::zero;
+    sectionU_ = vector::zero;
     forAll(projectedCells_, cellLocalI)
     {
         label cellGlobalI = projectedCells_[cellLocalI];
         scalar r2 = magSqr(mesh_.C()[cellGlobalI] - origin_);
         scalar weight = mesh_.V()[cellGlobalI]*Foam::exp(-r2/sqr(eps_))/(sqr(eps_)*constant::mathematical::pi);
-        sectionVelocity_ += U_[cellGlobalI] * weight;
+        sectionU_ += U_[cellGlobalI] * weight;
     }
-    sectionVelocity_ = returnReduce(sectionVelocity_, sumOp<vector>())/sectionWeight_;
+    sectionU_ = returnReduce(sectionU_, sumOp<vector>())/sectionWeight_;
     // Correction for Cd
-    if (isCorreForCd_) sectionVelocity_ /= (1.0 - Cd_*blade_->chord(0)/(4*sqrt(constant::mathematical::pi)*eps_));
-    sectionAOA_ = getAngleOfAttack(sectionVelocity_.x(), sectionVelocity_.y(), 0);
+    if (isCorreForCd_) sectionU_ /= (1.0 - Cd_*blade_->chord(0)/(4*sqrt(constant::mathematical::pi)*eps_));
+    sectionAOA_ = getAngleOfAttack(sectionU_.x(), sectionU_.y(), 0);
     scalar refAOA = getAngleOfAttack(refU_.x(), refU_.y(), 0);
     auto [cos, sin] = cosSin(refAOA); // angle of inflow
     scalar Cx = Cd_ * cos - Cl_ * sin;
@@ -179,11 +179,11 @@ void Foam::ALM2D::write()
 {
     scalar refAOA = getAngleOfAttack(refU_.x(), refU_.y(), 0);
     scalar error_AOA = mag(sectionAOA_ - refAOA);
-    scalar error_velocity = 100*(mag(sectionVelocity_)-mag(refU_))/mag(refU_);
+    scalar error_velocity = 100*(mag(sectionU_)-mag(refU_))/mag(refU_);
     Info << "# simpling weight        [-] = " << sectionWeight_  << endl;
     Info << "# simpling AOA           [-] = " << sectionAOA_  << endl;
     Info << "# error in AOA           [-] = " << error_AOA << endl;
-    Info << "# simpling velocity      [-] = " << sectionVelocity_  << endl;
+    Info << "# simpling velocity      [-] = " << sectionU_  << endl;
     Info << "# error in velocity      [%] = " << error_velocity << endl;
 }
 

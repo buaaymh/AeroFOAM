@@ -41,16 +41,16 @@ namespace Foam
 class WingALM: public Model
 {
     bool isChordBased_;
+    word wingType_;
     label  nSpans_;
-    vector origin_, rotate_;
-    scalar refU_, twist_, epsParameter_, dx_, dSpan_;
+    vector origin_, rotate_, refU_;
+    scalar refRho_, twist_, epsParameter_, dx_, dSpan_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
     scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
     scalarField sectionAOA_;
-    scalarField sectionCz_;
     scalarField sectionCir_;
     //- section of all actuator points
     std::map<size_t, Section> sections_;
@@ -69,6 +69,10 @@ public:
 
     // Member Functions
     void evaluateForce(const solver* solver);
+    
+    void getConstCirculationForce(const solver* solver);
+    
+    void getEllipticallyLoadedForce(const solver* solver);
 
     void write();
 
