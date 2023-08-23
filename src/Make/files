@@ -13,6 +13,7 @@ aircraft/blade/blade.C
 aircraft/ALM2D/ALM2D.C
 aircraft/rotorALM/rotorALM.C
 aircraft/wingALM/wingALM.C
+aircraft/wingACE/wingACE.C
 aircraft/model/model.C
 solver/solver.C
 eulerSolver/eulerSolver.C

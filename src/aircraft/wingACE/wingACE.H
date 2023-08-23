@@ -22,68 +22,46 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Model
+    wing ACE
 
 Author
     Minghao Yang
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef model_H
-#define model_H
+#ifndef wingACE_H
+#define wingACE_H
 
-#include "solver.H"
-#include "blade.H"
-#include "definitions.H"
-#include "element.H"
-#include "KDTree.H"
-#include "Map.H"
+#include "model.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 namespace Foam
 {
 
-struct Section
+class wingACE: public Model
 {
-    Section()
-    : 
-        coord(vector::zero),
-        x_unit(vector::zero),
-        y_unit(vector::zero),
-        z_unit(vector::zero)
-    {};
-    
-    vector coord;
-    labelList projectedCells;
-    scalarList weights;
-    vector x_unit, y_unit, z_unit;
-};
+    word wingType_;
+    label  nSpans_;
+    vector origin_, rotate_, refU_;
+    scalar refRho_, twist_, dGrid_, dSpan_,
+           nMin_, nMax_, C0_, C1_;
+    std::unique_ptr<KDTree> tree_;
+    //- section info of all actuator points
+    scalarField sectionCount_;
+    scalarField sectionWeight_;
+    vectorField sectionForce_;
+    scalarField sectionAOA_;
+    scalarField sectionCir_;
+    //- section of all actuator points
+    std::map<size_t, Section> sections_;
 
-class Model
-{
-    
-protected:
-    const word name_;
-    label zoneI_;
-    //- Reference to mesh
-    const fvMesh& mesh_;
-    //- Density
-    const volScalarField& rho_;
-    //- Velocity
-    const volVectorField& U_;
-    //- ForceSource
-    volVectorField& force_;
-    //- Blade
-    std::unique_ptr<Blade> blade_;
-    
-    // Member Functions
-    scalar getAngleOfAttack(scalar u, scalar w, scalar twist) const;
-    
-    scalar get3DGaussWeight(scalar d2, scalar eps) const;
+    scalar gaussRadius(scalar r) const;
+
+    scalar getACEGaussWeight(scalar r, scalar ps, scalar pn) const;
 
 public:
     // Constructors
-    Model
+    wingACE
     (
         const word& name,
         const volScalarField& rho,
@@ -91,15 +69,14 @@ public:
         volVectorField& force
     );
 
-    // Destructor - default
-    virtual ~Model() {};
-
     // Member Functions
-    virtual void updatePosition(scalar time) {};
+    void evaluateForce(const solver* solver);
+    
+    void getConstCirculationForce(const solver* solver);
+    
+    void getEllipticallyLoadedForce(const solver* solver);
 
-    virtual void evaluateForce(const solver* solver) = 0;
-
-    virtual void write() = 0;
+    void write();
 
 };
 

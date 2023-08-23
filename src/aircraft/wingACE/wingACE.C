@@ -23,9 +23,9 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "wingALM.H"
+#include "wingACE.H"
 
-Foam::WingALM::WingALM
+Foam::wingACE::wingACE
 (
     const word& name,
     const volScalarField& rho,
@@ -37,16 +37,21 @@ Foam::WingALM::WingALM
 {
     Info << "Install wing ALM model in Zone " << name << endl;
     wingType_ = mesh_.solutionDict().subDict(name).lookup<word>("blade");
-    isChordBased_ = mesh_.solutionDict().subDict(name).lookup<Switch>("isChordBased");
     origin_  = mesh_.solutionDict().subDict(name).lookup<vector>("origin");
     rotate_  = mesh_.solutionDict().subDict(name).lookup<vector>("rotate");
     nSpans_ = mesh_.solutionDict().subDict(name).lookup<label>("nActuatorPoints");
     refRho_ = mesh_.solutionDict().subDict(name).lookup<scalar>("referenceDensity");
     refU_ = mesh_.solutionDict().subDict(name).lookup<vector>("referenceVelocity");
     twist_ = mesh_.solutionDict().subDict(name).lookup<scalar>("twist");
-    dx_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gridSize");
-    epsParameter_ = mesh_.solutionDict().subDict(name).lookup<scalar>("smearParameter");
+    dGrid_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gridSize");
+    nMin_ = mesh_.solutionDict().subDict(name).lookup<scalar>("nMin");
+    nMax_ = mesh_.solutionDict().subDict(name).lookup<scalar>("nMax");
     dSpan_ = (blade_->maxRadius() - blade_->minRadius()) / nSpans_;
+    // Constant
+    C0_ = 4*(blade_->maxRadius()-blade_->minRadius())/(constant::mathematical::pi*blade_->aspectRatio());
+    C1_ = 0.25*(nMax_*dGrid_/(blade_->maxRadius()-blade_->minRadius()))
+        * (constant::mathematical::pi*blade_->aspectRatio());
+    // Section
     sectionForce_ = vectorField(nSpans_);
     sectionAOA_ = scalarField(nSpans_);
     sectionCir_ = scalarField(nSpans_);
@@ -77,7 +82,8 @@ Foam::WingALM::WingALM
         vector coordTmp = origin_ + y_value * y_unit;
         std::vector<scalar> coord{coordTmp[0], coordTmp[1], coordTmp[2]};
         const scalar eps = gaussRadius(y_value);
-        auto neighIds = tree_->neighborhood_indices(coord, 3*eps);
+        const scalar searchRadius = sqrt(sqr(3*eps) + sqr(dSpan_));
+        auto neighIds = tree_->neighborhood_indices(coord, searchRadius);
         if (!neighIds.empty())
         {
             std::vector<label> cellIs; cellIs.reserve(neighIds.size());
@@ -85,13 +91,20 @@ Foam::WingALM::WingALM
             for (auto& cellI : neighIds)
             {
                 cellI = mesh_.cellZones()[zoneI_][cellI];
-                scalar r = mag((mesh_.C()[cellI]-origin_)&y_unit);
-                if (r >= blade_->maxRadius()) continue;
-                const scalar d2 = magSqr(coordTmp - mesh_.C()[cellI]);
-                const scalar weight = get3DGaussWeight(d2, eps) * mesh_.V()[cellI];
-                cellIs.push_back(cellI);
-                weights.push_back(weight);
-                sectionWeight_[sectionI] += weight;
+                scalar r = (mesh_.C()[cellI]-origin_)&y_unit;
+                if (r >= blade_->maxRadius() || r <= blade_->minRadius()) continue;
+                scalar ps = (r-y_value)/dSpan_;
+                scalar pn = sqrt(magSqr(mesh_.C()[cellI]-origin_)-sqr(r));
+                if ((sectionI == 0) && (ps < 0)) ps = 0;
+                else if ((sectionI == nSpans_-1) && (ps > 0)) ps = 0;
+                scalar weight = getACEGaussWeight(r, mag(ps), pn);
+                if (weight > 1e-6)
+                {
+                    weight *= mesh_.V()[cellI];
+                    cellIs.push_back(cellI);
+                    weights.push_back(weight);
+                    sectionWeight_[sectionI] += weight;
+                }
             }
             sections_[sectionI] = Section();
             sections_[sectionI].coord = coordTmp;
@@ -104,9 +117,10 @@ Foam::WingALM::WingALM
         y_value += dSpan_;
     }
     sectionWeight_ = returnReduce(sectionWeight_, sumOp<scalarField>());
+    Info << sectionWeight_ << endl;
 }
 
-void Foam::WingALM::evaluateForce(const solver* solver)
+void Foam::wingACE::evaluateForce(const solver* solver)
 {
     if (wingType_ == "RectangularWing")  getConstCirculationForce(solver);
     else if (wingType_ == "EllipticWing")  getEllipticallyLoadedForce(solver);
@@ -121,7 +135,7 @@ void Foam::WingALM::evaluateForce(const solver* solver)
     }
 }
     
-void Foam::WingALM::getConstCirculationForce(const solver* solver)
+void Foam::wingACE::getConstCirculationForce(const solver* solver)
 {
     // Sample Velocity
     vectorField sectionU(nSpans_, vector::zero);
@@ -164,7 +178,7 @@ void Foam::WingALM::getConstCirculationForce(const solver* solver)
     }
 }
 
-void Foam::WingALM::getEllipticallyLoadedForce(const solver* solver)
+void Foam::wingACE::getEllipticallyLoadedForce(const solver* solver)
 {
     // Sample Velocity
     vectorField sectionU(nSpans_, vector::zero);
@@ -204,7 +218,7 @@ void Foam::WingALM::getEllipticallyLoadedForce(const solver* solver)
     }
 }
 
-void Foam::WingALM::write()
+void Foam::wingACE::write()
 {
     scalarField sectionCount(nSpans_, 0);
     for (const auto& [sectionI, section] : sections_) sectionCount[sectionI] = 1.0;
@@ -212,8 +226,8 @@ void Foam::WingALM::write()
     scalar lift = 0, drag = 0;
     for (const auto& [sectionI, section] : sections_)
     { 
-        lift += - (sectionForce_[sectionI]&section.z_unit)/sectionCount[sectionI];
-        drag += - (sectionForce_[sectionI]&section.x_unit)/sectionCount[sectionI];
+        lift -= (sectionForce_[sectionI]&section.z_unit)/sectionCount[sectionI];
+        drag -= (sectionForce_[sectionI]&section.x_unit)/sectionCount[sectionI];
     }
     lift = returnReduce(lift, sumOp<scalar>());
     drag = returnReduce(drag, sumOp<scalar>());
@@ -250,8 +264,20 @@ void Foam::WingALM::write()
     }
 }
 
-scalar Foam::WingALM::gaussRadius(scalar r) const
+scalar Foam::wingACE::gaussRadius(scalar r) const
 {
-    if (isChordBased_) return max(epsParameter_*blade_->chord(r), dx_);
-    else return epsParameter_*dx_;
+    scalar cStar = C0_*sqrt(1-sqr(r/blade_->maxRadius()));
+    return max(C1_*cStar, nMin_*dGrid_);
+}
+
+scalar Foam::wingACE::getACEGaussWeight
+(
+    scalar r,
+    scalar ps,
+    scalar pn
+) const
+{
+    scalar eps = gaussRadius(r);
+    if (pn > 3*eps || ps >= 1) return 0.0;
+    return (1-ps)*Foam::exp(-sqr(pn/eps))/(sqr(eps)*dSpan_*constant::mathematical::pi);
 }   
