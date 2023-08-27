@@ -38,13 +38,13 @@ Author
 namespace Foam
 {
 
-class wingACE: public Model
+class WingACE: public Model
 {
     word wingType_;
     label  nSpans_;
     vector origin_, rotate_, refU_;
     scalar refRho_, twist_, dGrid_, dSpan_,
-           nMin_, nMax_, C0_, C1_;
+           tipFactor_, rTip_, nMax_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
     scalarField sectionCount_;
@@ -61,7 +61,7 @@ class wingACE: public Model
 
 public:
     // Constructors
-    wingACE
+    WingACE
     (
         const word& name,
         const volScalarField& rho,

@@ -22,15 +22,15 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    standard rotor ALM
+    advanced rotor ADM
 
 Author
     Minghao Yang
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef rotorALM_H
-#define rotorALM_H
+#ifndef rotorADM_H
+#define rotorADM_H
 
 #include "model.H"
 
@@ -38,16 +38,15 @@ Author
 namespace Foam
 {
 
-class RotorALM: public Model
+class RotorADM: public Model
 {
-    label  nBlades_, nSpans_;
-    scalar time_, thrust_, torque_, refRho_;
+    label  nBlades_, nSectors_, nSpans_;
     vector origin_, rotate_;
-    scalar frequence_, degOmega_, radOmega_;
-    scalar twist_, eps_, dSpan_, dSector_;
+    scalar refRho_, thrust_, torque_, twist_,
+           eps_, frequence_, degOmega_, radOmega_,
+           dSpan_, dSector_, sigma_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
-    scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
     scalarField sectionAOA_;
@@ -55,9 +54,11 @@ class RotorALM: public Model
     //- section of all actuator points
     std::map<size_t, Section> sections_;
 
+    scalar getGaussWeight(scalar ps, scalar pn) const;
+
 public:
     // Constructors
-    RotorALM
+    RotorADM
     (
         const word& name,
         const volScalarField& rho,
@@ -66,8 +67,6 @@ public:
     );
 
     // Member Functions
-    void updatePosition(scalar time);
-
     void evaluateForce(const solver* solver);
 
     void write();

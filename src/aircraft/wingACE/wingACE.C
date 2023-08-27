@@ -25,7 +25,7 @@ License
 
 #include "wingACE.H"
 
-Foam::wingACE::wingACE
+Foam::WingACE::WingACE
 (
     const word& name,
     const volScalarField& rho,
@@ -44,13 +44,10 @@ Foam::wingACE::wingACE
     refU_ = mesh_.solutionDict().subDict(name).lookup<vector>("referenceVelocity");
     twist_ = mesh_.solutionDict().subDict(name).lookup<scalar>("twist");
     dGrid_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gridSize");
-    nMin_ = mesh_.solutionDict().subDict(name).lookup<scalar>("nMin");
+    tipFactor_ = mesh_.solutionDict().subDict(name).lookup<scalar>("tipFactor");
     nMax_ = mesh_.solutionDict().subDict(name).lookup<scalar>("nMax");
     dSpan_ = (blade_->maxRadius() - blade_->minRadius()) / nSpans_;
-    // Constant
-    C0_ = 4*(blade_->maxRadius()-blade_->minRadius())/(constant::mathematical::pi*blade_->aspectRatio());
-    C1_ = 0.25*(nMax_*dGrid_/(blade_->maxRadius()-blade_->minRadius()))
-        * (constant::mathematical::pi*blade_->aspectRatio());
+    rTip_ = min(max(tipFactor_, 0)*blade_->maxRadius(), blade_->maxRadius());
     // Section
     sectionForce_ = vectorField(nSpans_);
     sectionAOA_ = scalarField(nSpans_);
@@ -120,7 +117,7 @@ Foam::wingACE::wingACE
     Info << sectionWeight_ << endl;
 }
 
-void Foam::wingACE::evaluateForce(const solver* solver)
+void Foam::WingACE::evaluateForce(const solver* solver)
 {
     if (wingType_ == "RectangularWing")  getConstCirculationForce(solver);
     else if (wingType_ == "EllipticWing")  getEllipticallyLoadedForce(solver);
@@ -135,7 +132,7 @@ void Foam::wingACE::evaluateForce(const solver* solver)
     }
 }
     
-void Foam::wingACE::getConstCirculationForce(const solver* solver)
+void Foam::WingACE::getConstCirculationForce(const solver* solver)
 {
     // Sample Velocity
     vectorField sectionU(nSpans_, vector::zero);
@@ -178,7 +175,7 @@ void Foam::wingACE::getConstCirculationForce(const solver* solver)
     }
 }
 
-void Foam::wingACE::getEllipticallyLoadedForce(const solver* solver)
+void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
 {
     // Sample Velocity
     vectorField sectionU(nSpans_, vector::zero);
@@ -218,7 +215,7 @@ void Foam::wingACE::getEllipticallyLoadedForce(const solver* solver)
     }
 }
 
-void Foam::wingACE::write()
+void Foam::WingACE::write()
 {
     scalarField sectionCount(nSpans_, 0);
     for (const auto& [sectionI, section] : sections_) sectionCount[sectionI] = 1.0;
@@ -264,13 +261,15 @@ void Foam::wingACE::write()
     }
 }
 
-scalar Foam::wingACE::gaussRadius(scalar r) const
+scalar Foam::WingACE::gaussRadius(scalar r) const
 {
-    scalar cStar = C0_*sqrt(1-sqr(r/blade_->maxRadius()));
-    return max(C1_*cStar, nMin_*dGrid_);
+    r = mag(r);
+    scalar eps = nMax_*dGrid_;
+    if (r > rTip_) eps *= sqrt(1.0-sqr((r-rTip_)/(blade_->maxRadius()-rTip_)));
+    return max(eps, dGrid_);
 }
 
-scalar Foam::wingACE::getACEGaussWeight
+scalar Foam::WingACE::getACEGaussWeight
 (
     scalar r,
     scalar ps,

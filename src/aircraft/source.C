@@ -71,32 +71,35 @@ Foam::Source::Source
             {
                 models_.emplace_back(std::make_unique<RotorALM>(name, rho_, U_, force_));
             }
+            else if (model == "rotorACE")
+            {
+                models_.emplace_back(std::make_unique<RotorACE>(name, rho_, U_, force_));
+            }
+            else if (model == "rotorADM")
+            {
+                models_.emplace_back(std::make_unique<RotorADM>(name, rho_, U_, force_));
+            }
             else if (model == "wingALM")
             {
                 models_.emplace_back(std::make_unique<WingALM>(name, rho_, U_, force_));
             }
             else if (model == "wingACE")
             {
-                models_.emplace_back(std::make_unique<wingACE>(name, rho_, U_, force_));
+                models_.emplace_back(std::make_unique<WingACE>(name, rho_, U_, force_));
             }
             else if (model == "ALM2D")
             {
                 models_.emplace_back(std::make_unique<ALM2D>(name, rho_, U_, force_));
             }
-            // else if (model == "ADM")
-            // {
-            //     models_.emplace_back(std::make_unique<ADM>(name, *this));
-            // }
-            // else if (model == "FIX")
-            // {
-            //     models_.emplace_back(std::make_unique<FIX>(name, *this));
-            // }
             else
             {
                 Info << "Error in model type" << nl
                      << "(" << nl
                      << " rotorALM" << nl
+                     << " rotorACE" << nl
+                     << " rotorADM" << nl
                      << " wingALM"  << nl
+                     << " wingACE"  << nl
                      << " ALM2D"  << nl
                      << ")" << nl
                      << endl;
@@ -115,7 +118,7 @@ void Foam::Source::updatePosition(scalar time)
 
 void Foam::Source::evaluateForce(const solver* solver)
 {
-    force_ = vector::zero; 
+    force_.primitiveFieldRef() = vector::zero; 
     for (auto& model : models_)
     { 
         model->evaluateForce(solver);
@@ -124,9 +127,12 @@ void Foam::Source::evaluateForce(const solver* solver)
 
 void Foam::Source::write()
 {
-    force_.primitiveFieldRef() /= mesh_.V();
-    volTensorField UGrad = fvc::grad(U_);
-    Q_ = 0.5*(sqr(tr(UGrad)) - tr(UGrad&UGrad));
+    if (mesh_.time().outputTime())
+    {
+        force_.primitiveFieldRef() /= mesh_.V();
+        volTensorField UGrad = fvc::grad(U_);
+        Q_ = 0.5*(sqr(tr(UGrad)) - tr(UGrad&UGrad));
+    }
     for (auto& model : models_) { model->write(); }
     Info << "----------------------------------------" << endl;
 }

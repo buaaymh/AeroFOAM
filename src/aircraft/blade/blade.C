@@ -65,38 +65,30 @@ Foam::CaradonnaTung::CaradonnaTung()
     Blade()
 {}
 
-const std::array<scalar, 16> CaradonnaTung::lift_
+const std::array<scalar, 31> CaradonnaTung::lift_
     = NACA0012::getLiftCoefficients();
 
-const std::array<scalar, 16> CaradonnaTung::drag_
+const std::array<scalar, 31> CaradonnaTung::drag_
     = NACA0012::getDragCoefficients();
 
 std::pair<scalar, scalar> Foam::CaradonnaTung::Cl_Cd(scalar Ma, scalar r, scalar deg) const
 {
     scalar Cl, Cd;
-    scalar index = 0.5*mag(deg);
-    if (index >= 15)
-    {
-        Cl = lift_[15];
-        Cd = drag_[15];
-    }
+    scalar index = mag(deg);
+    if (index >= 30) { Cl = lift_[30]; Cd = drag_[30]; }
     else
     {
         label deg_floor = floor(index);
         label deg_ceil = ceil(index);
         if (deg_floor != deg_ceil)
         {
-            Cl = (index - deg_floor)*lift_[deg_floor] +
-                 (deg_ceil - index) *lift_[deg_ceil];
-            Cd = (index - deg_floor)*drag_[deg_floor] +
-                 (deg_ceil - index) *drag_[deg_ceil];
+            Cl = (deg_ceil - index) *lift_[deg_floor]
+               + (index - deg_floor)*lift_[deg_ceil];
+            Cd = (deg_ceil - index) *drag_[deg_floor]
+               + (index - deg_floor)*drag_[deg_ceil];
         }
-        else
-        {
-            Cl = lift_[deg_floor];
-            Cd = drag_[deg_floor];
-        }
+        else { Cl = lift_[deg_floor]; Cd = drag_[deg_floor]; }
     }
-    if (deg < 0) Cl = - Cl;
+    if (deg < 0) Cl = -Cl;
     return { Cl, Cd };
 }

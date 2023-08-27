@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
                 L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
-                Info << "# L1(dRho_0) = " << setprecision(4) << L1_deltaRho_0 << endl;
+                Info << "# L1(dRho) [-] = " << setprecision(4) << L1_deltaRho_0 << endl;
                 if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
@@ -107,8 +107,8 @@ int main(int argc, char *argv[])
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
                 L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
-                Info << "# L1(dRho) [-] = "            << setprecision(4) << L1_deltaRho
-                     << ", L1(dRho)/L1(dRho_0) [-] = " << setprecision(4) << L1_deltaRho/L1_deltaRho_0 << endl;
+                Info << "# L1(dRho) [-] = "          << setprecision(4) << L1_deltaRho
+                     << ", relative L1(dRho) [-] = " << setprecision(4) << L1_deltaRho/L1_deltaRho_0 << endl;
                 if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
             }
         }
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
                 L1_deltaRho_0 = gSum(mag(solver->dRho()))/nCells;
-                Info << "# L1(dRho_0) = " << setprecision(4) << L1_deltaRho_0 << endl;
+                Info << "# L1(dRho) [-] = " << setprecision(4) << L1_deltaRho_0 << endl;
                 if (L1_deltaRho_0 < tolerance)  { L1_deltaRho = L1_deltaRho_0; break; }
             }
             else
@@ -145,8 +145,8 @@ int main(int argc, char *argv[])
                 solver->solveFlowPseudoTimeSystem(dt, k11_22, pseudoResRho, pseudoResRhoU, pseudoResRhoE);
                 solver->correctFields();
                 L1_deltaRho = gSum(mag(solver->dRho()))/nCells;
-                Info << "# L1(dRho) [-] = "            << setprecision(4) << L1_deltaRho
-                     << ", L1(dRho)/L1(dRho_0) [-] = " << setprecision(4) << L1_deltaRho/L1_deltaRho_0 << endl;
+                Info << "# L1(dRho) [-] = "          << setprecision(4) << L1_deltaRho
+                     << ", relative L1(dRho) [-] = " << setprecision(4) << L1_deltaRho/L1_deltaRho_0 << endl;
                 if (L1_deltaRho/L1_deltaRho_0 < relTol || L1_deltaRho < tolerance)  break;
             }
         }
@@ -161,8 +161,8 @@ int main(int argc, char *argv[])
         if (fluidProps.withSourceTerm) source->write();
         runTime.write();
 	
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
+        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s,"
+            << " ClockTime = " << runTime.elapsedClockTime() << " s"
             << nl << endl;
     }
 

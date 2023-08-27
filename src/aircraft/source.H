@@ -35,6 +35,8 @@ Author
 #include "solver.H"
 #include "model.H"
 #include "rotorALM.H"
+#include "rotorACE.H"
+#include "rotorADM.H"
 #include "wingALM.H"
 #include "wingACE.H"
 #include "ALM2D.H"

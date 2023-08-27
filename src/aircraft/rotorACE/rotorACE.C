@@ -23,9 +23,9 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "rotorALM.H"
+#include "rotorACE.H"
 
-Foam::RotorALM::RotorALM
+Foam::RotorACE::RotorACE
 (
     const word& name,
     const volScalarField& rho,
@@ -35,19 +35,21 @@ Foam::RotorALM::RotorALM
 :
     Model(name, rho, U, force)
 {
-    Info << "Install rotor ALM model in Zone " << name << endl;
+    Info << "Install rotor ACE model in Zone " << name << endl;
     origin_  = mesh_.solutionDict().subDict(name).lookup<vector>("origin");
     rotate_  = mesh_.solutionDict().subDict(name).lookup<vector>("rotate");
     nBlades_ = mesh_.solutionDict().subDict(name).lookup<label>("nBlades");
     nSpans_ = mesh_.solutionDict().subDict(name).lookup<label>("nActuatorPoints");
-    refRho_ = mesh_.solutionDict().subDict(name).lookup<scalar>("referenceDensity");
     frequence_ = mesh_.solutionDict().subDict(name).lookup<scalar>("frequence");
+    refRho_ = mesh_.solutionDict().subDict(name).lookup<scalar>("referenceDensity");
     twist_ = mesh_.solutionDict().subDict(name).lookup<scalar>("twist");
-    eps_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gaussRadius");
+    dGrid_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gridSize");
+    nMax_ = mesh_.solutionDict().subDict(name).lookup<scalar>("nMax");
     dSpan_ = (blade_->maxRadius() - blade_->minRadius()) / nSpans_;
     dSector_ = 360.0/nBlades_;
     degOmega_ = frequence_ * 360.0;
     radOmega_ = frequence_ * 2 * constant::mathematical::pi;
+    // Section
     sectionWeight_ = scalarField(nSpans_*nBlades_);
     sectionForce_ = vectorField(nSpans_*nBlades_);
     sectionAOA_ = scalarField(nSpans_*nBlades_);
@@ -68,8 +70,8 @@ Foam::RotorALM::RotorALM
     tree_ = std::make_unique<KDTree>(points);
 }
 
-void Foam::RotorALM::updatePosition(scalar time)
-{ 
+void Foam::RotorACE::updatePosition(scalar time)
+{
     time_ = time;
     sectionWeight_ = 0;
     vector x_unit(1, 0, 0), y_unit(0, 1, 0), z_unit(0, 0, 1);
@@ -87,7 +89,9 @@ void Foam::RotorALM::updatePosition(scalar time)
         {
             vector coordTmp = origin_ + y_value * y_unit;
             std::vector<scalar> coord{coordTmp[0], coordTmp[1], coordTmp[2]};
-            auto neighIds = tree_->neighborhood_indices(coord, 3*eps_);
+            const scalar eps = gaussRadius(y_value);
+            const scalar searchRadius = sqrt(sqr(3*eps) + sqr(dSpan_));
+            auto neighIds = tree_->neighborhood_indices(coord, searchRadius);
             if (!neighIds.empty())
             {
                 const size_t sectionI = nSpans_*bladeI + pointI;
@@ -97,10 +101,15 @@ void Foam::RotorALM::updatePosition(scalar time)
                 {
                     cellI = mesh_.cellZones()[zoneI_][cellI];
                     const scalar r = mag((mesh_.C()[cellI]-origin_)&y_unit);
-                    if ((r < blade_->maxRadius()) && (r > blade_->minRadius()))
+                    if (r >= blade_->maxRadius() || r <= blade_->minRadius()) continue;
+                    scalar ps = (r-y_value)/dSpan_;
+                    scalar pn = sqrt(magSqr(mesh_.C()[cellI]-origin_)-sqr(r));
+                    if ((pointI == 0) && (ps < 0)) ps = 0;
+                    else if ((pointI == nSpans_-1) && (ps > 0)) ps = 0;
+                    scalar weight = getACEGaussWeight(r, mag(ps), pn);
+                    if (weight > 1e-8)
                     {
-                        const scalar d2 = magSqr(coordTmp - mesh_.C()[cellI]);
-                        const scalar weight = get3DGaussWeight(d2, eps_) * mesh_.V()[cellI];
+                        weight *= mesh_.V()[cellI];
                         cellIs.push_back(cellI);
                         weights.push_back(weight);
                         sectionWeight_[sectionI] += weight;
@@ -121,7 +130,7 @@ void Foam::RotorALM::updatePosition(scalar time)
     sectionWeight_ = returnReduce(sectionWeight_, sumOp<scalarField>());
 }
 
-void Foam::RotorALM::evaluateForce(const solver* solver)
+void Foam::RotorACE::evaluateForce(const solver* solver)
 {
     // Sample rho and U
     vectorField sectionU(nSpans_*nBlades_, vector::zero);
@@ -158,12 +167,12 @@ void Foam::RotorALM::evaluateForce(const solver* solver)
         forAll(section.projectedCells, cellI)
         {
             label i = section.projectedCells[cellI];
-            force_[i] += section.weights[cellI] * sectionForce_[sectionI] / sectionWeight_[sectionI];
+            force_[i] += section.weights[cellI]*sectionForce_[sectionI]/sectionWeight_[sectionI];
         }
     }
 }
 
-void Foam::RotorALM::write()
+void Foam::RotorACE::write()
 {
     scalarField sectionCount(nSpans_*nBlades_, 0);
     for (const auto& [sectionI, section] : sections_) sectionCount[sectionI] = 1.0;
@@ -208,3 +217,22 @@ void Foam::RotorALM::write()
         }
     }
 }
+
+scalar Foam::RotorACE::gaussRadius(scalar r) const
+{
+    scalar eps = nMax_*dGrid_;
+    eps *= sqrt(1.0-sqr((2*r-blade_->maxRadius())/blade_->maxRadius()));
+    return max(eps, dGrid_);
+}
+
+scalar Foam::RotorACE::getACEGaussWeight
+(
+    scalar r,
+    scalar ps,
+    scalar pn
+) const
+{
+    scalar eps = gaussRadius(r);
+    if (pn > 3*eps || ps >= 1) return 0.0;
+    return (1-ps)*Foam::exp(-sqr(pn/eps))/(sqr(eps)*dSpan_*constant::mathematical::pi);
+}   
