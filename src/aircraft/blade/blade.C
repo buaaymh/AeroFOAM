@@ -65,17 +65,17 @@ Foam::CaradonnaTung::CaradonnaTung()
     Blade()
 {}
 
-const std::array<scalar, 31> CaradonnaTung::lift_
+const std::array<scalar, 41> CaradonnaTung::lift_
     = NACA0012::getLiftCoefficients();
 
-const std::array<scalar, 31> CaradonnaTung::drag_
+const std::array<scalar, 41> CaradonnaTung::drag_
     = NACA0012::getDragCoefficients();
 
 std::pair<scalar, scalar> Foam::CaradonnaTung::Cl_Cd(scalar Ma, scalar r, scalar deg) const
 {
     scalar Cl, Cd;
     scalar index = mag(deg);
-    if (index >= 30) { Cl = lift_[30]; Cd = drag_[30]; }
+    if (index >= 40) { Cl = lift_[40]; Cd = drag_[40]; }
     else
     {
         label deg_floor = floor(index);

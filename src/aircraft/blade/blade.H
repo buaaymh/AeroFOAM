@@ -154,8 +154,8 @@ public:
 
     std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
 
-    static const std::array<scalar, 31> lift_;
-    static const std::array<scalar, 31> drag_;
+    static const std::array<scalar, 41> lift_;
+    static const std::array<scalar, 41> drag_;
 };
 
 class UH60A: public Blade
