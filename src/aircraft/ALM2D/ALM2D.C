@@ -122,7 +122,7 @@ void Foam::ALM2D::getPointSamplingForce(const solver* solver)
     scalar minDist2 = returnReduce(d2, minOp<scalar>());
     label procNo = 0;
     if (d2 == minDist2) procNo = Pstream::myProcNo();
-    procNo = returnReduce(d2, maxOp<label>());
+    procNo = returnReduce(procNo, maxOp<label>());
     sectionU_ = vector::zero;
     if (procNo == Pstream::myProcNo())
     {
