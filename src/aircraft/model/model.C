@@ -79,13 +79,11 @@ scalar Foam::Model::getAngleOfAttack
     scalar twist
 ) const
 {
-    auto deg = rad2deg(Foam::atan(w / u));  // [-90, 90]
+    scalar deg = 0;
+    if (mag(u) > SMALL) deg = rad2deg(Foam::atan(w / u));  // [-90, 90]
     if (u < 0) {
-      if (w > 0) {
-        deg += 180/* [-90, 0] -> [90, 180] */;
-      } else {
-        deg -= 180/* [0, 90] -> [-180, -90] */;
-      }
+      if (w > 0) deg += 180/* [-90, 0] -> [90, 180] */;
+      else deg -= 180/* [0, 90] -> [-180, -90] */;
     }
     // deg := angle of inflow
     deg += twist;
