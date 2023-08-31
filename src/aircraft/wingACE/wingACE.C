@@ -35,7 +35,7 @@ Foam::WingACE::WingACE
 :
     Model(name, rho, U, force)
 {
-    Info << "Install wing ALM model in Zone " << name << endl;
+    Info << "Install wing ACE model in Zone " << name << endl;
     wingType_ = mesh_.solutionDict().subDict(name).lookup<word>("blade");
     origin_  = mesh_.solutionDict().subDict(name).lookup<vector>("origin");
     rotate_  = mesh_.solutionDict().subDict(name).lookup<vector>("rotate");
@@ -43,15 +43,13 @@ Foam::WingACE::WingACE
     refRho_ = mesh_.solutionDict().subDict(name).lookup<scalar>("referenceDensity");
     refU_ = mesh_.solutionDict().subDict(name).lookup<vector>("referenceVelocity");
     twist_ = mesh_.solutionDict().subDict(name).lookup<scalar>("twist");
-    dGrid_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gridSize");
-    tipFactor_ = mesh_.solutionDict().subDict(name).lookup<scalar>("tipFactor");
-    nMax_ = mesh_.solutionDict().subDict(name).lookup<scalar>("nMax");
+    eps_ = mesh_.solutionDict().subDict(name).lookup<scalar>("kernelSize");
     dSpan_ = (blade_->maxRadius() - blade_->minRadius()) / nSpans_;
-    rTip_ = min(max(tipFactor_, 0)*blade_->maxRadius(), blade_->maxRadius());
     // Section
+    sectionCount_ = scalarField(nSpans_, 0);
     sectionForce_ = vectorField(nSpans_);
-    sectionAOA_ = scalarField(nSpans_);
-    sectionCir_ = scalarField(nSpans_);
+    sectionAOA_   = scalarField(nSpans_);
+    sectionDiffG_ = scalarField(nSpans_);
     // Build KDTree
     std::vector<std::vector<scalar>> points;
     points.reserve(mesh_.cellZones()[zoneI_].size());
@@ -78,8 +76,7 @@ Foam::WingACE::WingACE
     {
         vector coordTmp = origin_ + y_value * y_unit;
         std::vector<scalar> coord{coordTmp[0], coordTmp[1], coordTmp[2]};
-        const scalar eps = gaussRadius(y_value);
-        const scalar searchRadius = sqrt(sqr(3*eps) + sqr(dSpan_));
+        const scalar searchRadius = sqrt(sqr(3*eps_) + sqr(dSpan_));
         auto neighIds = tree_->neighborhood_indices(coord, searchRadius);
         if (!neighIds.empty())
         {
@@ -110,11 +107,14 @@ Foam::WingACE::WingACE
             sections_[sectionI].x_unit = x_unit;
             sections_[sectionI].y_unit = y_unit;
             sections_[sectionI].z_unit = z_unit;
+            sectionCount_[sectionI] = 1;
         }
         y_value += dSpan_;
     }
+    sectionCount_  = returnReduce(sectionCount_,  sumOp<scalarField>());
     sectionWeight_ = returnReduce(sectionWeight_, sumOp<scalarField>());
     Info << sectionWeight_ << endl;
+    
 }
 
 void Foam::WingACE::evaluateForce(const solver* solver)
@@ -148,7 +148,6 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
     // Evaluate force on section
     sectionForce_ = vector::zero;
     sectionAOA_ = 0;
-    sectionCir_ = 0;
     for (const auto& [sectionI, section] : sections_)
     {
         scalar r = (section.coord - origin_)&section.y_unit;
@@ -156,12 +155,12 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
         scalar w = sectionU[sectionI]&section.z_unit;
         auto [Cl, Cd] = blade_->Cl_Cd(0, r, 0);
         sectionAOA_[sectionI] = getAngleOfAttack(u, w, 0);
-        sectionCir_[sectionI] = 0.5*mag(refU_)*blade_->chord(r)*Cl;
+        scalar sectionCir = 0.5*mag(refU_)*blade_->chord(r)*Cl;
         // angle of priori inflow 
         u = mag(refU_);
         w = (blade_->maxRadius()+r)/(sqr((blade_->maxRadius()+r)) + sqr(0.1*blade_->chord(r)))
           + (blade_->maxRadius()-r)/(sqr((blade_->maxRadius()-r)) + sqr(0.1*blade_->chord(r)));
-        w *= -sectionCir_[sectionI]/(4*constant::mathematical::pi);
+        w *= -sectionCir/(4*constant::mathematical::pi);
         auto [cos, sin] = cosSin(getAngleOfAttack(u, w, 0));
         scalar Cz = Cl * cos + Cd * sin;
         scalar Cx = Cd * cos - Cl * sin;
@@ -191,7 +190,6 @@ void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
     // Evaluate force on section
     sectionForce_ = vector::zero;
     sectionAOA_ = 0;
-    sectionCir_ = 0;
     for (const auto& [sectionI, section] : sections_)
     {
         scalar r = (section.coord - origin_)&section.y_unit;
@@ -204,7 +202,6 @@ void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
         auto [cos, sin] = cosSin(sectionAOA_[sectionI] - twist); // angle of inflow
         scalar Cz = Cl * cos + Cd * sin;
         scalar Cx = Cd * cos - Cl * sin;
-        sectionCir_[sectionI] = 0.5*U_in*blade_->chord(r)*Cl;
         sectionForce_[sectionI]  = Cz*section.z_unit + Cx*section.x_unit;
         sectionForce_[sectionI] *= -0.5*refRho_*sqr(U_in)*blade_->chord(r)*dSpan_;
         forAll(section.projectedCells, cellI)
@@ -217,14 +214,11 @@ void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
 
 void Foam::WingACE::write()
 {
-    scalarField sectionCount(nSpans_, 0);
-    for (const auto& [sectionI, section] : sections_) sectionCount[sectionI] = 1.0;
-    sectionCount = returnReduce(sectionCount, sumOp<scalarField>());
     scalar lift = 0, drag = 0;
     for (const auto& [sectionI, section] : sections_)
     { 
-        lift -= (sectionForce_[sectionI]&section.z_unit)/sectionCount[sectionI];
-        drag -= (sectionForce_[sectionI]&section.x_unit)/sectionCount[sectionI];
+        lift -= (sectionForce_[sectionI]&section.z_unit)/sectionCount_[sectionI];
+        drag -= (sectionForce_[sectionI]&section.x_unit)/sectionCount_[sectionI];
     }
     lift = returnReduce(lift, sumOp<scalar>());
     drag = returnReduce(drag, sumOp<scalar>());
@@ -238,35 +232,23 @@ void Foam::WingACE::write()
     if (mesh_.time().outputTime())
     {
         sectionAOA_ = returnReduce(sectionAOA_, sumOp<scalarField>());
-        sectionCir_ = returnReduce(sectionCir_, sumOp<scalarField>());
         if (Pstream::master())
         {
-            sectionAOA_ /= sectionCount;
-            sectionCir_ /= sectionCount;
+            sectionAOA_ /= sectionCount_;
             fileName outputDir = mesh_.time().timePath();
             mkDir(outputDir);
             // File pointer to direct the output to
             autoPtr<OFstream> outputFilePtr;
             // Open the file in the newly created directory
             outputFilePtr.reset(new OFstream(outputDir/"sectionInfo.dat"));
-            outputFilePtr() << "#r/R" << tab << "AOA" << tab << "Cir" << endl;
+            outputFilePtr() << "#r/R" << tab << "AOA" << endl;
             for (label pointI = 0; pointI < nSpans_; pointI++)
             {
                 scalar r_R = (blade_->minRadius()+(pointI+0.5)*dSpan_)/(blade_->maxRadius()-blade_->minRadius());
-                outputFilePtr() << r_R << tab
-                                << sectionAOA_[pointI] << tab
-                                << sectionCir_[pointI] << endl;
+                outputFilePtr() << r_R << tab << sectionAOA_[pointI] << endl;
             }
         }
     }
-}
-
-scalar Foam::WingACE::gaussRadius(scalar r) const
-{
-    r = mag(r);
-    scalar eps = nMax_*dGrid_;
-    if (r > rTip_) eps *= sqrt(1.0-sqr((r-rTip_)/(blade_->maxRadius()-rTip_)));
-    return max(eps, dGrid_);
 }
 
 scalar Foam::WingACE::getACEGaussWeight
@@ -276,7 +258,6 @@ scalar Foam::WingACE::getACEGaussWeight
     scalar pn
 ) const
 {
-    scalar eps = gaussRadius(r);
-    if (pn > 3*eps || ps >= 1) return 0.0;
-    return (1-ps)*Foam::exp(-sqr(pn/eps))/(sqr(eps)*dSpan_*constant::mathematical::pi);
+    if (pn > 3*eps_ || ps >= 1) return 0.0;
+    return (1-ps)*Foam::exp(-sqr(pn/eps_))/(sqr(eps_)*dSpan_*constant::mathematical::pi);
 }   

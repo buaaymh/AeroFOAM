@@ -43,19 +43,16 @@ class WingACE: public Model
     word wingType_;
     label  nSpans_;
     vector origin_, rotate_, refU_;
-    scalar refRho_, twist_, dGrid_, dSpan_,
-           tipFactor_, rTip_, nMax_;
+    scalar refRho_, twist_, eps_, dSpan_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
     scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
     scalarField sectionAOA_;
-    scalarField sectionCir_;
+    scalarField sectionDiffG_;
     //- section of all actuator points
     std::map<size_t, Section> sections_;
-
-    scalar gaussRadius(scalar r) const;
 
     scalar getACEGaussWeight(scalar r, scalar ps, scalar pn) const;
 
