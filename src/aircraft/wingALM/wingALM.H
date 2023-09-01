@@ -50,8 +50,7 @@ class WingALM: public Model
     scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
-    scalarField sectionAOA_;
-    scalarField sectionCir_;
+    scalarField sectionDwDu_;
     //- section of all actuator points
     std::map<size_t, Section> sections_;
 

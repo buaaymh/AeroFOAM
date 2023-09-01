@@ -48,8 +48,7 @@ Foam::WingALM::WingALM
     epsParameter_ = mesh_.solutionDict().subDict(name).lookup<scalar>("smearParameter");
     dSpan_ = (blade_->maxRadius() - blade_->minRadius()) / nSpans_;
     sectionForce_ = vectorField(nSpans_);
-    sectionAOA_ = scalarField(nSpans_);
-    sectionCir_ = scalarField(nSpans_);
+    sectionDwDu_  = scalarField(nSpans_);
     // Build KDTree
     std::vector<std::vector<scalar>> points;
     points.reserve(mesh_.cellZones()[zoneI_].size());
@@ -136,21 +135,20 @@ void Foam::WingALM::getConstCirculationForce(const solver* solver)
     sectionU = returnReduce(sectionU, sumOp<vectorField>())/sectionWeight_;
     // Evaluate force on section
     sectionForce_ = vector::zero;
-    sectionAOA_ = 0;
-    sectionCir_ = 0;
+    sectionDwDu_  = 0;
     for (const auto& [sectionI, section] : sections_)
     {
         scalar r = (section.coord - origin_)&section.y_unit;
-        scalar u = sectionU[sectionI]&section.x_unit;
+        scalar u = refU_&section.x_unit;
         scalar w = sectionU[sectionI]&section.z_unit;
         auto [Cl, Cd] = blade_->Cl_Cd(0, r, 0);
-        sectionAOA_[sectionI] = getAngleOfAttack(u, w, 0);
-        sectionCir_[sectionI] = 0.5*mag(refU_)*blade_->chord(r)*Cl;
+        sectionDwDu_[sectionI] = w / u;
+        scalar sectionCir = 0.5*mag(refU_)*blade_->chord(r)*Cl;
         // angle of priori inflow 
         u = mag(refU_);
         w = (blade_->maxRadius()+r)/(sqr((blade_->maxRadius()+r)) + sqr(0.1*blade_->chord(r)))
           + (blade_->maxRadius()-r)/(sqr((blade_->maxRadius()-r)) + sqr(0.1*blade_->chord(r)));
-        w *= -sectionCir_[sectionI]/(4*constant::mathematical::pi);
+        w *= -sectionCir/(4*constant::mathematical::pi);
         auto [cos, sin] = cosSin(getAngleOfAttack(u, w, 0));
         scalar Cz = Cl * cos + Cd * sin;
         scalar Cx = Cd * cos - Cl * sin;
@@ -179,23 +177,21 @@ void Foam::WingALM::getEllipticallyLoadedForce(const solver* solver)
     sectionU = returnReduce(sectionU, sumOp<vectorField>())/sectionWeight_;
     // Evaluate force on section
     sectionForce_ = vector::zero;
-    sectionAOA_ = 0;
-    sectionCir_ = 0;
+    sectionDwDu_  = 0;
     for (const auto& [sectionI, section] : sections_)
     {
         scalar r = (section.coord - origin_)&section.y_unit;
-        scalar u = sectionU[sectionI]&section.x_unit;
+        scalar u = refU_&section.x_unit;
         scalar w = sectionU[sectionI]&section.z_unit;
-        scalar U_in = sqrt(sqr(u) + sqr(w));
+        sectionDwDu_[sectionI] = w / u;
         scalar twist = twist_ + blade_->twist(r);
-        sectionAOA_[sectionI] = getAngleOfAttack(u, w, twist);
-        auto [Cl, Cd] = blade_->Cl_Cd(U_in, r, sectionAOA_[sectionI]);
-        auto [cos, sin] = cosSin(sectionAOA_[sectionI] - twist); // angle of inflow
+        scalar AOA = getAngleOfAttack(u, w, twist);
+        auto [Cl, Cd] = blade_->Cl_Cd(0, r, AOA);
+        auto [cos, sin] = cosSin(AOA - twist); // angle of inflow
         scalar Cz = Cl * cos + Cd * sin;
         scalar Cx = Cd * cos - Cl * sin;
-        sectionCir_[sectionI] = 0.5*U_in*blade_->chord(r)*Cl;
         sectionForce_[sectionI]  = Cz*section.z_unit + Cx*section.x_unit;
-        sectionForce_[sectionI] *= -0.5*refRho_*sqr(U_in)*blade_->chord(r)*dSpan_;
+        sectionForce_[sectionI] *= -0.5*refRho_*magSqr(refU_)*blade_->chord(r)*dSpan_;
         forAll(section.projectedCells, cellI)
         {
             label i = section.projectedCells[cellI];
@@ -226,25 +222,21 @@ void Foam::WingALM::write()
 
     if (mesh_.time().outputTime())
     {
-        sectionAOA_ = returnReduce(sectionAOA_, sumOp<scalarField>());
-        sectionCir_ = returnReduce(sectionCir_, sumOp<scalarField>());
+        sectionDwDu_ = returnReduce(sectionDwDu_, sumOp<scalarField>());
         if (Pstream::master())
         {
-            sectionAOA_ /= sectionCount;
-            sectionCir_ /= sectionCount;
+            sectionDwDu_ /= sectionCount;
             fileName outputDir = mesh_.time().timePath();
             mkDir(outputDir);
             // File pointer to direct the output to
             autoPtr<OFstream> outputFilePtr;
             // Open the file in the newly created directory
             outputFilePtr.reset(new OFstream(outputDir/"sectionInfo.dat"));
-            outputFilePtr() << "#r/R" << tab << "AOA" << tab << "Cir" << endl;
+            outputFilePtr() << "#r/R" << tab << "DwDu" << endl;
             for (label pointI = 0; pointI < nSpans_; pointI++)
             {
                 scalar r_R = (blade_->minRadius()+(pointI+0.5)*dSpan_)/(blade_->maxRadius()-blade_->minRadius());
-                outputFilePtr() << r_R << tab
-                                << sectionAOA_[pointI] << tab
-                                << sectionCir_[pointI] << endl;
+                outputFilePtr() << r_R << tab << sectionDwDu_[pointI] << endl;
             }
         }
     }

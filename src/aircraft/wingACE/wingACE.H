@@ -40,6 +40,7 @@ namespace Foam
 
 class WingACE: public Model
 {
+    bool isChordBased_;
     word wingType_;
     label  nSpans_;
     vector origin_, rotate_, refU_;
@@ -49,10 +50,20 @@ class WingACE: public Model
     scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
-    scalarField sectionAOA_;
-    scalarField sectionDiffG_;
+    scalarField sectionDwDu_;
+    scalarField sectionUzDes_;
+    scalarField sectionUzOpt_;
     //- section of all actuator points
     std::map<size_t, Section> sections_;
+
+    std::pair<scalar, scalar> evaluateInducedVelocity
+    (
+        const scalarField& dG,
+        scalar U_in,
+        scalar epsDes,
+        scalar epsOpt,
+        label  sectionI
+    ) const;
 
     scalar getACEGaussWeight(scalar r, scalar ps, scalar pn) const;
 

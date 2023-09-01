@@ -37,6 +37,7 @@ Foam::WingACE::WingACE
 {
     Info << "Install wing ACE model in Zone " << name << endl;
     wingType_ = mesh_.solutionDict().subDict(name).lookup<word>("blade");
+    isChordBased_ = mesh_.solutionDict().subDict(name).lookup<Switch>("isChordBased");
     origin_  = mesh_.solutionDict().subDict(name).lookup<vector>("origin");
     rotate_  = mesh_.solutionDict().subDict(name).lookup<vector>("rotate");
     nSpans_ = mesh_.solutionDict().subDict(name).lookup<label>("nActuatorPoints");
@@ -48,8 +49,9 @@ Foam::WingACE::WingACE
     // Section
     sectionCount_ = scalarField(nSpans_, 0);
     sectionForce_ = vectorField(nSpans_);
-    sectionAOA_   = scalarField(nSpans_);
-    sectionDiffG_ = scalarField(nSpans_);
+    sectionDwDu_   = scalarField(nSpans_);
+    sectionUzDes_ = scalarField(nSpans_, 0);
+    sectionUzOpt_ = scalarField(nSpans_, 0);
     // Build KDTree
     std::vector<std::vector<scalar>> points;
     points.reserve(mesh_.cellZones()[zoneI_].size());
@@ -114,7 +116,6 @@ Foam::WingACE::WingACE
     sectionCount_  = returnReduce(sectionCount_,  sumOp<scalarField>());
     sectionWeight_ = returnReduce(sectionWeight_, sumOp<scalarField>());
     Info << sectionWeight_ << endl;
-    
 }
 
 void Foam::WingACE::evaluateForce(const solver* solver)
@@ -146,15 +147,18 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
     }
     sectionU = returnReduce(sectionU, sumOp<vectorField>())/sectionWeight_;
     // Evaluate force on section
+    scalarField G(nSpans_, 0);
+    scalarField dG(nSpans_, 0);
     sectionForce_ = vector::zero;
-    sectionAOA_ = 0;
+    sectionDwDu_  = 0;
     for (const auto& [sectionI, section] : sections_)
     {
         scalar r = (section.coord - origin_)&section.y_unit;
-        scalar u = sectionU[sectionI]&section.x_unit;
+        scalar u = refU_&section.x_unit;
         scalar w = sectionU[sectionI]&section.z_unit;
+        w += sectionUzOpt_[sectionI] - sectionUzDes_[sectionI];
         auto [Cl, Cd] = blade_->Cl_Cd(0, r, 0);
-        sectionAOA_[sectionI] = getAngleOfAttack(u, w, 0);
+        sectionDwDu_[sectionI] = w / u;
         scalar sectionCir = 0.5*mag(refU_)*blade_->chord(r)*Cl;
         // angle of priori inflow 
         u = mag(refU_);
@@ -166,10 +170,27 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
         scalar Cx = Cd * cos - Cl * sin;
         sectionForce_[sectionI]  = Cz*section.z_unit + Cx*section.x_unit;
         sectionForce_[sectionI] *= -0.5*refRho_*magSqr(refU_)*blade_->chord(r)*dSpan_;
+        G[sectionI] = 0.5*Cz*magSqr(refU_)*blade_->chord(r); // G for correction
         forAll(section.projectedCells, cellI)
         {
             label i = section.projectedCells[cellI];
             force_[i] += section.weights[cellI] * sectionForce_[sectionI] / sectionWeight_[sectionI];
+        }
+    }
+    // Correction
+    if (isChordBased_)
+    {
+        G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
+        dG[0] = 2*G[0]; dG[nSpans_-1] = -2*G[nSpans_-1];
+        for (label sectionI = 1; sectionI < nSpans_-1; sectionI++)
+            dG[sectionI] = 0.5*(G[sectionI+1]-G[sectionI-1]);
+        for (const auto& [sectionI, section] : sections_)
+        {
+            scalar r = (section.coord - origin_)&section.y_unit;
+            scalar epsOpt = 0.2*blade_->chord(r);
+            auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, mag(refU_), eps_, epsOpt, sectionI);
+            sectionUzDes_[sectionI] = UzDes;
+            sectionUzOpt_[sectionI] = UzOpt;
         }
     }
 }
@@ -188,26 +209,46 @@ void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
     }
     sectionU = returnReduce(sectionU, sumOp<vectorField>())/sectionWeight_;
     // Evaluate force on section
+    scalarField G(nSpans_, 0);
+    scalarField dG(nSpans_, 0);
     sectionForce_ = vector::zero;
-    sectionAOA_ = 0;
+    sectionDwDu_  = 0;
     for (const auto& [sectionI, section] : sections_)
     {
         scalar r = (section.coord - origin_)&section.y_unit;
-        scalar u = sectionU[sectionI]&section.x_unit;
+        scalar u = refU_&section.x_unit;
         scalar w = sectionU[sectionI]&section.z_unit;
-        scalar U_in = sqrt(sqr(u) + sqr(w));
+        w += sectionUzOpt_[sectionI] - sectionUzDes_[sectionI];
+        sectionDwDu_[sectionI] = w / max(u, SMALL);
         scalar twist = twist_ + blade_->twist(r);
-        sectionAOA_[sectionI] = getAngleOfAttack(u, w, twist);
-        auto [Cl, Cd] = blade_->Cl_Cd(U_in, r, sectionAOA_[sectionI]);
-        auto [cos, sin] = cosSin(sectionAOA_[sectionI] - twist); // angle of inflow
+        scalar AOA = getAngleOfAttack(u, w, twist);
+        auto [Cl, Cd] = blade_->Cl_Cd(mag(refU_), r, AOA);
+        auto [cos, sin] = cosSin(AOA - twist); // angle of inflow
         scalar Cz = Cl * cos + Cd * sin;
         scalar Cx = Cd * cos - Cl * sin;
         sectionForce_[sectionI]  = Cz*section.z_unit + Cx*section.x_unit;
-        sectionForce_[sectionI] *= -0.5*refRho_*sqr(U_in)*blade_->chord(r)*dSpan_;
+        sectionForce_[sectionI] *= -0.5*refRho_*magSqr(refU_)*blade_->chord(r)*dSpan_;
+        G[sectionI] = 0.5*Cz*magSqr(refU_)*blade_->chord(r); // G for correction
         forAll(section.projectedCells, cellI)
         {
             label i = section.projectedCells[cellI];
             force_[i] += section.weights[cellI] * sectionForce_[sectionI] / sectionWeight_[sectionI];
+        }
+    }
+    // Correction
+    if (isChordBased_)
+    {
+        G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
+        dG[0] = 2*G[0]; dG[nSpans_-1] = -2*G[nSpans_-1];
+        for (label sectionI = 1; sectionI < nSpans_-1; sectionI++)
+            dG[sectionI] = 0.5*(G[sectionI+1]-G[sectionI-1]);
+        for (const auto& [sectionI, section] : sections_)
+        {
+            scalar r = (section.coord - origin_)&section.y_unit;
+            scalar epsOpt = 0.2*blade_->chord(r);
+            auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, mag(refU_), eps_, epsOpt, sectionI);
+            sectionUzDes_[sectionI] = UzDes;
+            sectionUzOpt_[sectionI] = UzOpt;
         }
     }
 }
@@ -231,24 +272,47 @@ void Foam::WingACE::write()
 
     if (mesh_.time().outputTime())
     {
-        sectionAOA_ = returnReduce(sectionAOA_, sumOp<scalarField>());
+        sectionDwDu_ = returnReduce(sectionDwDu_, sumOp<scalarField>());
         if (Pstream::master())
         {
-            sectionAOA_ /= sectionCount_;
+            sectionDwDu_ /= sectionCount_;
             fileName outputDir = mesh_.time().timePath();
             mkDir(outputDir);
             // File pointer to direct the output to
             autoPtr<OFstream> outputFilePtr;
             // Open the file in the newly created directory
             outputFilePtr.reset(new OFstream(outputDir/"sectionInfo.dat"));
-            outputFilePtr() << "#r/R" << tab << "AOA" << endl;
+            outputFilePtr() << "#r/R" << tab << "DwDu" << endl;
             for (label pointI = 0; pointI < nSpans_; pointI++)
             {
                 scalar r_R = (blade_->minRadius()+(pointI+0.5)*dSpan_)/(blade_->maxRadius()-blade_->minRadius());
-                outputFilePtr() << r_R << tab << sectionAOA_[pointI] << endl;
+                outputFilePtr() << r_R << tab << sectionDwDu_[pointI] << endl;
             }
         }
     }
+}
+
+std::pair<scalar, scalar> Foam::WingACE::evaluateInducedVelocity
+(
+    const scalarField& dG,
+    scalar U_in,
+    scalar epsDes,
+    scalar epsOpt,
+    label  sectionI
+) const
+{
+    scalar UyDes = 0, UyOpt = 0;
+    for (label i = 0; i < nSpans_; i++)
+    {
+        if (i == sectionI) continue;
+        scalar dy = dSpan_*(sectionI-i);
+        scalar temp = dG[i]/(4*constant::mathematical::pi*dy);
+        UyDes += temp*(1-Foam::exp(-sqr(dy/epsDes)));
+        UyOpt += temp*(1-Foam::exp(-sqr(dy/epsOpt)));
+    }
+    UyDes /= -U_in;
+    UyOpt /= -U_in;
+    return {UyDes, UyOpt};
 }
 
 scalar Foam::WingACE::getACEGaussWeight
