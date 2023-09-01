@@ -148,7 +148,6 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
     sectionU = returnReduce(sectionU, sumOp<vectorField>())/sectionWeight_;
     // Evaluate force on section
     scalarField G(nSpans_, 0);
-    scalarField dG(nSpans_, 0);
     sectionForce_ = vector::zero;
     sectionDwDu_  = 0;
     for (const auto& [sectionI, section] : sections_)
@@ -180,8 +179,9 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
     // Correction
     if (isChordBased_)
     {
+        scalarField dG(nSpans_, 0);
         G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
-        dG[0] = 2*G[0]; dG[nSpans_-1] = -2*G[nSpans_-1];
+        dG[0] = G[0]; dG[nSpans_-1] = -G[nSpans_-1];
         for (label sectionI = 1; sectionI < nSpans_-1; sectionI++)
             dG[sectionI] = 0.5*(G[sectionI+1]-G[sectionI-1]);
         for (const auto& [sectionI, section] : sections_)
@@ -189,8 +189,8 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
             scalar r = (section.coord - origin_)&section.y_unit;
             scalar epsOpt = 0.2*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, mag(refU_), eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = UzDes;
-            sectionUzOpt_[sectionI] = UzOpt;
+            sectionUzDes_[sectionI] = 0.5*UzDes + 0.5*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.5*UzOpt + 0.5*sectionUzOpt_[sectionI];
         }
     }
 }
@@ -210,7 +210,6 @@ void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
     sectionU = returnReduce(sectionU, sumOp<vectorField>())/sectionWeight_;
     // Evaluate force on section
     scalarField G(nSpans_, 0);
-    scalarField dG(nSpans_, 0);
     sectionForce_ = vector::zero;
     sectionDwDu_  = 0;
     for (const auto& [sectionI, section] : sections_)
@@ -238,8 +237,9 @@ void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
     // Correction
     if (isChordBased_)
     {
+        scalarField dG(nSpans_, 0);
         G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
-        dG[0] = 2*G[0]; dG[nSpans_-1] = -2*G[nSpans_-1];
+        dG[0] = -G[0]; dG[nSpans_-1] = -G[nSpans_-1];
         for (label sectionI = 1; sectionI < nSpans_-1; sectionI++)
             dG[sectionI] = 0.5*(G[sectionI+1]-G[sectionI-1]);
         for (const auto& [sectionI, section] : sections_)
@@ -247,8 +247,8 @@ void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
             scalar r = (section.coord - origin_)&section.y_unit;
             scalar epsOpt = 0.2*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, mag(refU_), eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = UzDes;
-            sectionUzOpt_[sectionI] = UzOpt;
+            sectionUzDes_[sectionI] = 0.5*UzDes + 0.5*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.5*UzOpt + 0.5*sectionUzOpt_[sectionI];
         }
     }
 }
