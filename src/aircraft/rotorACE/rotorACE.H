@@ -40,23 +40,34 @@ namespace Foam
 
 class RotorACE: public Model
 {
+    bool isCorrected_;
     label  nBlades_, nSpans_;
     vector origin_, rotate_;
     scalar time_, refRho_, thrust_, torque_, twist_,
-           dGrid_, frequence_, degOmega_, radOmega_,
-           dSpan_, dSector_, nMax_;
+           frequence_, degOmega_, radOmega_,
+           dSpan_, dSector_, eps_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
+    scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
     scalarField sectionAOA_;
     scalarField sectionCz_;
+    scalarField sectionUzDes_;
+    scalarField sectionUzOpt_;
     //- section of all actuator points
     std::map<size_t, Section> sections_;
-    
-    scalar gaussRadius(scalar r) const;
 
     scalar getACEGaussWeight(scalar r, scalar ps, scalar pn) const;
+
+    std::pair<scalar, scalar> evaluateInducedVelocity
+    (
+        const scalarField& dG,
+        scalar U_in,
+        scalar epsDes,
+        scalar epsOpt,
+        label  sectionI
+    ) const;
 
 public:
     // Constructors

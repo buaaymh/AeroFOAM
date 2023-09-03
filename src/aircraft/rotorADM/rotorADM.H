@@ -40,6 +40,7 @@ namespace Foam
 
 class RotorADM: public Model
 {
+    bool isCorrected_;
     label  nBlades_, nSectors_, nSpans_;
     vector origin_, rotate_;
     scalar refRho_, thrust_, torque_, twist_,
@@ -47,14 +48,26 @@ class RotorADM: public Model
            dSpan_, dSector_, sigma_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
+    scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
     scalarField sectionAOA_;
     scalarField sectionCz_;
+    scalarField sectionUzDes_;
+    scalarField sectionUzOpt_;
     //- section of all actuator points
     std::map<size_t, Section> sections_;
 
     scalar getGaussWeight(scalar ps, scalar pn) const;
+    
+    std::pair<scalar, scalar> evaluateInducedVelocity
+    (
+        const scalarField& dG,
+        scalar U_in,
+        scalar epsDes,
+        scalar epsOpt,
+        label  sectionI
+    ) const;
 
 public:
     // Constructors
