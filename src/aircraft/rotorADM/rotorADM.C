@@ -229,7 +229,9 @@ void Foam::RotorADM::write()
             // File pointer to direct the output to
             autoPtr<OFstream> outputFilePtr;
             // Open the file in the newly created directory
-            outputFilePtr.reset(new OFstream(outputDir/"sectionInfo.dat"));
+            outputFilePtr.reset(new OFstream(outputDir/(name_+".dat")));
+            outputFilePtr() << "# CT   [-] = " << setprecision(4) << CT << nl
+                            << "# CM   [-] = " << setprecision(4) << CM << endl;
             outputFilePtr() << "#r/R" << tab << "Cl" << tab << "AOA" << endl;
             for (label pointI = 0; pointI < nSpans_; pointI++)
             {
@@ -268,8 +270,6 @@ std::pair<scalar, scalar> Foam::RotorADM::evaluateInducedVelocity
     {
         if (i == spanI+1) continue;
         scalar dy = dSpan_*(spanI+1-i);
-        if (i == 0) dy = dSpan_*(spanI+0.5);
-        if (i == nSpans_+1) dy = dSpan_*(spanI-nSpans_+0.5);
         scalar temp = dG[i+(nSpans_+2)*sectorI]/(4*constant::mathematical::pi*dy);
         UyDes += temp*(1-Foam::exp(-sqr(dy/epsDes)));
         UyOpt += temp*(1-Foam::exp(-sqr(dy/epsOpt)));

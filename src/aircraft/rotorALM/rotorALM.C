@@ -196,7 +196,9 @@ void Foam::RotorALM::write()
             // File pointer to direct the output to
             autoPtr<OFstream> outputFilePtr;
             // Open the file in the newly created directory
-            outputFilePtr.reset(new OFstream(outputDir/"sectionInfo.dat"));
+            outputFilePtr.reset(new OFstream(outputDir/(name_+".dat")));
+            outputFilePtr() << "# CT   [-] = " << setprecision(4) << CT << nl
+                            << "# CM   [-] = " << setprecision(4) << CM << endl;
             outputFilePtr() << "#r/R" << tab << "Cl" << tab << "AOA" << endl;
             for (label pointI = 0; pointI < nSpans_; pointI++)
             {
