@@ -201,26 +201,24 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
     // Correction
     if (isCorrected_)
     {
-        scalarField dG((nSpans_+2)*nBlades_, 0);
+        scalarField dG((nSpans_+1)*nBlades_, 0);
         G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
         for (label bladeI = 0; bladeI < nBlades_; bladeI++)
         {
             label head_G  = bladeI*nSpans_;
-            label head_dG = bladeI*(nSpans_+2);
+            label head_dG = bladeI*(nSpans_+1);
             dG[head_dG]   = 2*G[head_G];
-            dG[head_dG+1] = G[head_G+1] - G[head_G];
-            dG[head_dG+nSpans_+1] = -2*G[head_G+nSpans_-1];
-            dG[head_dG+nSpans_]   = G[head_G+nSpans_-1] - G[head_G+nSpans_-2];
-            for (label i = 2; i < nSpans_; i++)
-                dG[head_dG+i] = 0.5*(G[head_G+i]-G[head_G+i-2]);
+            dG[head_dG+nSpans_] = -2*G[head_G+nSpans_-1];
+            for (label i = 1; i < nSpans_; i++)
+                dG[head_dG+i] = G[head_G+i]-G[head_G+i-1];
         }
         for (const auto& [sectionI, section] : sections_)
         {
             scalar r = mag(section.coord - origin_);
             scalar epsOpt = 0.25*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, U_in[sectionI], eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = UzDes;
-            sectionUzOpt_[sectionI] = UzOpt;
+            sectionUzDes_[sectionI] = 0.5*UzDes + 0.5*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.5*UzOpt + 0.5*sectionUzOpt_[sectionI];
         }
     }
 }
@@ -293,11 +291,11 @@ std::pair<scalar, scalar> Foam::RotorACE::evaluateInducedVelocity
     label bladeI = sectionI/nSpans_;
     label spanI  = sectionI%nSpans_;
     scalar UyDes = 0, UyOpt = 0;
-    for (label i = 0; i < nSpans_+2; i++)
+    for (label i = 0; i < nSpans_+1; i++)
     {
-        if (i == spanI+1) continue;
-        scalar dy = dSpan_*(spanI+1-i);
-        scalar temp = dG[i+(nSpans_+2)*bladeI]/(4*constant::mathematical::pi*dy);
+        scalar dy = dSpan_*(spanI-i+0.5);
+        scalar temp = dG[i+(nSpans_+1)*bladeI]/(4*constant::mathematical::pi*dy);
+        if (temp < 0) continue; 
         UyDes += temp*(1-Foam::exp(-sqr(dy/epsDes)));
         UyOpt += temp*(1-Foam::exp(-sqr(dy/epsOpt)));
     }

@@ -179,21 +179,19 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
     // Correction
     if (isChordBased_)
     {
-        scalarField dG(nSpans_+2, 0);
+        scalarField dG(nSpans_+1, 0);
         G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
         dG[0] = 2*G[0];
-        dG[1] = G[1] - G[0];
-        dG[nSpans_+1] = -2*G[nSpans_-1];
-        dG[nSpans_] = G[nSpans_-1] - G[nSpans_-2];
-        for (label sectionI = 2; sectionI < nSpans_; sectionI++)
-            dG[sectionI] = 0.5*(G[sectionI]-G[sectionI-2]);
+        dG[nSpans_] = -2*G[nSpans_-1];
+        for (label sectionI = 1; sectionI < nSpans_; sectionI++)
+            dG[sectionI] = G[sectionI]-G[sectionI-1];
         for (const auto& [sectionI, section] : sections_)
         {
             scalar r = (section.coord - origin_)&section.y_unit;
             scalar epsOpt = 0.25*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, mag(refU_), eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = 0.1*UzDes + 0.9*sectionUzDes_[sectionI];
-            sectionUzOpt_[sectionI] = 0.1*UzOpt + 0.9*sectionUzOpt_[sectionI];
+            sectionUzDes_[sectionI] = 0.5*UzDes + 0.5*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.5*UzOpt + 0.5*sectionUzOpt_[sectionI];
         }
     }
 }
@@ -240,21 +238,19 @@ void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
     // Correction
     if (isChordBased_)
     {
-        scalarField dG(nSpans_+2, 0);
+        scalarField dG(nSpans_+1, 0);
         G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
         dG[0] = 2*G[0];
-        dG[1] = G[1] - G[0];
-        dG[nSpans_+1] = -2*G[nSpans_-1];
-        dG[nSpans_] = G[nSpans_-1] - G[nSpans_-2];
-        for (label sectionI = 2; sectionI < nSpans_; sectionI++)
-            dG[sectionI] = 0.5*(G[sectionI]-G[sectionI-2]);
+        dG[nSpans_] = -2*G[nSpans_-1];
+        for (label sectionI = 1; sectionI < nSpans_; sectionI++)
+            dG[sectionI] = G[sectionI]-G[sectionI-1];
         for (const auto& [sectionI, section] : sections_)
         {
             scalar r = (section.coord - origin_)&section.y_unit;
             scalar epsOpt = 0.25*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, mag(refU_), eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = 0.1*UzDes + 0.9*sectionUzDes_[sectionI];
-            sectionUzOpt_[sectionI] = 0.1*UzOpt + 0.9*sectionUzOpt_[sectionI];
+            sectionUzDes_[sectionI] = 0.5*UzDes + 0.5*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.5*UzOpt + 0.5*sectionUzOpt_[sectionI];
         }
     }
 }
@@ -308,11 +304,11 @@ std::pair<scalar, scalar> Foam::WingACE::evaluateInducedVelocity
 ) const
 {
     scalar UyDes = 0, UyOpt = 0;
-    for (label i = 0; i < nSpans_+2; i++)
+    for (label i = 0; i < nSpans_+1; i++)
     {
-        if (i == sectionI+1) continue;
-        scalar dy = dSpan_*(sectionI+1-i);
+        scalar dy = dSpan_*(sectionI-i+0.5);
         scalar temp = dG[i]/(4*constant::mathematical::pi*dy);
+        if (temp < 0) continue;
         UyDes += temp*(1-Foam::exp(-sqr(dy/epsDes)));
         UyOpt += temp*(1-Foam::exp(-sqr(dy/epsOpt)));
     }
