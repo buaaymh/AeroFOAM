@@ -80,7 +80,7 @@ Foam::turbulenceSolver::turbulenceSolver
             IOobject::AUTO_WRITE
         ),
         mesh_,
-        dimensionedVector(dimless/dimLength, vector::zero)
+        dimensionedScalar(dimless/dimLength, 0)
     ),
     dNuTilda_(scalarField(mesh_.nCells())),
     maxDelta_(scalarField(mesh_.nCells()))
