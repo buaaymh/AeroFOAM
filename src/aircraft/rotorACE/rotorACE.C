@@ -215,7 +215,7 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
         for (const auto& [sectionI, section] : sections_)
         {
             scalar r = mag(section.coord - origin_);
-            scalar epsOpt = 0.25*blade_->chord(r);
+            scalar epsOpt = 0.2*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, U_in[sectionI], eps_, epsOpt, sectionI);
             sectionUzDes_[sectionI] = 0.5*UzDes + 0.5*sectionUzDes_[sectionI];
             sectionUzOpt_[sectionI] = 0.5*UzOpt + 0.5*sectionUzOpt_[sectionI];

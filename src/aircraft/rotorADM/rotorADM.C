@@ -157,6 +157,10 @@ void Foam::RotorADM::evaluateForce(const solver* solver)
         scalar w = (velocity_rel&section.z_unit) - sectionUzDes_[sectionI];
         U_in[sectionI] = sqrt(sqr(u) + sqr(w));
         w += sectionUzOpt_[sectionI];
+        if (sectionI < nSpans_)
+            Info << "w0 = " << (velocity_rel&section.z_unit)
+                 << ", DES = " << sectionUzDes_[sectionI]
+                 << ", OPT = " << sectionUzOpt_[sectionI] << endl;
         scalar twist = twist_ + blade_->twist(r);
         sectionAOA_[sectionI] = getAngleOfAttack(u, w, twist);
         auto [Cl, Cd] = blade_->Cl_Cd(U_in[sectionI], r, sectionAOA_[sectionI]);
@@ -189,10 +193,10 @@ void Foam::RotorADM::evaluateForce(const solver* solver)
         for (const auto& [sectionI, section] : sections_)
         {
             scalar r = mag(section.coord - origin_);
-            scalar epsOpt = 0.25*blade_->chord(r);
-            auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, U_in[sectionI], eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = 0.5*UzDes + 0.5*sectionUzDes_[sectionI];
-            sectionUzOpt_[sectionI] = 0.5*UzOpt + 0.5*sectionUzOpt_[sectionI];
+            scalar epsOpt = 0.2*blade_->chord(r);
+            auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, U_in[sectionI], blade_->chord(r), epsOpt, sectionI);
+            sectionUzDes_[sectionI] = 0.1*UzDes + 0.9*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.1*UzOpt + 0.9*sectionUzOpt_[sectionI];
         }
     }
 }
