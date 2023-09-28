@@ -178,7 +178,7 @@ void Foam::ALM2D::getIntegralSamplingForce(const solver* solver)
 void Foam::ALM2D::write()
 {
     scalar refAOA = getAngleOfAttack(refU_.x(), refU_.y(), 0);
-    scalar error_AOA = mag(sectionAOA_ - refAOA);
+    scalar error_AOA = sectionAOA_ - refAOA;
     scalar error_velocity = 100*(mag(sectionU_)-mag(refU_))/mag(refU_);
     Info << "# simpling weight        [-] = " << sectionWeight_  << endl;
     Info << "# simpling AOA           [-] = " << sectionAOA_  << endl;
