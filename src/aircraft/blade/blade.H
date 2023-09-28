@@ -158,22 +158,22 @@ public:
     static const std::array<scalar, 41> drag_;
 };
 
-class UH60A: public Blade
+class RotorFuselage: public Blade
 {
 public:
     
-    UH60A();
+    RotorFuselage();
     
     // Destructor - default
-    ~UH60A() noexcept = default;
+    ~RotorFuselage() noexcept = default;
 
-    scalar minRadius() const { return 0.1; }
+    scalar minRadius() const { return 0.012344; }
 
-    scalar maxRadius() const { return 1.0; }
+    scalar maxRadius() const { return 0.4572; }
 
-    scalar chord(scalar r) const { return 0.1; }
+    scalar chord(scalar r) const { return 0.086; }
     
-    scalar aspectRatio() const { return  10; }
+    scalar aspectRatio() const { return  5.31628; }
     
     scalar twist(scalar r) const { return 0; }
 

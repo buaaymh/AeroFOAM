@@ -45,9 +45,9 @@ Foam::Model::Model
     {
         blade_ = std::make_unique<CaradonnaTung>();
     }
-    else if (blade == "UH60A")
+    else if (blade == "RotorFuselage")
     {
-        blade_ = std::make_unique<UH60A>();
+        blade_ = std::make_unique<RotorFuselage>();
     }
     else if (blade == "RectangularWing")
     {
@@ -66,7 +66,7 @@ Foam::Model::Model
         Info << "Error in blade type" << nl
              << "(" << nl
              << " CaradonnaTung" << nl
-             << " UH60A" << nl
+             << " RotorFuselage" << nl
              << ")" << nl
              << endl;
     }

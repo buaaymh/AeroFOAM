@@ -25,24 +25,6 @@ License
 
 #include "blade.H"
 
-Foam::UH60A::UH60A()
-:
-    Blade()
-{}
-
-const std::array<scalar, 181> UH60A::lift_
-    = SC1095::getLiftCoefficients();
-
-const std::array<scalar, 181> UH60A::drag_
-    = SC1095::getDragCoefficients();
-
-std::pair<scalar, scalar> Foam::UH60A::Cl_Cd(scalar Ma, scalar r, scalar deg) const
-{
-    return { lift_[(deg + 180) / 2], drag_[(deg + 180) / 2] };
-}
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
 Foam::Airfoil2D::Airfoil2D() : Blade() {}
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -91,4 +73,22 @@ std::pair<scalar, scalar> Foam::CaradonnaTung::Cl_Cd(scalar Ma, scalar r, scalar
     }
     if (deg < 0) Cl = -Cl;
     return { Cl, Cd };
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+Foam::RotorFuselage::RotorFuselage()
+:
+    Blade()
+{}
+
+const std::array<scalar, 181> RotorFuselage::lift_
+    = SC1095::getLiftCoefficients();
+
+const std::array<scalar, 181> RotorFuselage::drag_
+    = SC1095::getDragCoefficients();
+
+std::pair<scalar, scalar> Foam::RotorFuselage::Cl_Cd(scalar Ma, scalar r, scalar deg) const
+{
+    return { lift_[(deg + 180) / 2], drag_[(deg + 180) / 2] };
 }
