@@ -40,7 +40,7 @@ namespace Foam
 
 class WingACE: public Model
 {
-    bool isChordBased_;
+    bool isCorrected_;
     word wingType_;
     label  nSpans_;
     vector origin_, rotate_, refU_;
@@ -51,6 +51,7 @@ class WingACE: public Model
     scalarField sectionWeight_;
     vectorField sectionForce_;
     scalarField sectionDwDu_;
+    scalarField sectionAOA_;
     scalarField sectionUzDes_;
     scalarField sectionUzOpt_;
     //- section of all actuator points

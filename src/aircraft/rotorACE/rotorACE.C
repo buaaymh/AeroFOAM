@@ -53,8 +53,8 @@ Foam::RotorACE::RotorACE
     sectionCount_ = scalarField(nSpans_*nBlades_, 0);
     sectionWeight_ = scalarField(nSpans_*nBlades_);
     sectionForce_ = vectorField(nSpans_*nBlades_);
-    sectionAOA_ = scalarField(nSpans_*nBlades_);
     sectionCz_ = scalarField(nSpans_*nBlades_);
+    sectionAOA_ = scalarField(nSpans_*nBlades_, 0);
     sectionUzDes_ = scalarField(nSpans_*nBlades_, 0);
     sectionUzOpt_ = scalarField(nSpans_*nBlades_, 0);
     // Build KDTree
@@ -136,17 +136,20 @@ void Foam::RotorACE::updatePosition(scalar time)
     // Communication for Uz
     if (isCorrected_)
     {
+        sectionAOA_   = returnReduce(sectionUzDes_, sumOp<scalarField>());
         sectionUzDes_ = returnReduce(sectionUzDes_, sumOp<scalarField>());
         sectionUzOpt_ = returnReduce(sectionUzOpt_, sumOp<scalarField>());
         for (label sectionI = 0; sectionI < nSpans_*nBlades_; sectionI++)
         {
             if (sections_.find(sectionI) == sections_.end())
             {
+                sectionAOA_[sectionI]   = 0;
                 sectionUzDes_[sectionI] = 0;
                 sectionUzOpt_[sectionI] = 0;
             }
             else
             {
+                sectionAOA_[sectionI]   /= sectionCount_[sectionI];
                 sectionUzDes_[sectionI] /= sectionCount_[sectionI];
                 sectionUzOpt_[sectionI] /= sectionCount_[sectionI];
             }
@@ -171,7 +174,6 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
     scalarField G(nSpans_*nBlades_, 0);
     scalarField U_in(nSpans_*nBlades_, 0);
     sectionForce_ = vector::zero;
-    sectionAOA_ = 0;
     sectionCz_ = 0;
     for (const auto& [sectionI, section] : sections_)
     {
@@ -179,19 +181,22 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
         vector velocity_rel = sectionU[sectionI] + r*radOmega_*section.x_unit;
         vector x_unit = section.x_unit;
         if (degOmega_ < 0) x_unit = -section.x_unit;
-        scalar u = velocity_rel&x_unit;
-        scalar w = (velocity_rel&section.z_unit) - sectionUzDes_[sectionI];
+        auto [cos0, sin0] = cosSin(sectionAOA_[sectionI]); // angle of inflow
+        scalar u = (velocity_rel&x_unit) + sin0*sectionUzDes_[sectionI];
+        scalar w = (velocity_rel&section.z_unit) - cos0*sectionUzDes_[sectionI];
+        sectionAOA_[sectionI] = getAngleOfAttack(u, w, 0);
         U_in[sectionI] = sqrt(sqr(u) + sqr(w));
-        w += sectionUzOpt_[sectionI];
+        u -= sin0*sectionUzOpt_[sectionI];
+        w += cos0*sectionUzOpt_[sectionI];
         scalar twist = twist_ + blade_->twist(r);
-        sectionAOA_[sectionI] = getAngleOfAttack(u, w, twist);
-        auto [Cl, Cd] = blade_->Cl_Cd(U_in[sectionI], r, sectionAOA_[sectionI]);
-        auto [cos, sin] = cosSin(sectionAOA_[sectionI] - twist); // angle of inflow
+        scalar AOA = getAngleOfAttack(u, w, twist);
+        auto [Cl, Cd] = blade_->Cl_Cd(U_in[sectionI], r, AOA);
+        auto [cos, sin] = cosSin(AOA - twist); // angle of inflow
         sectionCz_[sectionI] = Cl * cos + Cd * sin;
         scalar Cx = Cd * cos - Cl * sin;
         sectionForce_[sectionI]  = sectionCz_[sectionI]*section.z_unit + Cx*x_unit;
         sectionForce_[sectionI] *= -0.5*refRho_*(sqr(u)+sqr(w))*blade_->chord(r)*dSpan_;
-        G[sectionI] = 0.5*sectionCz_[sectionI]*sqr(U_in[sectionI])*blade_->chord(r); // G for correction
+        G[sectionI] = 0.5*Cl*sqr(U_in[sectionI])*blade_->chord(r); // G for correction
         forAll(section.projectedCells, cellI)
         {
             label i = section.projectedCells[cellI];
@@ -207,8 +212,8 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
         {
             label head_G  = bladeI*nSpans_;
             label head_dG = bladeI*(nSpans_+1);
-            dG[head_dG]   = 2*G[head_G];
-            dG[head_dG+nSpans_] = -2*G[head_G+nSpans_-1];
+            dG[head_dG]   = 3*G[head_G]-G[head_G+1];
+            dG[head_dG+nSpans_] = -3*G[head_G+nSpans_-1]+G[head_G+nSpans_-2];
             for (label i = 1; i < nSpans_; i++)
                 dG[head_dG+i] = G[head_G+i]-G[head_G+i-1];
         }
@@ -217,8 +222,8 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
             scalar r = mag(section.coord - origin_);
             scalar epsOpt = 0.2*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, U_in[sectionI], eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = 0.5*UzDes + 0.5*sectionUzDes_[sectionI];
-            sectionUzOpt_[sectionI] = 0.5*UzOpt + 0.5*sectionUzOpt_[sectionI];
+            sectionUzDes_[sectionI] = 0.2*UzDes + 0.8*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.2*UzOpt + 0.8*sectionUzOpt_[sectionI];
         }
     }
 }
@@ -242,11 +247,9 @@ void Foam::RotorACE::write()
 
     if (mesh_.time().outputTime())
     {
-        sectionAOA_ = returnReduce(sectionAOA_, sumOp<scalarField>());
         sectionCz_  = returnReduce(sectionCz_, sumOp<scalarField>());
         if (Pstream::master())
         {
-            sectionAOA_ /= sectionCount_;
             sectionCz_  /= sectionCount_;
             fileName outputDir = mesh_.time().timePath();
             mkDir(outputDir);
@@ -256,13 +259,11 @@ void Foam::RotorACE::write()
             outputFilePtr.reset(new OFstream(outputDir/(name_+".dat")));
             outputFilePtr() << "# CT   [-] = " << setprecision(4) << CT << nl
                             << "# CM   [-] = " << setprecision(4) << CM << endl;
-            outputFilePtr() << "#r/R" << tab << "Cl" << tab << "AOA" << endl;
+            outputFilePtr() << "#r/R" << tab << "Cl" << endl;
             for (label pointI = 0; pointI < nSpans_; pointI++)
             {
                 scalar r_R = (blade_->minRadius()+(pointI+0.5)*dSpan_)/blade_->maxRadius();
-                outputFilePtr() << r_R << tab
-                                << sectionCz_[pointI] << tab
-                                << sectionAOA_[pointI] << endl;
+                outputFilePtr() << r_R << tab << sectionCz_[pointI] << endl;
             }
         }
     }
@@ -295,7 +296,6 @@ std::pair<scalar, scalar> Foam::RotorACE::evaluateInducedVelocity
     {
         scalar dy = dSpan_*(spanI-i+0.5);
         scalar temp = dG[i+(nSpans_+1)*bladeI]/(4*constant::mathematical::pi*dy);
-        if (temp < 0) continue; 
         UyDes += temp*(1-Foam::exp(-sqr(dy/epsDes)));
         UyOpt += temp*(1-Foam::exp(-sqr(dy/epsOpt)));
     }

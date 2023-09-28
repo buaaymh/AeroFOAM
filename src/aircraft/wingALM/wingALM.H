@@ -44,7 +44,7 @@ class WingALM: public Model
     word wingType_;
     label  nSpans_;
     vector origin_, rotate_, refU_;
-    scalar refRho_, twist_, epsParameter_, dx_, dSpan_;
+    scalar refRho_, twist_, eps_, dSpan_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
     scalarField sectionCount_;
@@ -53,8 +53,6 @@ class WingALM: public Model
     scalarField sectionDwDu_;
     //- section of all actuator points
     std::map<size_t, Section> sections_;
-
-    scalar gaussRadius(scalar r) const;
 
 public:
     // Constructors

@@ -37,15 +37,13 @@ Foam::WingALM::WingALM
 {
     Info << "Install wing ALM model in Zone " << name << endl;
     wingType_ = mesh_.solutionDict().subDict(name).lookup<word>("blade");
-    isChordBased_ = mesh_.solutionDict().subDict(name).lookup<Switch>("isChordBased");
     origin_  = mesh_.solutionDict().subDict(name).lookup<vector>("origin");
     rotate_  = mesh_.solutionDict().subDict(name).lookup<vector>("rotate");
     nSpans_ = mesh_.solutionDict().subDict(name).lookup<label>("nActuatorPoints");
     refRho_ = mesh_.solutionDict().subDict(name).lookup<scalar>("referenceDensity");
     refU_ = mesh_.solutionDict().subDict(name).lookup<vector>("referenceVelocity");
     twist_ = mesh_.solutionDict().subDict(name).lookup<scalar>("twist");
-    dx_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gridSize");
-    epsParameter_ = mesh_.solutionDict().subDict(name).lookup<scalar>("smearParameter");
+    eps_ = mesh_.solutionDict().subDict(name).lookup<scalar>("kernelSize");
     dSpan_ = (blade_->maxRadius() - blade_->minRadius()) / nSpans_;
     sectionForce_ = vectorField(nSpans_);
     sectionDwDu_  = scalarField(nSpans_);
@@ -75,8 +73,7 @@ Foam::WingALM::WingALM
     {
         vector coordTmp = origin_ + y_value * y_unit;
         std::vector<scalar> coord{coordTmp[0], coordTmp[1], coordTmp[2]};
-        const scalar eps = gaussRadius(y_value);
-        auto neighIds = tree_->neighborhood_indices(coord, 3*eps);
+        auto neighIds = tree_->neighborhood_indices(coord, 3*eps_);
         if (!neighIds.empty())
         {
             std::vector<label> cellIs; cellIs.reserve(neighIds.size());
@@ -87,7 +84,7 @@ Foam::WingALM::WingALM
                 scalar r = mag((mesh_.C()[cellI]-origin_)&y_unit);
                 if (r >= blade_->maxRadius()) continue;
                 const scalar d2 = magSqr(coordTmp - mesh_.C()[cellI]);
-                const scalar weight = get3DGaussWeight(d2, eps) * mesh_.V()[cellI];
+                const scalar weight = get3DGaussWeight(d2, eps_) * mesh_.V()[cellI];
                 cellIs.push_back(cellI);
                 weights.push_back(weight);
                 sectionWeight_[sectionI] += weight;
@@ -241,9 +238,3 @@ void Foam::WingALM::write()
         }
     }
 }
-
-scalar Foam::WingALM::gaussRadius(scalar r) const
-{
-    if (isChordBased_) return max(epsParameter_*blade_->chord(r), dx_);
-    else return epsParameter_*dx_;
-}   
