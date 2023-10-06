@@ -142,7 +142,7 @@ public:
     // Destructor - default
     ~CaradonnaTung() noexcept = default;
 
-    scalar minRadius() const { return 0.1143; }
+    scalar minRadius() const { return 0.217; }
 
     scalar maxRadius() const { return 1.143; }
 
@@ -154,8 +154,8 @@ public:
 
     std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
 
-    static const std::array<scalar, 41> lift_;
-    static const std::array<scalar, 41> drag_;
+    static const std::array<scalar, 23> lift_;
+    static const std::array<scalar, 23> drag_;
 };
 
 class RotorFuselage: public Blade
