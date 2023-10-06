@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
         {
             source->evaluateForce(solver.get());
             resRhoU += source->force();
+            resRhoE += source->force()&U.primitiveField();
         }
         Info << "# Local Courant          [-] = " << CFL << endl;
         Info << "----------------------------------------" << nl;
