@@ -44,14 +44,13 @@ class WingACE: public Model
     word wingType_;
     label  nSpans_;
     vector origin_, rotate_, refU_;
-    scalar refRho_, twist_, eps_, dSpan_;
+    scalar refRho_, twist_, eps_, optimalPara_, dSpan_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
     scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
     scalarField sectionDwDu_;
-    scalarField sectionAOA_;
     scalarField sectionUzDes_;
     scalarField sectionUzOpt_;
     //- section of all actuator points

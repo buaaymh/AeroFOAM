@@ -45,13 +45,12 @@ class RotorACE: public Model
     vector origin_, rotate_;
     scalar time_, refRho_, thrust_, torque_, twist_,
            frequence_, degOmega_, radOmega_,
-           dSpan_, dSector_, eps_;
+           dSpan_, dSector_, eps_, optimalPara_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
     scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
-    scalarField sectionAOA_;
     scalarField sectionCz_;
     scalarField sectionUzDes_;
     scalarField sectionUzOpt_;

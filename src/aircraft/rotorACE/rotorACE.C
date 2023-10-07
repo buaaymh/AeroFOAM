@@ -45,6 +45,7 @@ Foam::RotorACE::RotorACE
     refRho_ = mesh_.solutionDict().subDict(name).lookup<scalar>("referenceDensity");
     twist_ = mesh_.solutionDict().subDict(name).lookup<scalar>("twist");
     eps_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gaussRadius");
+    optimalPara_ = mesh_.solutionDict().subDict(name).lookup<scalar>("optimalPara");
     dSpan_ = (blade_->maxRadius() - blade_->minRadius()) / nSpans_;
     dSector_ = 360.0/nBlades_;
     degOmega_ = frequence_ * 360.0;
@@ -54,7 +55,6 @@ Foam::RotorACE::RotorACE
     sectionWeight_ = scalarField(nSpans_*nBlades_);
     sectionForce_ = vectorField(nSpans_*nBlades_);
     sectionCz_ = scalarField(nSpans_*nBlades_);
-    sectionAOA_ = scalarField(nSpans_*nBlades_, 0);
     sectionUzDes_ = scalarField(nSpans_*nBlades_, 0);
     sectionUzOpt_ = scalarField(nSpans_*nBlades_, 0);
     // Build KDTree
@@ -136,20 +136,17 @@ void Foam::RotorACE::updatePosition(scalar time)
     // Communication for Uz
     if (isCorrected_)
     {
-        sectionAOA_   = returnReduce(sectionUzDes_, sumOp<scalarField>());
         sectionUzDes_ = returnReduce(sectionUzDes_, sumOp<scalarField>());
         sectionUzOpt_ = returnReduce(sectionUzOpt_, sumOp<scalarField>());
         for (label sectionI = 0; sectionI < nSpans_*nBlades_; sectionI++)
         {
             if (sections_.find(sectionI) == sections_.end())
             {
-                sectionAOA_[sectionI]   = 0;
                 sectionUzDes_[sectionI] = 0;
                 sectionUzOpt_[sectionI] = 0;
             }
             else
             {
-                sectionAOA_[sectionI]   /= sectionCount_[sectionI];
                 sectionUzDes_[sectionI] /= sectionCount_[sectionI];
                 sectionUzOpt_[sectionI] /= sectionCount_[sectionI];
             }
@@ -181,13 +178,10 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
         vector velocity_rel = sectionU[sectionI] + r*radOmega_*section.x_unit;
         vector x_unit = section.x_unit;
         if (degOmega_ < 0) x_unit = -section.x_unit;
-        auto [cos0, sin0] = cosSin(sectionAOA_[sectionI]); // angle of inflow
-        scalar u = (velocity_rel&x_unit) + sin0*sectionUzDes_[sectionI];
-        scalar w = (velocity_rel&section.z_unit) - cos0*sectionUzDes_[sectionI];
-        sectionAOA_[sectionI] = getAngleOfAttack(u, w, 0);
+        scalar u = velocity_rel&x_unit;
+        scalar w = (velocity_rel&section.z_unit) - sectionUzDes_[sectionI];
         U_in[sectionI] = sqrt(sqr(u) + sqr(w));
-        u -= sin0*sectionUzOpt_[sectionI];
-        w += cos0*sectionUzOpt_[sectionI];
+        w += sectionUzOpt_[sectionI];
         scalar twist = twist_ + blade_->twist(r);
         scalar AOA = getAngleOfAttack(u, w, twist);
         auto [Cl, Cd] = blade_->Cl_Cd(U_in[sectionI], r, AOA);
@@ -196,7 +190,7 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
         scalar Cx = Cd * cos - Cl * sin;
         sectionForce_[sectionI]  = sectionCz_[sectionI]*section.z_unit + Cx*x_unit;
         sectionForce_[sectionI] *= -0.5*refRho_*(sqr(u)+sqr(w))*blade_->chord(r)*dSpan_;
-        G[sectionI] = 0.5*Cl*sqr(U_in[sectionI])*blade_->chord(r); // G for correction
+        G[sectionI] = 0.5*sectionCz_[sectionI]*sqr(U_in[sectionI])*blade_->chord(r); // G for correction
         forAll(section.projectedCells, cellI)
         {
             label i = section.projectedCells[cellI];
@@ -212,15 +206,15 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
         {
             label head_G  = bladeI*nSpans_;
             label head_dG = bladeI*(nSpans_+1);
-            dG[head_dG]   = 3*G[head_G]-G[head_G+1];
-            dG[head_dG+nSpans_] = -3*G[head_G+nSpans_-1]+G[head_G+nSpans_-2];
+            dG[head_dG]   = 2*G[head_G];
+            dG[head_dG+nSpans_] = -2*G[head_G+nSpans_-1];
             for (label i = 1; i < nSpans_; i++)
                 dG[head_dG+i] = G[head_G+i]-G[head_G+i-1];
         }
         for (const auto& [sectionI, section] : sections_)
         {
             scalar r = mag(section.coord - origin_);
-            scalar epsOpt = 0.2*blade_->chord(r);
+            scalar epsOpt = optimalPara_*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, U_in[sectionI], eps_, epsOpt, sectionI);
             sectionUzDes_[sectionI] = 0.2*UzDes + 0.8*sectionUzDes_[sectionI];
             sectionUzOpt_[sectionI] = 0.2*UzOpt + 0.8*sectionUzOpt_[sectionI];
@@ -241,9 +235,9 @@ void Foam::RotorACE::write()
     torque = returnReduce(torque, sumOp<scalar>());
     scalar CT = thrust/(sqr(radOmega_*blade_->maxRadius())*sqr(blade_->maxRadius()) *constant::mathematical::pi);
     scalar CM = torque/(sqr(radOmega_*blade_->maxRadius())*pow3(blade_->maxRadius())*constant::mathematical::pi);
-    Info << "# ------ " << name_ << " ------ #" << nl
-         << "# CT   [-] = " << setprecision(4) << CT << nl
-         << "# CM   [-] = " << setprecision(4) << CM << endl;
+    Info << "# " << name_
+         << ", CT[-] = " << setprecision(4) << CT
+         << ", CM[-] = " << setprecision(4) << CM << endl;
 
     if (mesh_.time().outputTime())
     {

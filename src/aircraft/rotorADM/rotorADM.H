@@ -44,14 +44,13 @@ class RotorADM: public Model
     label  nBlades_, nSectors_, nSpans_;
     vector origin_, rotate_;
     scalar refRho_, thrust_, torque_, twist_,
-           eps_, frequence_, degOmega_, radOmega_,
+           eps_, optimalPara_, frequence_, degOmega_, radOmega_,
            dSpan_, dSector_, sigma_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
     scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
-    scalarField sectionAOA_;
     scalarField sectionCz_;
     scalarField sectionUzDes_;
     scalarField sectionUzOpt_;

@@ -43,7 +43,7 @@ Foam::WingALM::WingALM
     refRho_ = mesh_.solutionDict().subDict(name).lookup<scalar>("referenceDensity");
     refU_ = mesh_.solutionDict().subDict(name).lookup<vector>("referenceVelocity");
     twist_ = mesh_.solutionDict().subDict(name).lookup<scalar>("twist");
-    eps_ = mesh_.solutionDict().subDict(name).lookup<scalar>("kernelSize");
+    eps_ = mesh_.solutionDict().subDict(name).lookup<scalar>("gaussRadius");
     dSpan_ = (blade_->maxRadius() - blade_->minRadius()) / nSpans_;
     sectionForce_ = vectorField(nSpans_);
     sectionDwDu_  = scalarField(nSpans_);
