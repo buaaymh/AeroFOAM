@@ -216,8 +216,8 @@ void Foam::RotorACE::evaluateForce(const solver* solver)
             scalar r = mag(section.coord - origin_);
             scalar epsOpt = optimalPara_*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, U_in[sectionI], eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = 0.2*UzDes + 0.8*sectionUzDes_[sectionI];
-            sectionUzOpt_[sectionI] = 0.2*UzOpt + 0.8*sectionUzOpt_[sectionI];
+            sectionUzDes_[sectionI] = 0.1*UzDes + 0.9*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.1*UzOpt + 0.9*sectionUzOpt_[sectionI];
         }
     }
 }
