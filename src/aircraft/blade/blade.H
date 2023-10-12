@@ -179,8 +179,8 @@ public:
 
     std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
 
-    static const std::array<scalar, 181> lift_;
-    static const std::array<scalar, 181> drag_;
+    static const std::array<scalar, 29> lift_;
+    static const std::array<scalar, 29> drag_;
 };
 
 } // End namespace Foam

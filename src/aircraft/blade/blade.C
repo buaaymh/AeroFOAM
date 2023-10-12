@@ -57,7 +57,7 @@ std::pair<scalar, scalar> Foam::CaradonnaTung::Cl_Cd(scalar Ma, scalar r, scalar
 {
     scalar Cl, Cd;
     scalar index = mag(deg);
-    if (index >= 40) { Cl = lift_[40]; Cd = drag_[40]; }
+    if (index >= 22) { Cl = lift_[22]; Cd = drag_[22]; }
     else
     {
         label deg_floor = floor(index);
@@ -82,13 +82,30 @@ Foam::RotorFuselage::RotorFuselage()
     Blade()
 {}
 
-const std::array<scalar, 181> RotorFuselage::lift_
-    = SC1095::getLiftCoefficients();
+const std::array<scalar, 29> RotorFuselage::lift_
+    = NACA0015::getLiftCoefficients();
 
-const std::array<scalar, 181> RotorFuselage::drag_
-    = SC1095::getDragCoefficients();
+const std::array<scalar, 29> RotorFuselage::drag_
+    = NACA0015::getDragCoefficients();
 
 std::pair<scalar, scalar> Foam::RotorFuselage::Cl_Cd(scalar Ma, scalar r, scalar deg) const
 {
-    return { lift_[(deg + 180) / 2], drag_[(deg + 180) / 2] };
+    scalar Cl, Cd;
+    scalar index = mag(deg);
+    if (index >= 28) { Cl = lift_[28]; Cd = drag_[28]; }
+    else
+    {
+        label deg_floor = floor(index);
+        label deg_ceil = ceil(index);
+        if (deg_floor != deg_ceil)
+        {
+            Cl = (deg_ceil - index) *lift_[deg_floor]
+               + (index - deg_floor)*lift_[deg_ceil];
+            Cd = (deg_ceil - index) *drag_[deg_floor]
+               + (index - deg_floor)*drag_[deg_ceil];
+        }
+        else { Cl = lift_[deg_floor]; Cd = drag_[deg_floor]; }
+    }
+    if (deg < 0) Cl = -Cl;
+    return { Cl, Cd };
 }
