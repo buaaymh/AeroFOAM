@@ -80,6 +80,8 @@ class turbulenceSolver: public navierStokesSolver
         volVectorField nuTildaGrad_;
         //- vorticity
         volScalarField Omega_;
+        //- second-invariant
+        volScalarField Q_;
         //- nuTilda residual
         scalarField dNuTilda_;
         //- wall distance

@@ -82,6 +82,19 @@ Foam::turbulenceSolver::turbulenceSolver
         mesh_,
         dimensionedScalar(dimless/dimLength, 0)
     ),
+    Q_
+    (
+        IOobject
+        (
+            "Q",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar(dimless/dimArea, 0.0)
+    ),
     dNuTilda_(scalarField(mesh_.nCells())),
     maxDelta_(scalarField(mesh_.nCells()))
 {
@@ -132,6 +145,7 @@ void Foam::turbulenceSolver::correctFields()
     navierStokesSolver::correctFields();
     correctTurbulenceFields();
     UGrad_ = fvc::grad(U_);
+    Q_ = 0.5*(sqr(tr(UGrad_)) - tr(UGrad_&UGrad_));
 }
 
 #include "functions.H"

@@ -59,8 +59,6 @@ private:
     volVectorField& U_;
     //- ForceSource
     volVectorField force_;
-    //- second-invariant
-    volScalarField Q_;
     //- model
     std::vector<std::unique_ptr<Model>> models_;
 

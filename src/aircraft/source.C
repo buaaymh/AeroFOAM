@@ -46,19 +46,6 @@ Foam::Source::Source
         ),
         mesh_,
         dimensionedVector(dimless, vector::zero)
-    ),
-    Q_
-    (
-        IOobject
-        (
-            "Q",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar(dimless/dimArea, 0.0)
     )
 {
     forAll(mesh_.cellZones(), zoneI)
@@ -130,8 +117,6 @@ void Foam::Source::write()
     if (mesh_.time().outputTime())
     {
         force_.primitiveFieldRef() /= mesh_.V();
-        volTensorField UGrad = fvc::grad(U_);
-        Q_ = 0.5*(sqr(tr(UGrad)) - tr(UGrad&UGrad));
     }
     for (auto& model : models_) { model->write(); }
     Info << "----------------------------------------" << endl;
