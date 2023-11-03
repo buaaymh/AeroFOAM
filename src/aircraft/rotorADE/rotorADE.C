@@ -23,9 +23,9 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "rotorADM.H"
+#include "rotorADE.H"
 
-Foam::RotorADM::RotorADM
+Foam::RotorADE::RotorADE
 (
     const word& name,
     const volScalarField& rho,
@@ -35,7 +35,7 @@ Foam::RotorADM::RotorADM
 :
     Model(name, rho, U, force)
 {
-    Info << "Install rotor ADM model in Zone " << name << endl;
+    Info << "Install rotor ADE model in Zone " << name << endl;
     isCorrected_ = mesh_.solutionDict().subDict(name).lookup<Switch>("isCorrected");
     origin_  = mesh_.solutionDict().subDict(name).lookup<vector>("origin");
     rotate_  = mesh_.solutionDict().subDict(name).lookup<vector>("rotate");
@@ -128,7 +128,7 @@ Foam::RotorADM::RotorADM
     sectionWeight_ = returnReduce(sectionWeight_, sumOp<scalarField>());
 }
 
-void Foam::RotorADM::evaluateForce(const solver* solver)
+void Foam::RotorADE::evaluateForce(const solver* solver)
 {
     // Sample rho and U
     vectorField sectionU(nSpans_*nSectors_, vector::zero);
@@ -174,16 +174,16 @@ void Foam::RotorADM::evaluateForce(const solver* solver)
     // Correction
     if (isCorrected_)
     {
-        scalarField dG(nSpans_*nSectors_, 0);
+        scalarField dG((nSpans_+1)*nSectors_, 0);
         G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
         for (label sectorI = 0; sectorI < nSectors_; sectorI++)
         {
             label head_G  = sectorI*nSpans_;
-            label head_dG = sectorI*nSpans_;
-            dG[head_dG] = G[head_G];
-            dG[head_dG+nSpans_-1] = -G[head_G+nSpans_-1];
-            for (label i = 1; i < nSpans_-1; i++)
-                dG[head_dG+i] = 0.5*(G[head_G+i+1]-G[head_G+i-1]);
+            label head_dG = sectorI*(nSpans_+1);
+            dG[head_dG] = 2*G[head_G];
+            dG[head_dG+nSpans_] = -2*G[head_G+nSpans_-1];
+            for (label i = 1; i < nSpans_; i++)
+                dG[head_dG+i] = G[head_G+i]-G[head_G+i-1];
         }
         for (const auto& [sectionI, section] : sections_)
         {
@@ -196,7 +196,7 @@ void Foam::RotorADM::evaluateForce(const solver* solver)
     }
 }
 
-void Foam::RotorADM::write()
+void Foam::RotorADE::write()
 {
     scalar thrust = 0, torque = 0;
     for (const auto& [sectionI, section] : sections_)
@@ -237,7 +237,7 @@ void Foam::RotorADM::write()
     }
 }
 
-scalar Foam::RotorADM::getGaussWeight
+scalar Foam::RotorADE::getGaussWeight
 (
     scalar ps,
     scalar pn
@@ -247,7 +247,7 @@ scalar Foam::RotorADM::getGaussWeight
     return (1-ps)*Foam::exp(-sqr(pn/eps_))/(sqr(eps_)*dSpan_*constant::mathematical::pi);
 }
 
-std::pair<scalar, scalar> Foam::RotorADM::evaluateInducedVelocity
+std::pair<scalar, scalar> Foam::RotorADE::evaluateInducedVelocity
 (
     const scalarField& dG,
     scalar U_in,
@@ -259,11 +259,10 @@ std::pair<scalar, scalar> Foam::RotorADM::evaluateInducedVelocity
     label sectorI = sectionI/nSpans_;
     label spanI   = sectionI%nSpans_;
     scalar UyDes = 0, UyOpt = 0;
-    for (label i = 0; i < nSpans_; i++)
+    for (label i = 0; i < nSpans_+1; i++)
     {
-        if (spanI == i) continue;
-        scalar dy = dSpan_*(spanI-i);
-        scalar temp = dG[i+nSpans_*sectorI]/(4*constant::mathematical::pi*dy);
+        scalar dy = dSpan_*(spanI-i+0.5);
+        scalar temp = dG[i+(nSpans_+1)*sectorI]/(4*constant::mathematical::pi*dy);
         UyDes += temp*(1-Foam::exp(-sqr(dy/epsDes)));
         UyOpt += temp*(1-Foam::exp(-sqr(dy/epsOpt)));
     }

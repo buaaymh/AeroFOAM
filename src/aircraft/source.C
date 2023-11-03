@@ -66,6 +66,10 @@ Foam::Source::Source
             {
                 models_.emplace_back(std::make_unique<RotorADM>(name, rho_, U_, force_));
             }
+            else if (model == "rotorADE")
+            {
+                models_.emplace_back(std::make_unique<RotorADE>(name, rho_, U_, force_));
+            }
             else if (model == "wingALM")
             {
                 models_.emplace_back(std::make_unique<WingALM>(name, rho_, U_, force_));

@@ -40,19 +40,32 @@ namespace Foam
 
 class WingALM: public Model
 {
-    bool isChordBased_;
+    bool isCorrected_;
     word wingType_;
     label  nSpans_;
     vector origin_, rotate_, refU_;
-    scalar refRho_, twist_, eps_, dSpan_;
+    scalar refRho_, twist_, eps_, optimalPara_, dSpan_;
     std::unique_ptr<KDTree> tree_;
     //- section info of all actuator points
     scalarField sectionCount_;
     scalarField sectionWeight_;
     vectorField sectionForce_;
     scalarField sectionDwDu_;
+    scalarField sectionUzDes_;
+    scalarField sectionUzOpt_;
     //- section of all actuator points
     std::map<size_t, Section> sections_;
+
+    std::pair<scalar, scalar> evaluateInducedVelocity
+    (
+        const scalarField& dG,
+        scalar U_in,
+        scalar epsDes,
+        scalar epsOpt,
+        label  sectionI
+    ) const;
+    
+    scalar getGaussWeight(scalar r, scalar ps, scalar pn) const;
 
 public:
     // Constructors

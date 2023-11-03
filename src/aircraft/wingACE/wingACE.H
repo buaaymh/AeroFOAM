@@ -65,7 +65,7 @@ class WingACE: public Model
         label  sectionI
     ) const;
 
-    scalar getACEGaussWeight(scalar r, scalar ps, scalar pn) const;
+    scalar getGaussWeight(scalar r, scalar ps, scalar pn) const;
 
 public:
     // Constructors

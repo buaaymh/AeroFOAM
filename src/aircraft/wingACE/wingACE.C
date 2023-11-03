@@ -94,7 +94,7 @@ Foam::WingACE::WingACE
                 scalar pn = sqrt(magSqr(mesh_.C()[cellI]-origin_)-sqr(r));
                 if ((sectionI == 0) && (ps < 0)) ps = 0;
                 else if ((sectionI == nSpans_-1) && (ps > 0)) ps = 0;
-                scalar weight = getACEGaussWeight(r, mag(ps), pn);
+                scalar weight = getGaussWeight(r, mag(ps), pn);
                 if (weight > 1e-6)
                 {
                     weight *= mesh_.V()[cellI];
@@ -181,8 +181,8 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
     {
         scalarField dG(nSpans_+1, 0);
         G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
-        dG[0] = 2*G[0];
-        dG[nSpans_] = -2*G[nSpans_-1];
+        dG[0] = 3*G[0] - G[1];
+        dG[nSpans_] = -3*G[nSpans_-1] + G[nSpans_-2];
         for (label sectionI = 1; sectionI < nSpans_; sectionI++)
             dG[sectionI] = G[sectionI]-G[sectionI-1];
         for (const auto& [sectionI, section] : sections_)
@@ -190,8 +190,8 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
             scalar r = (section.coord - origin_)&section.y_unit;
             scalar epsOpt = optimalPara_*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, mag(refU_), eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = 0.2*UzDes + 0.8*sectionUzDes_[sectionI];
-            sectionUzOpt_[sectionI] = 0.2*UzOpt + 0.8*sectionUzOpt_[sectionI];
+            sectionUzDes_[sectionI] = 0.1*UzDes + 0.9*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.1*UzOpt + 0.9*sectionUzOpt_[sectionI];
         }
     }
 }
@@ -248,8 +248,8 @@ void Foam::WingACE::getEllipticallyLoadedForce(const solver* solver)
             scalar r = (section.coord - origin_)&section.y_unit;
             scalar epsOpt = optimalPara_*blade_->chord(r);
             auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, mag(refU_), eps_, epsOpt, sectionI);
-            sectionUzDes_[sectionI] = 0.2*UzDes + 0.8*sectionUzDes_[sectionI];
-            sectionUzOpt_[sectionI] = 0.2*UzOpt + 0.8*sectionUzOpt_[sectionI];
+            sectionUzDes_[sectionI] = 0.1*UzDes + 0.9*sectionUzDes_[sectionI];
+            sectionUzOpt_[sectionI] = 0.1*UzOpt + 0.9*sectionUzOpt_[sectionI];
         }
     }
 }
@@ -315,7 +315,7 @@ std::pair<scalar, scalar> Foam::WingACE::evaluateInducedVelocity
     return {UyDes, UyOpt};
 }
 
-scalar Foam::WingACE::getACEGaussWeight
+scalar Foam::WingACE::getGaussWeight
 (
     scalar r,
     scalar ps,
@@ -324,4 +324,4 @@ scalar Foam::WingACE::getACEGaussWeight
 {
     if (pn > 3*eps_ || ps >= 1) return 0.0;
     return (1-ps)*Foam::exp(-sqr(pn/eps_))/(sqr(eps_)*dSpan_*constant::mathematical::pi);
-}   
+}
