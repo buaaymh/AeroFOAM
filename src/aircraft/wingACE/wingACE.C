@@ -181,8 +181,8 @@ void Foam::WingACE::getConstCirculationForce(const solver* solver)
     {
         scalarField dG(nSpans_+1, 0);
         G = returnReduce(G, sumOp<scalarField>())/sectionCount_;
-        dG[0] = 3*G[0] - G[1];
-        dG[nSpans_] = -3*G[nSpans_-1] + G[nSpans_-2];
+        dG[0] = 2*G[0];
+        dG[nSpans_] = -2*G[nSpans_-1];
         for (label sectionI = 1; sectionI < nSpans_; sectionI++)
             dG[sectionI] = G[sectionI]-G[sectionI-1];
         for (const auto& [sectionI, section] : sections_)
