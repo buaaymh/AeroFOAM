@@ -22,63 +22,63 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Source
+    stabilator
 
 Author
     Minghao Yang
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef source_H
-#define source_H
+#ifndef stabilator_H
+#define stabilator_H
 
-#include "solver.H"
 #include "model.H"
-#include "rotorALM.H"
-#include "rotorACE.H"
-#include "rotorADM.H"
-#include "rotorADE.H"
-#include "wingALM.H"
-#include "wingACE.H"
-#include "stabilator.H"
-#include "ALM2D.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 namespace Foam
 {
 
-class Source
+class Stabilator: public Model
 {
+    bool isCorrected_;
+    label  nSpans_;
+    vector origin_, rotate_, refU_;
+    scalar refRho_, twist_, eps_, optimalPara_, dSpan_;
+    std::unique_ptr<KDTree> tree_;
+    //- section info of all actuator points
+    scalarField sectionCount_;
+    scalarField sectionWeight_;
+    scalarField sectionAOA_;
+    vectorField sectionForce_;
+    scalarField sectionUzDes_;
+    scalarField sectionUzOpt_;
+    //- section of all actuator points
+    std::map<size_t, Section> sections_;
 
-friend class Model;
+    std::pair<scalar, scalar> evaluateInducedVelocity
+    (
+        const scalarField& dG,
+        scalar U_in,
+        scalar epsDes,
+        scalar epsOpt,
+        label  sectionI
+    ) const;
 
-private:
-    //- Reference to mesh
-    const fvMesh& mesh_;
-    //- Density
-    volScalarField& rho_;
-    //- Velocity
-    volVectorField& U_;
-    //- ForceSource
-    volVectorField force_;
-    //- model
-    std::vector<std::unique_ptr<Model>> models_;
+    scalar getGaussWeight(scalar r, scalar ps, scalar pn) const;
 
 public:
     // Constructors
-    Source
+    Stabilator
     (
-        volScalarField& rho,
-        volVectorField& U
+        const word& name,
+        const volScalarField& rho,
+        const volVectorField& U,
+        volVectorField& force
     );
 
     // Member Functions
-    void updatePosition(scalar time);
-
     void evaluateForce(const solver* solver);
 
-    const vectorField& force() const { return force_.primitiveField(); }
-    
     void write();
 
 };

@@ -42,6 +42,38 @@ std::pair<scalar, scalar> Foam::EllipticWing::Cl_Cd(scalar Ma, scalar r, scalar 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+Foam::HorizontalStabilator::HorizontalStabilator() : Blade() {}
+
+const std::array<scalar, 23> HorizontalStabilator::lift_
+    = NACA0012::getLiftCoefficients();
+
+const std::array<scalar, 23> HorizontalStabilator::drag_
+    = NACA0012::getDragCoefficients();
+
+std::pair<scalar, scalar> Foam::HorizontalStabilator::Cl_Cd(scalar Ma, scalar r, scalar deg) const
+{
+    scalar Cl, Cd;
+    scalar index = mag(deg);
+    if (index >= 22) { Cl = lift_[22]; Cd = drag_[22]; }
+    else
+    {
+        label deg_floor = floor(index);
+        label deg_ceil = ceil(index);
+        if (deg_floor != deg_ceil)
+        {
+            Cl = (deg_ceil - index) *lift_[deg_floor]
+               + (index - deg_floor)*lift_[deg_ceil];
+            Cd = (deg_ceil - index) *drag_[deg_floor]
+               + (index - deg_floor)*drag_[deg_ceil];
+        }
+        else { Cl = lift_[deg_floor]; Cd = drag_[deg_floor]; }
+    }
+    if (deg < 0) Cl = -Cl;
+    return { Cl, Cd };
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 Foam::CaradonnaTung::CaradonnaTung()
 :
     Blade()
@@ -107,5 +139,57 @@ std::pair<scalar, scalar> Foam::RotorFuselage::Cl_Cd(scalar Ma, scalar r, scalar
         else { Cl = lift_[deg_floor]; Cd = drag_[deg_floor]; }
     }
     if (deg < 0) Cl = -Cl;
+    return { Cl, Cd };
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+Foam::UH60A_Main::UH60A_Main()
+:
+    Blade()
+{}
+
+const std::array<scalar, 181> UH60A_Main::lift_
+    = SC1095::getLiftCoefficients();
+
+const std::array<scalar, 181> UH60A_Main::drag_
+    = SC1095::getDragCoefficients();
+
+std::pair<scalar, scalar> Foam::UH60A_Main::Cl_Cd(scalar Ma, scalar r, scalar deg) const
+{
+    scalar Cl, Cd;
+    scalar index = 0.5*(deg + 180);
+    label deg_floor = floor(index);
+    label deg_ceil = ceil(index);
+    Cl = (deg_ceil - index) *lift_[deg_floor]
+       + (index - deg_floor)*lift_[deg_ceil];
+    Cd = (deg_ceil - index) *drag_[deg_floor]
+       + (index - deg_floor)*drag_[deg_ceil];
+    return { Cl, Cd };
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+Foam::UH60A_Tail::UH60A_Tail()
+:
+    Blade()
+{}
+
+const std::array<scalar, 181> UH60A_Tail::lift_
+    = SC1095::getLiftCoefficients();
+
+const std::array<scalar, 181> UH60A_Tail::drag_
+    = SC1095::getDragCoefficients();
+
+std::pair<scalar, scalar> Foam::UH60A_Tail::Cl_Cd(scalar Ma, scalar r, scalar deg) const
+{
+    scalar Cl, Cd;
+    scalar index = 0.5*(deg + 180);
+    label deg_floor = floor(index);
+    label deg_ceil = ceil(index);
+    Cl = (deg_ceil - index) *lift_[deg_floor]
+       + (index - deg_floor)*lift_[deg_ceil];
+    Cd = (deg_ceil - index) *drag_[deg_floor]
+       + (index - deg_floor)*drag_[deg_ceil];
     return { Cl, Cd };
 }

@@ -134,6 +134,30 @@ public:
     std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
 };
 
+class HorizontalStabilator: public Blade
+{
+public:
+    // Constructors
+    HorizontalStabilator();
+    // Destructor - default
+    ~HorizontalStabilator() noexcept = default;
+
+    scalar minRadius() const { return -7.19; }
+
+    scalar maxRadius() const { return  7.19; }
+    
+    scalar aspectRatio() const { return  4.6; }
+
+    scalar chord(scalar r) const { return 3.67- 0.1572*mag(r); }
+    
+    scalar twist(scalar r) const { return 0; }
+
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
+    
+    static const std::array<scalar, 23> lift_;
+    static const std::array<scalar, 23> drag_;
+};
+
 class CaradonnaTung: public Blade
 {
 public:
@@ -181,6 +205,54 @@ public:
 
     static const std::array<scalar, 29> lift_;
     static const std::array<scalar, 29> drag_;
+};
+
+class UH60A_Main: public Blade
+{
+public:
+    // Constructors
+    UH60A_Main();
+    // Destructor - default
+    ~UH60A_Main() noexcept = default;
+
+    scalar minRadius() const { return 5.367; }
+
+    scalar maxRadius() const { return 26.835; }
+
+    scalar chord(scalar r) const { return 1.75; }
+    
+    scalar aspectRatio() const { return  15.333; }
+    
+    scalar twist(scalar r) const { return -16.0*(r/maxRadius()-0.75); }
+
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
+
+    static const std::array<scalar, 181> lift_;
+    static const std::array<scalar, 181> drag_;
+};
+
+class UH60A_Tail: public Blade
+{
+public:
+    // Constructors
+    UH60A_Tail();
+    // Destructor - default
+    ~UH60A_Tail() noexcept = default;
+
+    scalar minRadius() const { return 1; }
+
+    scalar maxRadius() const { return 5.5; }
+
+    scalar chord(scalar r) const { return 0.81; }
+    
+    scalar aspectRatio() const { return  6.8; }
+    
+    scalar twist(scalar r) const { return 0; }
+
+    std::pair<scalar, scalar> Cl_Cd(scalar Ma, scalar r, scalar deg) const;
+
+    static const std::array<scalar, 181> lift_;
+    static const std::array<scalar, 181> drag_;
 };
 
 } // End namespace Foam

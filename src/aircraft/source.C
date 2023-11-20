@@ -78,6 +78,10 @@ Foam::Source::Source
             {
                 models_.emplace_back(std::make_unique<WingACE>(name, rho_, U_, force_));
             }
+            else if (model == "stabilator")
+            {
+                models_.emplace_back(std::make_unique<Stabilator>(name, rho_, U_, force_));
+            }
             else if (model == "ALM2D")
             {
                 models_.emplace_back(std::make_unique<ALM2D>(name, rho_, U_, force_));
@@ -91,6 +95,7 @@ Foam::Source::Source
                      << " rotorADM" << nl
                      << " wingALM"  << nl
                      << " wingACE"  << nl
+                     << " stabilator"  << nl
                      << " ALM2D"  << nl
                      << ")" << nl
                      << endl;

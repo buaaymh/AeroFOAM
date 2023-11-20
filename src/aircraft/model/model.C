@@ -49,6 +49,18 @@ Foam::Model::Model
     {
         blade_ = std::make_unique<RotorFuselage>();
     }
+    else if (blade == "UH60A_Main")
+    {
+        blade_ = std::make_unique<UH60A_Main>();
+    }
+    else if (blade == "UH60A_Tail")
+    {
+        blade_ = std::make_unique<UH60A_Tail>();
+    }
+    else if (blade == "HorizontalStabilator")
+    {
+        blade_ = std::make_unique<HorizontalStabilator>();
+    }
     else if (blade == "RectangularWing")
     {
         blade_ = std::make_unique<RectangularWing>();
@@ -67,6 +79,11 @@ Foam::Model::Model
              << "(" << nl
              << " CaradonnaTung" << nl
              << " RotorFuselage" << nl
+             << " UH60A_Main" << nl
+             << " UH60A_Tail" << nl
+             << " RectangularWing" << nl
+             << " EllipticWing" << nl
+             << " Airfoil2D" << nl
              << ")" << nl
              << endl;
     }

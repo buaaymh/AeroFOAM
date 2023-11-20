@@ -17,6 +17,7 @@ aircraft/rotorADM/rotorADM.C
 aircraft/rotorADE/rotorADE.C
 aircraft/wingALM/wingALM.C
 aircraft/wingACE/wingACE.C
+aircraft/stabilator/stabilator.C
 aircraft/model/model.C
 solver/solver.C
 eulerSolver/eulerSolver.C
