@@ -36,6 +36,7 @@ Foam::Stabilator::Stabilator
     Model(name, rho, U, force)
 {
     Info << "Install stabilator model in Zone " << name << endl;
+    isModified_ = mesh_.solutionDict().subDict(name).lookup<Switch>("isModified");
     isCorrected_ = mesh_.solutionDict().subDict(name).lookup<Switch>("isCorrected");
     origin_  = mesh_.solutionDict().subDict(name).lookup<vector>("origin");
     rotate_  = mesh_.solutionDict().subDict(name).lookup<vector>("rotate");
@@ -191,8 +192,11 @@ void Foam::Stabilator::write()
     scalar Cl = lift/(0.5*refRho_*magSqr(refU_)*area);
     scalar Cd = drag/(0.5*refRho_*magSqr(refU_)*area);
     Info << "# ------ " << name_ << " ------ #" << nl
+         << "# A_rel[-] = " << setprecision(4) << twist_ << nl
          << "# Cl   [-] = " << setprecision(4) << Cl << nl
          << "# Cd   [-] = " << setprecision(4) << Cd << endl;
+
+    if (isModified_) twist_ -= Cl/0.2;
     
     if (mesh_.time().outputTime())
     {

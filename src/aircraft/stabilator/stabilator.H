@@ -40,7 +40,7 @@ namespace Foam
 
 class Stabilator: public Model
 {
-    bool isCorrected_;
+    bool isModified_, isCorrected_;
     label  nSpans_;
     vector origin_, rotate_, refU_;
     scalar refRho_, twist_, eps_, optimalPara_, dSpan_;
