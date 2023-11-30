@@ -82,8 +82,6 @@ class turbulenceSolver: public navierStokesSolver
         volScalarField Omega_;
         //- strain rate
         volScalarField Strain_;
-        //- second-invariant
-        volScalarField Q_;
         //- nuTilda residual
         scalarField dNuTilda_;
         //- wall distance
