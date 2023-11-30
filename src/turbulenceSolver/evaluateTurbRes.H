@@ -85,8 +85,9 @@ void Foam::turbulenceSolver::evaluateTurbRes
     }
     forAll(mesh_.C(), cellI)
     {
-        Omega_[cellI] = mag(vorticity(UGrad_[cellI]));
-        resNuTilda[cellI] += evaluateSource(dist_[cellI], Omega_[cellI], nuLam_[cellI], nuTilda_[cellI],
+        Omega_[cellI] = Foam::sqrt(2.0)*mag(skew(UGrad_[cellI]));
+        Strain_[cellI] = Foam::sqrt(2.0)*mag(symm( UGrad_[cellI]));
+        resNuTilda[cellI] += evaluateSource(dist_[cellI], Omega_[cellI], Strain_[cellI], nuLam_[cellI], nuTilda_[cellI],
                                             nuTildaGrad_[cellI], mesh_.V()[cellI]);
     }
 }

@@ -80,6 +80,8 @@ class turbulenceSolver: public navierStokesSolver
         volVectorField nuTildaGrad_;
         //- vorticity
         volScalarField Omega_;
+        //- strain rate
+        volScalarField Strain_;
         //- second-invariant
         volScalarField Q_;
         //- nuTilda residual
@@ -184,6 +186,7 @@ protected:
     (
         const scalar& d,
         const scalar& Omega,
+        const scalar& Strain,
         const scalar& nuLam,
         const scalar& nuTilda,
         const vector& nuTildaGrad,
@@ -194,6 +197,7 @@ protected:
     (
         const scalar& d,
         const scalar& Omega,
+        const scalar& Strain,
         const scalar& nuLam,
         const scalar& nuTilda,
         const scalar& volume

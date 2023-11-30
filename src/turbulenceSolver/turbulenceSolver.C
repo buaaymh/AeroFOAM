@@ -82,6 +82,19 @@ Foam::turbulenceSolver::turbulenceSolver
         mesh_,
         dimensionedScalar(dimless/dimLength, 0)
     ),
+    Strain_
+    (
+        IOobject
+        (
+            "strainRate",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar(dimless/dimLength, 0)
+    ),
     Q_
     (
         IOobject

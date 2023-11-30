@@ -130,8 +130,7 @@ void Foam::turbulenceSolver::evaluateTurbLDU
     }
     forAll(mesh_.C(), cellI)
     {
-        const scalar Omega = mag(vorticity(UGrad_[cellI]));
-        scalar source_Jacobian = evaluateSourceJacobian(dist_[cellI], Omega, nuLam_[cellI], nuTilda_[cellI], mesh_.V()[cellI]);
+        scalar source_Jacobian = evaluateSourceJacobian(dist_[cellI], Omega_[cellI], Strain_[cellI], nuLam_[cellI], nuTilda_[cellI], mesh_.V()[cellI]);
         D[cellI] -= 0.5*alpha*(source_Jacobian-mag(source_Jacobian));
     }
 }
@@ -140,6 +139,7 @@ scalar Foam::turbulenceSolver::evaluateSource
 (
     const scalar& d,
     const scalar& Omega,
+    const scalar& Strain,
     const scalar& nuLam,
     const scalar& nuTilda,
     const vector& nuTildaGrad,
@@ -150,13 +150,14 @@ scalar Foam::turbulenceSolver::evaluateSource
     if (d > 1e-10)
     {
         const scalar d2 = sqr(d);
+        const scalar S  = 2.0*min(1e-10, Strain-Omega);
         if (nuTilda > 0.0)
         {
             /*--- Production term ---*/
             scalar X = nuTilda/nuLam;
             scalar fv2 = 1.0 - X/(1.0+X*fv1(X));
             scalar inv_k2_d2 = 1.0/(SA::k2*d2);
-            scalar Shat = max(Omega + Ma_Re_*nuTilda*fv2*inv_k2_d2, 1e-10);
+            scalar Shat = max(S + Ma_Re_*nuTilda*fv2*inv_k2_d2, 1e-10);
             scalar Production = SA::Cb1*Shat*nuTilda;
             /*--- Destruction term ---*/
             scalar r = min(Ma_Re_*nuTilda/Shat*inv_k2_d2, 10.0);
@@ -170,7 +171,7 @@ scalar Foam::turbulenceSolver::evaluateSource
         else
         {
             /*--- Production term ---*/;
-            scalar Production = SA::Cb1*(1.0-SA::Ct3)*Omega*nuTilda;
+            scalar Production = SA::Cb1*(1.0-SA::Ct3)*S*nuTilda;
             /*--- Destruction term ---*/
             scalar Destruction = Ma_Re_*SA::Cw1*sqr(nuTilda)/d2;
             /*--- Diffusion term ---*/
@@ -185,6 +186,7 @@ scalar Foam::turbulenceSolver::evaluateSourceJacobian
 (
     const scalar& d,
     const scalar& Omega,
+    const scalar& Strain,
     const scalar& nuLam,
     const scalar& nuTilda,
     const scalar& volume
@@ -194,13 +196,14 @@ scalar Foam::turbulenceSolver::evaluateSourceJacobian
     if (d > 1e-10)
     {
         const scalar d2 = sqr(d);
+        const scalar S  = 2.0*min(1e-10, Strain-Omega);
         if (nuTilda > 0.0)
         {
             /*--- Implicit part, production term ---*/
             scalar X = nuTilda/nuLam;
             scalar fv2 = 1.0 - X/(1.0+X*fv1(X));
             scalar inv_k2_d2 = 1.0/(SA::k2*d2);
-            scalar Shat = max(Omega + Ma_Re_*nuTilda*fv2*inv_k2_d2, 1e-10);
+            scalar Shat = max(S + Ma_Re_*nuTilda*fv2*inv_k2_d2, 1e-10);
             scalar inv_Shat = 1.0/Shat;
             scalar dfv1 = 3.0*sqr(X)*SA::Cv1_3/(nuLam*sqr(pow3(X)+SA::Cv1_3));
             scalar dfv2 = -(1/nuLam-sqr(X)*dfv1)/sqr(1.+X*fv1(X));
@@ -222,7 +225,7 @@ scalar Foam::turbulenceSolver::evaluateSourceJacobian
         else
         {
             /*--- Implicit part, production term ---*/
-            jacobian += SA::Cb1*(1.0-SA::Ct3)*Omega * volume;
+            jacobian += SA::Cb1*(1.0-SA::Ct3)*S * volume;
             /*--- Implicit part, destruction term ---*/
             jacobian += Ma_Re_*2.0*SA::Cw1*nuTilda/d2 * volume;
         }
