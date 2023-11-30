@@ -150,7 +150,7 @@ scalar Foam::turbulenceSolver::evaluateSource
     if (d > 1e-10)
     {
         const scalar d2 = sqr(d);
-        const scalar S  = 2.0*min(1e-10, Strain-Omega);
+        const scalar S  = Omega + 2.0*min(1e-10, Strain-Omega);
         if (nuTilda > 0.0)
         {
             /*--- Production term ---*/
@@ -196,7 +196,7 @@ scalar Foam::turbulenceSolver::evaluateSourceJacobian
     if (d > 1e-10)
     {
         const scalar d2 = sqr(d);
-        const scalar S  = 2.0*min(1e-10, Strain-Omega);
+        const scalar S  = Omega + 2.0*min(1e-10, Strain-Omega);
         if (nuTilda > 0.0)
         {
             /*--- Implicit part, production term ---*/
