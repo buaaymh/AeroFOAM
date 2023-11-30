@@ -47,8 +47,9 @@ void Foam::Reconstruction::limitCoefficients()
                                                       dRho, dRhoU, dRhoE, SMALL, factor));
             if (factor < 1.0)
             {
-                coefs_[cellI] *= factor;
+                coefs_[cellI] *= 0;
                 parameter_.nNegative++;
+                IS_[cellI] = 100;
             }
         }
     }
