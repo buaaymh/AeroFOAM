@@ -111,7 +111,6 @@ Foam::turbulenceSolver::turbulenceSolver
             }
             maxDelta_[cellI] = deltaMaxTmp;
         }
-        dist_ = min(dist_, maxDelta_*SA::constDES);
     }
 }
 
@@ -141,6 +140,20 @@ void Foam::turbulenceSolver::correctFields()
     navierStokesSolver::correctFields();
     correctTurbulenceFields();
     UGrad_ = fvc::grad(U_);
+    /*--- 
+    A New Version of Detached-eddy Simulation, Resistant to Ambiguous Grid Densities.
+    Spalart et al. Theoretical and Computational Fluid Dynamics - 2006
+    ---*/
+    if (fluidProps_.simulationType == "DES")
+    {
+        dist_ = wallDist::New(mesh_).y().primitiveField();
+        forAll(mesh_.C(), cellI)
+        {
+            scalar r_d = Ma_Re_*nuTilda_[cellI]/(max(mag(UGrad_[cellI]), 1e-10)*SA::k2*sqr(dist_[cellI]));
+            scalar f_d = 1.0-Foam::tanh(Foam::pow3(8.0*r_d));
+            dist_[cellI] -= f_d*max(0.0, (dist_[cellI]-maxDelta_[cellI]*SA::constDES));
+        }
+    }
 }
 
 #include "functions.H"
