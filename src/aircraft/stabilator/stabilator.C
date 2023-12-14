@@ -171,7 +171,7 @@ void Foam::Stabilator::evaluateForce(const solver* solver)
         {
             scalar r = (section.coord - origin_)&section.y_unit;
             scalar epsOpt = optimalPara_*blade_->chord(r);
-            auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, mag(refU_), eps_, epsOpt, sectionI);
+            auto [UzDes, UzOpt] = evaluateInducedVelocity(dG, U_in[sectionI], eps_, epsOpt, sectionI);
             sectionUzDes_[sectionI] = 0.1*UzDes + 0.9*sectionUzDes_[sectionI];
             sectionUzOpt_[sectionI] = 0.1*UzOpt + 0.9*sectionUzOpt_[sectionI];
         }
@@ -191,10 +191,10 @@ void Foam::Stabilator::write()
     const scalar area = sqr(blade_->maxRadius()-blade_->minRadius())/blade_->aspectRatio();
     scalar Cl = lift/(0.5*refRho_*magSqr(refU_)*area);
     scalar Cd = drag/(0.5*refRho_*magSqr(refU_)*area);
-    Info << "# ------ " << name_ << " ------ #" << nl
-         << "# A_rel[-] = " << setprecision(4) << twist_ << nl
-         << "# Cl   [-] = " << setprecision(4) << Cl << nl
-         << "# Cd   [-] = " << setprecision(4) << Cd << endl;
+    Info << "# " << name_
+         << ", AOA[deg] = " << setprecision(4) << twist_
+         << ", Cl[-] = " << setprecision(4) << Cl
+         << ", Cd[-] = " << setprecision(4) << Cd << endl;
 
     if (isModified_) twist_ -= Cl/0.2;
     

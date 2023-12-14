@@ -44,17 +44,17 @@ std::pair<scalar, scalar> Foam::EllipticWing::Cl_Cd(scalar Ma, scalar r, scalar 
 
 Foam::HorizontalStabilator::HorizontalStabilator() : Blade() {}
 
-const std::array<scalar, 23> HorizontalStabilator::lift_
-    = NACA0012::getLiftCoefficients();
+const std::array<scalar, 29> HorizontalStabilator::lift_
+    = NACA0014::getLiftCoefficients();
 
-const std::array<scalar, 23> HorizontalStabilator::drag_
-    = NACA0012::getDragCoefficients();
+const std::array<scalar, 29> HorizontalStabilator::drag_
+    = NACA0014::getDragCoefficients();
 
 std::pair<scalar, scalar> Foam::HorizontalStabilator::Cl_Cd(scalar Ma, scalar r, scalar deg) const
 {
     scalar Cl, Cd;
     scalar index = mag(deg);
-    if (index >= 22) { Cl = lift_[22]; Cd = drag_[22]; }
+    if (index >= 28) { Cl = lift_[28]; Cd = drag_[28]; }
     else
     {
         label deg_floor = floor(index);
