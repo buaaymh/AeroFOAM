@@ -64,13 +64,16 @@ void Foam::turbulenceSolver::evaluateFlowResForGMRES
         }
         if (type == "wall")
         {
+            const fvPatchScalarField& muLamBound = muLam_.boundaryField()[patchI];
+            const fvPatchScalarField& muTurbBound = muTurb_.boundaryField()[patchI];
+            const fvPatchTensorField& UGradBound = UGrad_.boundaryField()[patchI];
             forAll(bfaceCells, faceI)
             {
                 vector rhoUFlux;
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
-                evaluateViscousFlux(rhoUFlux, rhoEFlux, vector::zero, vector::zero, UGrad_[i],
-                                    muLam_[i], 0, normal[faceI]);
+                evaluateViscousFlux(rhoUFlux, rhoEFlux, vector::zero, vector::zero, UGradBound[faceI],
+                                    muLamBound[faceI], muTurbBound[faceI], normal[faceI]);
                 resRhoU[i] += rhoUFlux * magSf[faceI];
             }
         }

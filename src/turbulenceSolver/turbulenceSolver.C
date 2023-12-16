@@ -133,13 +133,15 @@ void Foam::turbulenceSolver::correctTurbulenceFields()
         }
     }
     muTurb_ = muTurb(nuTilda_, rho_, muLam_);
+    enhancedWallTreatment();
 }
 
 void Foam::turbulenceSolver::correctFields()
 {
     navierStokesSolver::correctFields();
-    correctTurbulenceFields();
     UGrad_ = fvc::grad(U_);
+    UGrad_.correctBoundaryConditions();
+    correctTurbulenceFields();
     /*--- 
     A New Version of Detached-eddy Simulation, Resistant to Ambiguous Grid Densities.
     Spalart et al. Theoretical and Computational Fluid Dynamics - 2006
@@ -152,6 +154,45 @@ void Foam::turbulenceSolver::correctFields()
             scalar r_d = Ma_Re_*nuTilda_[cellI]/(max(mag(UGrad_[cellI]), 1e-10)*SA::k2*sqr(dist_[cellI]));
             scalar f_d = 1.0-Foam::tanh(Foam::pow3(8.0*r_d));
             dist_[cellI] -= f_d*max(0.0, (dist_[cellI]-maxDelta_[cellI]*SA::constDES));
+        }
+    }
+}
+
+void Foam::turbulenceSolver::enhancedWallTreatment()
+{
+    forAll(mesh_.boundary(), patchI)
+    {
+        if (mesh_.boundary()[patchI].type() == "wall")
+        {
+            const vectorField& normal = normal_.boundaryField()[patchI];
+            const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+            const fvPatchScalarField& nuLamWall = nuLam_.boundaryField()[patchI];
+            const scalarField magGradU(mag(normal&UGrad_.boundaryField()[patchI]));
+            const vectorField Up = U_.boundaryField()[patchI].patchInternalField();
+            const scalarField magUp(mag(Up-normal*(normal&Up)));
+            fvPatchScalarField& nuTildaWall = nuTilda_.boundaryFieldRef()[patchI];
+            fvPatchScalarField& muTurbWall = muTurb_.boundaryFieldRef()[patchI];
+            forAll(bfaceCells, faceI)
+            {
+                const label i = bfaceCells[faceI];
+                scalar ut = Foam::sqrt(Ma_Re_*nuLamWall[faceI]*magGradU[faceI]);
+                if (mag(ut) > ROOTVSMALL)
+                {
+                    scalar error = GREAT;
+                    label iter = 0;
+                    while (iter++ < 10 && error > 0.001)
+                    {
+                        const scalar yPlus = dist_[i]*ut/(Ma_Re_*nuLamWall[faceI]);
+                        const scalar uTauVis = magUp[faceI]/yPlus;
+                        const scalar uTauLog = SA::k*magUp[faceI]/log(max(SA::E*yPlus, 1 + 1e-4));
+                        const scalar utNew = pow(pow(uTauVis, 4) + pow(uTauLog, 4), 1.0/4);
+                        error = mag(ut - utNew)/(ut + ROOTVSMALL);
+                        ut = 0.5*(ut + utNew);
+                    }
+                }
+                muTurbWall[faceI]  = rho_[i]*max(0, sqr(ut)/(Ma_Re_*magGradU[faceI] + ROOTVSMALL) - nuLamWall[faceI]);
+                nuTildaWall[faceI] = muTurbWall[faceI]/rho_[i];
+            }
         }
     }
 }

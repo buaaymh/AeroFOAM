@@ -74,6 +74,7 @@ void Foam::turbulence3rdSolver::evaluateWallFlux
     const vector& rhoGrad,
     const tensor& rhoUGrad,
     const vector& rhoEGrad,
+    const scalar& muTurb,
     const vector& normal,
     const scalar& magSf
 ) const
@@ -83,9 +84,10 @@ void Foam::turbulence3rdSolver::evaluateWallFlux
     scalar T = Gamma*p/rho;
     tensor UGrad = (rho*rhoUGrad-rhoU*rhoGrad)/sqr(rho);
     scalar laminarViscosity = muLam(T, S_T_);
+    scalar mu = laminarViscosity + muTurb;
     vector StrainRateU = (UGrad + UGrad.T())&normal;
     scalar divU = UGrad.xx() + UGrad.yy() + UGrad.zz();
-    vector rhoUViscousFlux = laminarViscosity*StrainRateU - 2.0/3.0*laminarViscosity*divU*normal;
+    vector rhoUViscousFlux = mu*StrainRateU - 2.0/3.0*mu*divU*normal;
     rhoUFlux -= magSf*Ma_Re_ * rhoUViscousFlux;
 }
 
