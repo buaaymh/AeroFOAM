@@ -43,8 +43,8 @@ void Foam::turbulenceSolver::evaluateTurbRes
             {
                 scalar nuTildaFlux = 0;
                 const label i = bfaceCells[faceI];
-                scalar dx_L  = mag(delta_i[faceI]&normal_[faceI]) + SMALL;
-                scalar dx_R  = mag(delta_j[faceI]&normal_[faceI]) + SMALL;
+                scalar dx_L  = mag(delta_i[faceI]&normal[faceI]) + SMALL;
+                scalar dx_R  = mag(delta_j[faceI]&normal[faceI]) + SMALL;
                 scalar dx = dx_L + dx_R; dx_L /= dx; dx_R /= dx;
                 const scalar q_ij = (dx_L*U_[i]+dx_R*U_neigh[faceI])&Sf[faceI];
                 const scalar a_i = 0.5*(q_ij+mag(q_ij));

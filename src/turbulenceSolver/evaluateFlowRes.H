@@ -49,8 +49,8 @@ void Foam::turbulenceSolver::evaluateFlowResForGMRES
                 vector rhoUFlux;
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
-                scalar dx_L  = mag(delta_i[faceI]&normal_[faceI]) + SMALL;
-                scalar dx_R  = mag(delta_j[faceI]&normal_[faceI]) + SMALL;
+                scalar dx_L  = mag(delta_i[faceI]&normal[faceI]) + SMALL;
+                scalar dx_R  = mag(delta_j[faceI]&normal[faceI]) + SMALL;
                 scalar dx = dx_L + dx_R; dx_L /= dx; dx_R /= dx; 
                 evaluateViscousFlux(rhoUFlux, rhoEFlux,
                                     dx_L*U_[i]     +dx_R*U_neigh[faceI],
