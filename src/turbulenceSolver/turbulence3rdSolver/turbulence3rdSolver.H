@@ -102,7 +102,6 @@ class turbulence3rdSolver: public turbulenceSolver, public Reconstruction
         const vector& rhoGrad,
         const tensor& rhoUGrad,
         const vector& rhoEGrad,
-        const scalar& muTurb,
         const vector& normal,
         const scalar& magSf
     ) const;

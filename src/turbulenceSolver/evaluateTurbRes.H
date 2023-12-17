@@ -5,7 +5,6 @@ void Foam::turbulenceSolver::evaluateTurbRes
 {
     resNuTilda  = scalarField(mesh_.nCells(), 0.0);
     nuTildaGrad_ = fvc::grad(nuTilda_);
-    nuTildaGrad_.correctBoundaryConditions();
     forAll(mesh_.owner(), faceI)
     {
         scalar nuTildaFlux = 0;
@@ -60,13 +59,11 @@ void Foam::turbulenceSolver::evaluateTurbRes
         if (type == "wall")
         {
             const fvPatchScalarField& nuLamBound = nuLam_.boundaryField()[patchI];
-            const fvPatchScalarField& nuTildaBound = nuTilda_.boundaryField()[patchI];
-            const fvPatchVectorField& nuTildaGradBound = nuTildaGrad_.boundaryField()[patchI];
             forAll(bfaceCells, faceI)
             {
                 scalar nuTildaFlux = 0;
                 const label i = bfaceCells[faceI];
-                nuTildaFlux -= Ma_Re_*(nuLamBound[faceI]+nuTildaBound[faceI])*(nuTildaGradBound[faceI]&Sf[faceI])/SA::sigma;
+                nuTildaFlux -= Ma_Re_*nuLamBound[faceI]*(nuTildaGrad_[i]&Sf[faceI])/SA::sigma;
                 resNuTilda[i] -= nuTildaFlux;
             }
         }

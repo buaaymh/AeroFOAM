@@ -45,7 +45,6 @@ namespace Foam
 
 namespace SA
 {
-    static constexpr scalar k  = 0.4187;
     static constexpr scalar k2 = 0.1681;
     static constexpr scalar sigma = 2.0/3.0;
     static constexpr scalar Cb1 = 0.1355;
@@ -59,7 +58,6 @@ namespace SA
     static constexpr scalar Cn1 = 16.0;
     static constexpr scalar Ct3 = 1.2;
     static constexpr scalar Ct4 = 0.5;
-    static constexpr scalar E = 10;
     static constexpr scalar constDES = 0.65;
 }
 
@@ -222,8 +220,6 @@ private:
         const scalarField& v_NuTilda,
         scalarField& y_NuTilda
     ) const;
-
-    void enhancedWallTreatment();
 };
 
 // Functions

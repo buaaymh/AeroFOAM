@@ -120,7 +120,6 @@ void Foam::turbulence3rdSolver::evaluateFlowRes
         if (type == "wall")
         {
             const vectorField  Cn = mesh_.boundary()[patchI].Cn();
-            const fvPatchScalarField& muTurbBound = muTurb_.boundaryField()[patchI];
             const std::vector<std::unique_ptr<Face>>& boundaryQuad = patch2ndQuad_[patchI];
             forAll(bfaceCells, faceI)
             {
@@ -131,7 +130,7 @@ void Foam::turbulence3rdSolver::evaluateFlowRes
                     const vector delta_i = boundaryQuad[faceI]->at(gaussI) - Cn[faceI];
                     evaluateVarsAndGrads(rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
                                          rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
-                    evaluateWallFlux(rhoUFlux, rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i, muTurbBound[faceI],
+                    evaluateWallFlux(rhoUFlux, rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
                                      boundaryQuad[faceI]->normal(gaussI), boundaryQuad[faceI]->weight(gaussI));
                 }
                 resRhoU[i] -= rhoUFlux;
