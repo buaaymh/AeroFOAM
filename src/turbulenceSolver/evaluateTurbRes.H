@@ -27,6 +27,7 @@ void Foam::turbulenceSolver::evaluateTurbRes
     forAll(mesh_.boundary(), patchI)
     {
         const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
+        const vectorField& normal = normal_.boundaryField()[patchI];
         const vectorField& Sf = mesh_.Sf().boundaryField()[patchI];
         const word name = mesh_.boundary()[patchI].name();
         const word type = mesh_.boundary()[patchI].type();
