@@ -59,12 +59,14 @@ void Foam::turbulenceSolver::evaluateTurbRes
         }
         if (type == "wall")
         {
+            const scalarField& magSf = mesh_.magSf().boundaryField()[patchI];
             const fvPatchScalarField& nuLamBound = nuLam_.boundaryField()[patchI];
+            const scalarField nuTildaGradWall = nuTilda_.boundaryField()[patchI].snGrad();
             forAll(bfaceCells, faceI)
             {
                 scalar nuTildaFlux = 0;
                 const label i = bfaceCells[faceI];
-                nuTildaFlux -= Ma_Re_*nuLamBound[faceI]*(nuTildaGrad_[i]&Sf[faceI])/SA::sigma;
+                nuTildaFlux -= Ma_Re_*nuLamBound[faceI]*nuTildaGradWall[faceI]*magSf[faceI]/SA::sigma;
                 resNuTilda[i] -= nuTildaFlux;
             }
         }

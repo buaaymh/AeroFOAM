@@ -120,14 +120,16 @@ void Foam::turbulence2ndSolver::evaluateFlowRes
         if (type == "wall")
         {
             const fvPatchScalarField& pBound = p_.boundaryField()[patchI];
+            const fvPatchScalarField& muLamWall = muLam_.boundaryField()[patchI];
+            const tensorField UGradWall = normal*U_.boundaryField()[patchI].snGrad();
             forAll(bfaceCells, faceI)
             {
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
                 vector rhoUFlux = pBound[faceI]*normal[faceI];
                 resRhoU[i] -= rhoUFlux * magSf[faceI];
-                evaluateViscousFlux(rhoUFlux, rhoEFlux, vector::zero, vector::zero, UGrad_[i],
-                                    muLam_[i], 0, normal[faceI]);
+                evaluateViscousFlux(rhoUFlux, rhoEFlux, vector::zero, vector::zero, UGradWall[faceI],
+                                    muLamWall[faceI], 0, normal[faceI]);
                 resRhoU[i] += rhoUFlux * magSf[faceI];
             }
         }
