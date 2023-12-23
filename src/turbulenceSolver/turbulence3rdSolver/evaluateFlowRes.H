@@ -159,7 +159,7 @@ void Foam::turbulence3rdSolver::evaluateFlowRes
                                          rho_[i], rhoU_[i], rhoE_[i], coefs_[i], basisMean_[i], rDeltaXYZ_[i], delta_i);
                     evaluateInletOutletFlux(rhoFlux, rhoUFlux, rhoEFlux,
                                             rhoBound[faceI], UBound[faceI], pBound[faceI], muLamBound[faceI], muTurbBound[faceI],
-                                            rho_i, rhoU_i, rhoE_i, rhoGrad_i, rhoUGrad_i, rhoEGrad_i,
+                                            rho_i, rhoU_i, rhoE_i, vector::zero, tensor::zero, vector::zero,
                                             faceQuad->normal(gaussI), faceQuad->weight(gaussI));
                 }
                 resRho[i]  -= rhoFlux;

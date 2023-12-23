@@ -35,19 +35,9 @@ void Foam::Reconstruction::limitCoefficients()
             Col5X1 delta = coefs_[cellI].array().abs().matrix().transpose()*polyNorm_[cellI];
             if (0.99*rho_[cellI]  < delta(0)) factor = min(factor, 0.99*rho_[cellI]/delta(0));
             if (0.99*rhoE_[cellI] < delta(4)) factor = min(factor, 0.99*rhoE_[cellI]/delta(4));
-            scalar dRho  = -delta(0);
-            vector dRhoU = vector(delta(1),delta(2),delta(3));
-            scalar dRhoE = -delta(4);
-            scalar rhoNew  = rho_[cellI] + dRho*factor;
-            vector rhoUNew = cmptMag(rhoU_[cellI]) + dRhoU*factor;
-            scalar rhoENew = rhoE_[cellI]+ dRhoE*factor;
-            scalar pNew = (Gamma-1.0)*(rhoENew - 0.5*magSqr(rhoUNew)/rhoNew);
-            if (pNew <= SMALL)
-                factor = min(factor, solveForPressure(rho_[cellI], cmptMag(rhoU_[cellI]), rhoE_[cellI],
-                                                      dRho, dRhoU, dRhoE, SMALL, factor));
             if (factor < 1.0)
             {
-                coefs_[cellI] *= 0;
+                coefs_[cellI] *= factor;
                 parameter_.nNegative++;
                 IS_[cellI] = 100;
             }
