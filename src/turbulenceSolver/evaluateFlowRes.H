@@ -72,7 +72,7 @@ void Foam::turbulenceSolver::evaluateFlowResForGMRES
                 scalar rhoEFlux;
                 const label i = bfaceCells[faceI];
                 evaluateViscousFlux(rhoUFlux, rhoEFlux, vector::zero, vector::zero, UGradWall[faceI],
-                                    muLamWall[i], 0, normal[faceI]);
+                                    muLamWall[faceI], 0, normal[faceI]);
                 resRhoU[i] += rhoUFlux * magSf[faceI];
             }
         }
