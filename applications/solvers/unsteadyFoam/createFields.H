@@ -82,12 +82,17 @@ Info << "====================================================" << endl;
 std::unique_ptr<Source> source;
 if (fluidProps.withSourceTerm) source = std::make_unique<Source>(rho, U);
 
-std::unique_ptr<solver> solver;
 label order = mesh.schemesDict().lookup<label>("order");
+std::unique_ptr<solver> solver;
 if (fluidProps.simulationType == "Euler")
 {
     if (order == 2) solver = std::make_unique<euler2ndSolver>(fluidProps, rho, U, p);
     else if (order == 3) solver = std::make_unique<euler3rdSolver>(fluidProps, rho, U, p);
+}
+else if (fluidProps.simulationType == "laminar")
+{
+    if (order == 2) solver = std::make_unique<navierStokes2ndSolver>(fluidProps, rho, U, p);
+    else if (order == 3) solver = std::make_unique<navierStokes3rdSolver>(fluidProps, rho, U, p);
 }
 solver->correctFields();
 // Resident

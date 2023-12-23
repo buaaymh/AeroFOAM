@@ -31,8 +31,12 @@ Description
 
 #include "fvCFD.H"
 #include "source.H"
+#include "eulerSolver.H"
 #include "euler2ndSolver.H"
 #include "euler3rdSolver.H"
+#include "navierStokesSolver.H"
+#include "navierStokes2ndSolver.H"
+#include "navierStokes3rdSolver.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
