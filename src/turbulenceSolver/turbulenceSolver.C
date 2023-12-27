@@ -80,16 +80,18 @@ Foam::turbulenceSolver::turbulenceSolver
         mesh_,
         dimensionedScalar(dimless/dimLength, 0)
     ),
-    Strain_
+    fr1_
     (
         IOobject
         (
-            "strainRate",
+            "rotationFunction",
             mesh_.time().timeName(),
-            mesh_
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
         ),
         mesh_,
-        dimensionedScalar(dimless/dimLength, 0)
+        dimensionedScalar(dimless, 1)
     ),
     dNuTilda_(scalarField(mesh_.nCells())),
     maxDelta_(scalarField(mesh_.nCells()))
@@ -140,6 +142,31 @@ void Foam::turbulenceSolver::correctFields()
     navierStokesSolver::correctFields();
     correctTurbulenceFields();
     UGrad_ = fvc::grad(U_);
+    Omega_ = Foam::sqrt(2.0)*mag(skew(UGrad_));
+    if (fluidProps_.simulationType == "SARCM")
+    {
+        forAll(mesh_.C(), cellI)
+        {
+            const scalar asymInnerProduct = magSqr(Omega_[cellI]);
+            const scalar symInnerProduct = 2.0*magSqr(symm(UGrad_[cellI]));
+            const scalar w = atan(0.01*asymInnerProduct)
+                           * 2.0/constant::mathematical::pi
+                           * (asymInnerProduct-symInnerProduct)+symInnerProduct;
+            const scalar rStar  = sqrt(symInnerProduct/max(w, SMALL));
+            scalar rTilda = sqrt(w/max(symInnerProduct, SMALL));
+            rTilda *= rTilda-1;
+            fr1_[cellI] = max
+            (
+                min
+                (
+                    (1.0+SA::Cr1)*2.0*rStar/(1.0+rStar)*
+                    (1.0-SA::Cr3*atan(SA::Cr2*rTilda))-SA::Cr1,
+                    10.0
+                ),
+                -10.0
+            );
+        }
+    }
     /*--- 
     A New Version of Detached-eddy Simulation, Resistant to Ambiguous Grid Densities.
     Spalart et al. Theoretical and Computational Fluid Dynamics - 2006

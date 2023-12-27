@@ -58,6 +58,9 @@ namespace SA
     static constexpr scalar Cn1 = 16.0;
     static constexpr scalar Ct3 = 1.2;
     static constexpr scalar Ct4 = 0.5;
+    static constexpr scalar Cr1 = 1.0;
+    static constexpr scalar Cr2 = 2.0;
+    static constexpr scalar Cr3 = 1.0;
     static constexpr scalar constDES = 0.65;
 }
 
@@ -80,8 +83,8 @@ class turbulenceSolver: public navierStokesSolver
         volVectorField nuTildaGrad_;
         //- vorticity
         volScalarField Omega_;
-        //- strain rate
-        volScalarField Strain_;
+        //- rotationFunction
+        volScalarField fr1_;
         //- nuTilda residual
         scalarField dNuTilda_;
         //- wall distance
