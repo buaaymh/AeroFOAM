@@ -166,7 +166,7 @@ public:
     // Destructor - default
     ~CaradonnaTung() noexcept = default;
 
-    scalar minRadius() const { return 0.217; }
+    scalar minRadius() const { return 0.1143; }
 
     scalar maxRadius() const { return 1.143; }
 
