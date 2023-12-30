@@ -149,7 +149,6 @@ void Foam::Limiter::limiterVenkatakrishnan
     rhoLimit_.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
     ULimit_.primitiveFieldRef() = vectorField(mesh_.nCells(), vector::one);
     pLimit_.primitiveFieldRef() = scalarField(mesh_.nCells(), 1.0);
-    const scalarField delta = mag(mesh_.delta());
     const auto& owner = mesh_.owner();
     const auto& neighbour = mesh_.neighbour();
     forAll(owner, faceI)
@@ -158,7 +157,7 @@ void Foam::Limiter::limiterVenkatakrishnan
         const label j = neighbour[faceI];
         const vector delta_i = mesh_.Cf()[faceI] - mesh_.C()[i];
         const vector delta_j = mesh_.Cf()[faceI] - mesh_.C()[j];
-        const scalar eps2 = Foam::pow3(K*delta[faceI]);
+        const scalar eps2 = 0.5*Foam::pow3(K)*(mesh_.V()[i]+mesh_.V()[j]);
         rhoLimit_[i] = min(rhoLimit_[i], Venkat(rhoGrad[i]&delta_i, rhoMin[i], rhoMax[i], eps2));
         rhoLimit_[j] = min(rhoLimit_[j], Venkat(rhoGrad[j]&delta_j, rhoMin[j], rhoMax[j], eps2));
         vector UProj = UGrad[i]&delta_i;
@@ -179,12 +178,11 @@ void Foam::Limiter::limiterVenkatakrishnan
             const UList<label> &bfaceCells = mesh_.boundary()[patchI].faceCells();
             const vectorField& Cf = mesh_.boundary()[patchI].Cf();
             const vectorField Cn = mesh_.boundary()[patchI].Cn();
-            const scalarField delta = mag(mesh_.boundary()[patchI].delta());
             forAll(bfaceCells, faceI)
             {
                 const label i = bfaceCells[faceI];
                 const vector delta_i = Cf[faceI] - Cn[faceI];
-                const scalar eps2 = Foam::pow3(K*delta[faceI]);
+                const scalar eps2 = Foam::pow3(K)*mesh_.V()[i];
                 rhoLimit_[i] = min(rhoLimit_[i], Venkat(rhoGrad[i]&delta_i, rhoMin[i], rhoMax[i], eps2));
                 const vector UProj = UGrad[i]&delta_i;
                 ULimit_[i][0] = min(ULimit_[i][0], Venkat(UProj[0], UMin[i][0], UMax[i][0], eps2));
